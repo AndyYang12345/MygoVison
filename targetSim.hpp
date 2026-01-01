@@ -22,6 +22,19 @@ public:
               cv::Scalar background = cv::Scalar(255, 255, 255));
     
     /**
+     * @brief 获取所有预定义颜色
+     * @return 包含12个预定义颜色（BGR格式）的向量
+     */
+    std::vector<cv::Scalar> get_predefined_colors() const { return _predefined_colors; }
+
+    /**
+     * @brief 从预定义颜色中随机选择指定数量的颜色
+     * @param count 要选择的颜色数量（不超过12）
+     * @return 随机选择的颜色向量
+     */
+    std::vector<cv::Scalar> get_random_colors(int count = 5);
+
+    /**
      * @brief 生成靶子图像（核心函数）
      * @param center_color 中心色块的颜色（BGR格式）
      * @param surround_colors 外围5个色块的颜色向量（BGR格式）
@@ -40,33 +53,17 @@ public:
                            const cv::Point2f& base_center = cv::Point2f(-1, -1),
                            float rotation_angle = 0.0f,
                            int target_idx = 0);
-    
-    /**
-     * @brief 生成随机位置（无旋转）的靶子图像
-     * @param center_color 中心色块颜色
-     * @param surround_colors 外围色块颜色向量
+
+     /**
+     * @brief 生成全随机的靶子图像（位置+旋转+颜色）
      * @param target_idx 目标色块索引
      * @return 生成的图像
      * 
-     * @note 用于测试ROI检测算法的鲁棒性，避免算法过拟合画面中心位置。
+     * @note 这是唯一保留的便捷函数，因为组合使用场景最多
      */
-    cv::Mat generate_random_position_frame(const cv::Scalar& center_color,
-                                           const std::vector<cv::Scalar>& surround_colors,
-                                           int target_idx = 0);
+    cv::Mat generate_random_all_frame(int target_idx = 0);
     
-    /**
-     * @brief 生成随机位置+随机旋转的靶子图像
-     * @param center_color 中心色块颜色
-     * @param surround_colors 外围色块颜色向量
-     * @param target_idx 目标色块索引
-     * @return 生成的图像
-     * 
-     * @note 用于综合测试算法的鲁棒性，模拟目标在任意位置和姿态下的情况。
-     */
-    cv::Mat generate_random_pose_frame(const cv::Scalar& center_color,
-                                       const std::vector<cv::Scalar>& surround_colors,
-                                       int target_idx = 0);
-    
+
     /**
      * @brief 获取最新生成的色块中心坐标
      * @return 包含6个色块中心坐标（中心+外围5个）的向量
@@ -81,6 +78,7 @@ private:
     int _height;                        ///< 画布高度（像素）
     cv::Scalar _background;             ///< 画布背景颜色（BGR）
     std::vector<cv::Point2f> _blob_centroids; ///< 最新生成的色块中心坐标
+    std::vector<cv::Scalar> _predefined_colors; ///< 预定义的12种颜色（BGR格式）
     
     /**
      * @brief 计算靶子布局（核心几何计算）
