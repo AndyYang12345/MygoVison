@@ -1,6 +1,7 @@
-src/apps/CMakeFiles/test_stream.dir/test_stream.cpp.o: \
- /home/harekasa/Mygo/src/apps/test_stream.cpp /usr/include/stdc-predef.h \
- /home/harekasa/Mygo/include/targetSim/targetStreamSimulator.hpp \
+src/apps/CMakeFiles/test_training_app.dir/test_simple_training.cpp.o: \
+ /home/harekasa/Mygo/src/apps/test_simple_training.cpp \
+ /usr/include/stdc-predef.h \
+ /home/harekasa/Mygo/include/targetSim/TrainingFrameGenerator.hpp \
  /home/harekasa/Mygo/include/targetSim/targetSim.hpp \
  /usr/local/include/opencv4/opencv2/opencv.hpp \
  /usr/local/include/opencv4/opencv2/opencv_modules.hpp \

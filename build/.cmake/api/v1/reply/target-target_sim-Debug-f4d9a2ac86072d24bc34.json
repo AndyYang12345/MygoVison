@@ -12,9 +12,8 @@
 		"commands" : 
 		[
 			"add_library",
-			"install",
+			"add_compile_options",
 			"include_directories",
-			"target_include_directories",
 			"target_link_libraries"
 		],
 		"files" : 
@@ -30,13 +29,7 @@
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 24,
-				"parent" : 0
-			},
-			{
-				"command" : 1,
-				"file" : 0,
-				"line" : 44,
+				"line" : 2,
 				"parent" : 0
 			},
 			{
@@ -45,25 +38,25 @@
 			{
 				"command" : 1,
 				"file" : 1,
-				"line" : 48,
-				"parent" : 3
+				"line" : 37,
+				"parent" : 2
+			},
+			{
+				"command" : 2,
+				"file" : 1,
+				"line" : 19,
+				"parent" : 2
 			},
 			{
 				"command" : 2,
 				"file" : 1,
 				"line" : 26,
-				"parent" : 3
+				"parent" : 2
 			},
 			{
 				"command" : 3,
 				"file" : 0,
-				"line" : 29,
-				"parent" : 0
-			},
-			{
-				"command" : 4,
-				"file" : 0,
-				"line" : 32,
+				"line" : 16,
 				"parent" : 0
 			}
 		]
@@ -75,20 +68,32 @@
 			[
 				{
 					"fragment" : "-g -std=c++17"
+				},
+				{
+					"backtrace" : 3,
+					"fragment" : "-Wall"
+				},
+				{
+					"backtrace" : 3,
+					"fragment" : "-Wextra"
+				},
+				{
+					"backtrace" : 3,
+					"fragment" : "-Wpedantic"
 				}
 			],
 			"includes" : 
 			[
 				{
-					"backtrace" : 5,
+					"backtrace" : 4,
 					"path" : "/home/harekasa/Mygo/include"
 				},
 				{
-					"backtrace" : 6,
+					"backtrace" : 5,
 					"path" : "/home/harekasa/Mygo/include/targetSim"
 				},
 				{
-					"backtrace" : 6,
+					"backtrace" : 4,
 					"isSystem" : true,
 					"path" : "/usr/local/include/opencv4"
 				}
@@ -98,7 +103,7 @@
 			{
 				"backtraces" : 
 				[
-					7
+					6
 				],
 				"standard" : "17"
 			},
@@ -110,24 +115,6 @@
 		}
 	],
 	"id" : "target_sim::@6dd341a3e845b0f95420",
-	"install" : 
-	{
-		"destinations" : 
-		[
-			{
-				"backtrace" : 2,
-				"path" : "lib"
-			},
-			{
-				"backtrace" : 4,
-				"path" : "lib"
-			}
-		],
-		"prefix" : 
-		{
-			"path" : "/usr/local"
-		}
-	},
 	"name" : "target_sim",
 	"nameOnDisk" : "libtarget_sim.a",
 	"paths" : 

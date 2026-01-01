@@ -2,7 +2,7 @@
 	"artifacts" : 
 	[
 		{
-			"path" : "bin/tests/test_basic"
+			"path" : "bin/test_basic"
 		}
 	],
 	"backtrace" : 1,
@@ -12,6 +12,7 @@
 		[
 			"add_executable",
 			"target_link_libraries",
+			"add_compile_options",
 			"include_directories"
 		],
 		"files" : 
@@ -27,13 +28,13 @@
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 5,
+				"line" : 2,
 				"parent" : 0
 			},
 			{
 				"command" : 1,
 				"file" : 0,
-				"line" : 9,
+				"line" : 6,
 				"parent" : 0
 			},
 			{
@@ -41,6 +42,18 @@
 			},
 			{
 				"command" : 2,
+				"file" : 1,
+				"line" : 37,
+				"parent" : 3
+			},
+			{
+				"command" : 3,
+				"file" : 1,
+				"line" : 19,
+				"parent" : 3
+			},
+			{
+				"command" : 3,
 				"file" : 1,
 				"line" : 26,
 				"parent" : 3
@@ -54,20 +67,32 @@
 			[
 				{
 					"fragment" : "-g -std=c++17"
+				},
+				{
+					"backtrace" : 4,
+					"fragment" : "-Wall"
+				},
+				{
+					"backtrace" : 4,
+					"fragment" : "-Wextra"
+				},
+				{
+					"backtrace" : 4,
+					"fragment" : "-Wpedantic"
 				}
 			],
 			"includes" : 
 			[
 				{
-					"backtrace" : 4,
+					"backtrace" : 5,
 					"path" : "/home/harekasa/Mygo/include"
 				},
 				{
-					"backtrace" : 2,
+					"backtrace" : 6,
 					"path" : "/home/harekasa/Mygo/include/targetSim"
 				},
 				{
-					"backtrace" : 2,
+					"backtrace" : 5,
 					"isSystem" : true,
 					"path" : "/usr/local/include/opencv4"
 				}

@@ -6,5 +6,5 @@ CXX_DEFINES =
 
 CXX_INCLUDES = -I/home/harekasa/Mygo/include -I/home/harekasa/Mygo/include/targetSim -isystem /usr/local/include/opencv4
 
-CXX_FLAGS = -g -std=c++17
+CXX_FLAGS = -g -std=c++17 -Wall -Wextra -Wpedantic
 

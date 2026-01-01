@@ -14,10 +14,7 @@
 # EXTERNAL cache entries
 ########################
 
-//Build shared libraries
-BUILD_SHARED_LIBS:BOOL=OFF
-
-//Build tests
+//Build test applications
 BUILD_TESTS:BOOL=ON
 
 //Path to a program.
@@ -85,8 +82,8 @@ CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE
 //Value Computed by CMake.
 CMAKE_FIND_PACKAGE_REDIRECTS_DIR:STATIC=/home/harekasa/Mygo/build/CMakeFiles/pkgRedirects
 
-//Install path prefix, prepended onto install directories.
-CMAKE_INSTALL_PREFIX:PATH=/usr/local
+//Install path prefix
+CMAKE_INSTALL_PREFIX:PATH=/home/harekasa/Mygo/build/install
 
 //Path to a program.
 CMAKE_LINKER:FILEPATH=/usr/bin/ld
@@ -130,7 +127,22 @@ CMAKE_PROJECT_DESCRIPTION:STATIC=
 CMAKE_PROJECT_HOMEPAGE_URL:STATIC=
 
 //Value Computed by CMake
-CMAKE_PROJECT_NAME:STATIC=TargetSimulation
+CMAKE_PROJECT_NAME:STATIC=target_sim_project
+
+//Value Computed by CMake
+CMAKE_PROJECT_VERSION:STATIC=1.0.0
+
+//Value Computed by CMake
+CMAKE_PROJECT_VERSION_MAJOR:STATIC=1
+
+//Value Computed by CMake
+CMAKE_PROJECT_VERSION_MINOR:STATIC=0
+
+//Value Computed by CMake
+CMAKE_PROJECT_VERSION_PATCH:STATIC=0
+
+//Value Computed by CMake
+CMAKE_PROJECT_VERSION_TWEAK:STATIC=
 
 //Path to a program.
 CMAKE_RANLIB:FILEPATH=/usr/bin/ranlib
@@ -209,6 +221,15 @@ TargetSimulation_IS_TOP_LEVEL:STATIC=ON
 //Value Computed by CMake
 TargetSimulation_SOURCE_DIR:STATIC=/home/harekasa/Mygo
 
+//Value Computed by CMake
+target_sim_project_BINARY_DIR:STATIC=/home/harekasa/Mygo/build
+
+//Value Computed by CMake
+target_sim_project_IS_TOP_LEVEL:STATIC=ON
+
+//Value Computed by CMake
+target_sim_project_SOURCE_DIR:STATIC=/home/harekasa/Mygo
+
 
 ########################
 # INTERNAL cache entries
@@ -264,6 +285,8 @@ CMAKE_EXE_LINKER_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1
 CMAKE_EXE_LINKER_FLAGS_RELEASE-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO
 CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: CMAKE_EXPORT_COMPILE_COMMANDS
+CMAKE_EXPORT_COMPILE_COMMANDS-ADVANCED:INTERNAL=1
 //Name of external makefile project generator.
 CMAKE_EXTRA_GENERATOR:INTERNAL=
 //Name of generator.
