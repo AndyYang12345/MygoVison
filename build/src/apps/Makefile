@@ -176,18 +176,18 @@ test_basic/fast:
 .PHONY : test_basic/fast
 
 # Convenience name for target.
-src/apps/CMakeFiles/test_stream.dir/rule:
-	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/apps/CMakeFiles/test_stream.dir/rule
-.PHONY : src/apps/CMakeFiles/test_stream.dir/rule
+src/apps/CMakeFiles/test_training.dir/rule:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/apps/CMakeFiles/test_training.dir/rule
+.PHONY : src/apps/CMakeFiles/test_training.dir/rule
 
 # Convenience name for target.
-test_stream: src/apps/CMakeFiles/test_stream.dir/rule
-.PHONY : test_stream
+test_training: src/apps/CMakeFiles/test_training.dir/rule
+.PHONY : test_training
 
 # fast build rule for target.
-test_stream/fast:
-	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_stream.dir/build.make src/apps/CMakeFiles/test_stream.dir/build
-.PHONY : test_stream/fast
+test_training/fast:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_training.dir/build.make src/apps/CMakeFiles/test_training.dir/build
+.PHONY : test_training/fast
 
 test_basic.o: test_basic.cpp.o
 .PHONY : test_basic.o
@@ -213,29 +213,29 @@ test_basic.cpp.s:
 	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_basic.dir/build.make src/apps/CMakeFiles/test_basic.dir/test_basic.cpp.s
 .PHONY : test_basic.cpp.s
 
-test_stream.o: test_stream.cpp.o
-.PHONY : test_stream.o
+test_simple_training.o: test_simple_training.cpp.o
+.PHONY : test_simple_training.o
 
 # target to build an object file
-test_stream.cpp.o:
-	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_stream.dir/build.make src/apps/CMakeFiles/test_stream.dir/test_stream.cpp.o
-.PHONY : test_stream.cpp.o
+test_simple_training.cpp.o:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_training.dir/build.make src/apps/CMakeFiles/test_training.dir/test_simple_training.cpp.o
+.PHONY : test_simple_training.cpp.o
 
-test_stream.i: test_stream.cpp.i
-.PHONY : test_stream.i
+test_simple_training.i: test_simple_training.cpp.i
+.PHONY : test_simple_training.i
 
 # target to preprocess a source file
-test_stream.cpp.i:
-	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_stream.dir/build.make src/apps/CMakeFiles/test_stream.dir/test_stream.cpp.i
-.PHONY : test_stream.cpp.i
+test_simple_training.cpp.i:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_training.dir/build.make src/apps/CMakeFiles/test_training.dir/test_simple_training.cpp.i
+.PHONY : test_simple_training.cpp.i
 
-test_stream.s: test_stream.cpp.s
-.PHONY : test_stream.s
+test_simple_training.s: test_simple_training.cpp.s
+.PHONY : test_simple_training.s
 
 # target to generate assembly for a file
-test_stream.cpp.s:
-	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_stream.dir/build.make src/apps/CMakeFiles/test_stream.dir/test_stream.cpp.s
-.PHONY : test_stream.cpp.s
+test_simple_training.cpp.s:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_training.dir/build.make src/apps/CMakeFiles/test_training.dir/test_simple_training.cpp.s
+.PHONY : test_simple_training.cpp.s
 
 # Help Target
 help:
@@ -250,13 +250,13 @@ help:
 	@echo "... list_install_components"
 	@echo "... rebuild_cache"
 	@echo "... test_basic"
-	@echo "... test_stream"
+	@echo "... test_training"
 	@echo "... test_basic.o"
 	@echo "... test_basic.i"
 	@echo "... test_basic.s"
-	@echo "... test_stream.o"
-	@echo "... test_stream.i"
-	@echo "... test_stream.s"
+	@echo "... test_simple_training.o"
+	@echo "... test_simple_training.i"
+	@echo "... test_simple_training.s"
 .PHONY : help
 
 

@@ -175,19 +175,6 @@ target_sim/fast:
 .PHONY : target_sim/fast
 
 #=============================================================================
-# Target rules for targets named target_stream_sim
-
-# Build rule for target.
-target_stream_sim: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 target_stream_sim
-.PHONY : target_stream_sim
-
-# fast build rule for target.
-target_stream_sim/fast:
-	$(MAKE) $(MAKESILENT) -f src/targetSim/CMakeFiles/target_stream_sim.dir/build.make src/targetSim/CMakeFiles/target_stream_sim.dir/build
-.PHONY : target_stream_sim/fast
-
-#=============================================================================
 # Target rules for targets named test_basic
 
 # Build rule for target.
@@ -201,17 +188,17 @@ test_basic/fast:
 .PHONY : test_basic/fast
 
 #=============================================================================
-# Target rules for targets named test_stream
+# Target rules for targets named test_training
 
 # Build rule for target.
-test_stream: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_stream
-.PHONY : test_stream
+test_training: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_training
+.PHONY : test_training
 
 # fast build rule for target.
-test_stream/fast:
-	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_stream.dir/build.make src/apps/CMakeFiles/test_stream.dir/build
-.PHONY : test_stream/fast
+test_training/fast:
+	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_training.dir/build.make src/apps/CMakeFiles/test_training.dir/build
+.PHONY : test_training/fast
 
 # Help Target
 help:
@@ -226,9 +213,8 @@ help:
 	@echo "... list_install_components"
 	@echo "... rebuild_cache"
 	@echo "... target_sim"
-	@echo "... target_stream_sim"
 	@echo "... test_basic"
-	@echo "... test_stream"
+	@echo "... test_training"
 .PHONY : help
 
 

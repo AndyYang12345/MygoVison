@@ -1,0 +1,26 @@
+[
+{
+  "directory": "/home/harekasa/Mygo/build/src/targetSim",
+  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -I/home/harekasa/Mygo/include/targetSim -isystem /usr/local/include/opencv4 -g -std=c++17 -o CMakeFiles/target_sim.dir/targetSim.cpp.o -c /home/harekasa/Mygo/src/targetSim/targetSim.cpp",
+  "file": "/home/harekasa/Mygo/src/targetSim/targetSim.cpp",
+  "output": "src/targetSim/CMakeFiles/target_sim.dir/targetSim.cpp.o"
+},
+{
+  "directory": "/home/harekasa/Mygo/build/src/targetSim",
+  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -I/home/harekasa/Mygo/include/targetSim -isystem /usr/local/include/opencv4 -g -std=c++17 -o CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.o -c /home/harekasa/Mygo/src/targetSim/TrainingFrameGenerator.cpp",
+  "file": "/home/harekasa/Mygo/src/targetSim/TrainingFrameGenerator.cpp",
+  "output": "src/targetSim/CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.o"
+},
+{
+  "directory": "/home/harekasa/Mygo/build/src/apps",
+  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -I/home/harekasa/Mygo/include/targetSim -isystem /usr/local/include/opencv4 -g -std=c++17 -o CMakeFiles/test_basic.dir/test_basic.cpp.o -c /home/harekasa/Mygo/src/apps/test_basic.cpp",
+  "file": "/home/harekasa/Mygo/src/apps/test_basic.cpp",
+  "output": "src/apps/CMakeFiles/test_basic.dir/test_basic.cpp.o"
+},
+{
+  "directory": "/home/harekasa/Mygo/build/src/apps",
+  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -I/home/harekasa/Mygo/include/targetSim -isystem /usr/local/include/opencv4 -g -std=c++17 -o CMakeFiles/test_training.dir/test_simple_training.cpp.o -c /home/harekasa/Mygo/src/apps/test_simple_training.cpp",
+  "file": "/home/harekasa/Mygo/src/apps/test_simple_training.cpp",
+  "output": "src/apps/CMakeFiles/test_training.dir/test_simple_training.cpp.o"
+}
+]

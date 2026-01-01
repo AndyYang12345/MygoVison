@@ -82,7 +82,7 @@ clean: src/apps/clean
 
 # Recursive "all" directory target.
 src/apps/all: src/apps/CMakeFiles/test_basic.dir/all
-src/apps/all: src/apps/CMakeFiles/test_stream.dir/all
+src/apps/all: src/apps/CMakeFiles/test_training.dir/all
 .PHONY : src/apps/all
 
 # Recursive "preinstall" directory target.
@@ -91,7 +91,7 @@ src/apps/preinstall:
 
 # Recursive "clean" directory target.
 src/apps/clean: src/apps/CMakeFiles/test_basic.dir/clean
-src/apps/clean: src/apps/CMakeFiles/test_stream.dir/clean
+src/apps/clean: src/apps/CMakeFiles/test_training.dir/clean
 .PHONY : src/apps/clean
 
 #=============================================================================
@@ -99,7 +99,6 @@ src/apps/clean: src/apps/CMakeFiles/test_stream.dir/clean
 
 # Recursive "all" directory target.
 src/targetSim/all: src/targetSim/CMakeFiles/target_sim.dir/all
-src/targetSim/all: src/targetSim/CMakeFiles/target_stream_sim.dir/all
 .PHONY : src/targetSim/all
 
 # Recursive "preinstall" directory target.
@@ -108,7 +107,6 @@ src/targetSim/preinstall:
 
 # Recursive "clean" directory target.
 src/targetSim/clean: src/targetSim/CMakeFiles/target_sim.dir/clean
-src/targetSim/clean: src/targetSim/CMakeFiles/target_stream_sim.dir/clean
 .PHONY : src/targetSim/clean
 
 #=============================================================================
@@ -118,12 +116,12 @@ src/targetSim/clean: src/targetSim/CMakeFiles/target_stream_sim.dir/clean
 src/targetSim/CMakeFiles/target_sim.dir/all:
 	$(MAKE) $(MAKESILENT) -f src/targetSim/CMakeFiles/target_sim.dir/build.make src/targetSim/CMakeFiles/target_sim.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/targetSim/CMakeFiles/target_sim.dir/build.make src/targetSim/CMakeFiles/target_sim.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=1,2 "Built target target_sim"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=1,2,3 "Built target target_sim"
 .PHONY : src/targetSim/CMakeFiles/target_sim.dir/all
 
 # Build rule for subdir invocation for target.
 src/targetSim/CMakeFiles/target_sim.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/harekasa/Mygo/build/CMakeFiles 2
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/harekasa/Mygo/build/CMakeFiles 3
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/targetSim/CMakeFiles/target_sim.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/harekasa/Mygo/build/CMakeFiles 0
 .PHONY : src/targetSim/CMakeFiles/target_sim.dir/rule
@@ -138,44 +136,18 @@ src/targetSim/CMakeFiles/target_sim.dir/clean:
 .PHONY : src/targetSim/CMakeFiles/target_sim.dir/clean
 
 #=============================================================================
-# Target rules for target src/targetSim/CMakeFiles/target_stream_sim.dir
-
-# All Build rule for target.
-src/targetSim/CMakeFiles/target_stream_sim.dir/all: src/targetSim/CMakeFiles/target_sim.dir/all
-	$(MAKE) $(MAKESILENT) -f src/targetSim/CMakeFiles/target_stream_sim.dir/build.make src/targetSim/CMakeFiles/target_stream_sim.dir/depend
-	$(MAKE) $(MAKESILENT) -f src/targetSim/CMakeFiles/target_stream_sim.dir/build.make src/targetSim/CMakeFiles/target_stream_sim.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=3,4 "Built target target_stream_sim"
-.PHONY : src/targetSim/CMakeFiles/target_stream_sim.dir/all
-
-# Build rule for subdir invocation for target.
-src/targetSim/CMakeFiles/target_stream_sim.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/harekasa/Mygo/build/CMakeFiles 4
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/targetSim/CMakeFiles/target_stream_sim.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/harekasa/Mygo/build/CMakeFiles 0
-.PHONY : src/targetSim/CMakeFiles/target_stream_sim.dir/rule
-
-# Convenience name for target.
-target_stream_sim: src/targetSim/CMakeFiles/target_stream_sim.dir/rule
-.PHONY : target_stream_sim
-
-# clean rule for target.
-src/targetSim/CMakeFiles/target_stream_sim.dir/clean:
-	$(MAKE) $(MAKESILENT) -f src/targetSim/CMakeFiles/target_stream_sim.dir/build.make src/targetSim/CMakeFiles/target_stream_sim.dir/clean
-.PHONY : src/targetSim/CMakeFiles/target_stream_sim.dir/clean
-
-#=============================================================================
 # Target rules for target src/apps/CMakeFiles/test_basic.dir
 
 # All Build rule for target.
 src/apps/CMakeFiles/test_basic.dir/all: src/targetSim/CMakeFiles/target_sim.dir/all
 	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_basic.dir/build.make src/apps/CMakeFiles/test_basic.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_basic.dir/build.make src/apps/CMakeFiles/test_basic.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=5,6 "Built target test_basic"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=4,5 "Built target test_basic"
 .PHONY : src/apps/CMakeFiles/test_basic.dir/all
 
 # Build rule for subdir invocation for target.
 src/apps/CMakeFiles/test_basic.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/harekasa/Mygo/build/CMakeFiles 4
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/harekasa/Mygo/build/CMakeFiles 5
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/apps/CMakeFiles/test_basic.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/harekasa/Mygo/build/CMakeFiles 0
 .PHONY : src/apps/CMakeFiles/test_basic.dir/rule
@@ -190,31 +162,30 @@ src/apps/CMakeFiles/test_basic.dir/clean:
 .PHONY : src/apps/CMakeFiles/test_basic.dir/clean
 
 #=============================================================================
-# Target rules for target src/apps/CMakeFiles/test_stream.dir
+# Target rules for target src/apps/CMakeFiles/test_training.dir
 
 # All Build rule for target.
-src/apps/CMakeFiles/test_stream.dir/all: src/targetSim/CMakeFiles/target_sim.dir/all
-src/apps/CMakeFiles/test_stream.dir/all: src/targetSim/CMakeFiles/target_stream_sim.dir/all
-	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_stream.dir/build.make src/apps/CMakeFiles/test_stream.dir/depend
-	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_stream.dir/build.make src/apps/CMakeFiles/test_stream.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=7,8 "Built target test_stream"
-.PHONY : src/apps/CMakeFiles/test_stream.dir/all
+src/apps/CMakeFiles/test_training.dir/all: src/targetSim/CMakeFiles/target_sim.dir/all
+	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_training.dir/build.make src/apps/CMakeFiles/test_training.dir/depend
+	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_training.dir/build.make src/apps/CMakeFiles/test_training.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=6,7 "Built target test_training"
+.PHONY : src/apps/CMakeFiles/test_training.dir/all
 
 # Build rule for subdir invocation for target.
-src/apps/CMakeFiles/test_stream.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/harekasa/Mygo/build/CMakeFiles 6
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/apps/CMakeFiles/test_stream.dir/all
+src/apps/CMakeFiles/test_training.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/harekasa/Mygo/build/CMakeFiles 5
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/apps/CMakeFiles/test_training.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/harekasa/Mygo/build/CMakeFiles 0
-.PHONY : src/apps/CMakeFiles/test_stream.dir/rule
+.PHONY : src/apps/CMakeFiles/test_training.dir/rule
 
 # Convenience name for target.
-test_stream: src/apps/CMakeFiles/test_stream.dir/rule
-.PHONY : test_stream
+test_training: src/apps/CMakeFiles/test_training.dir/rule
+.PHONY : test_training
 
 # clean rule for target.
-src/apps/CMakeFiles/test_stream.dir/clean:
-	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_stream.dir/build.make src/apps/CMakeFiles/test_stream.dir/clean
-.PHONY : src/apps/CMakeFiles/test_stream.dir/clean
+src/apps/CMakeFiles/test_training.dir/clean:
+	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_training.dir/build.make src/apps/CMakeFiles/test_training.dir/clean
+.PHONY : src/apps/CMakeFiles/test_training.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

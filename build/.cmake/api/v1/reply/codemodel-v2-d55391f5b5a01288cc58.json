@@ -1,0 +1,112 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1,
+						2
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Debug-8d66d17baa2b68cd740a.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.12"
+					},
+					"projectIndex" : 0,
+					"source" : "."
+				},
+				{
+					"build" : "src/targetSim",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-src.targetSim-Debug-fff4840c21511b1b082c.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.12"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/targetSim",
+					"targetIndexes" : 
+					[
+						0
+					]
+				},
+				{
+					"build" : "src/apps",
+					"jsonFile" : "directory-src.apps-Debug-50dbd47a2650d25d642b.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.12"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/apps",
+					"targetIndexes" : 
+					[
+						1,
+						2
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0,
+						1,
+						2
+					],
+					"name" : "TargetSimulation",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 1,
+					"id" : "target_sim::@6dd341a3e845b0f95420",
+					"jsonFile" : "target-target_sim-Debug-52d3a536ad9f6e4cb02a.json",
+					"name" : "target_sim",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 2,
+					"id" : "test_basic::@57fecd540e8aa42f9f2f",
+					"jsonFile" : "target-test_basic-Debug-eb5c394f5afb6fbc386b.json",
+					"name" : "test_basic",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 2,
+					"id" : "test_training::@57fecd540e8aa42f9f2f",
+					"jsonFile" : "target-test_training-Debug-84f4d905c83ac1819181.json",
+					"name" : "test_training",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/harekasa/Mygo/build",
+		"source" : "/home/harekasa/Mygo"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 6
+	}
+}

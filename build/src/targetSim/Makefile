@@ -175,19 +175,29 @@ target_sim/fast:
 	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/targetSim/CMakeFiles/target_sim.dir/build.make src/targetSim/CMakeFiles/target_sim.dir/build
 .PHONY : target_sim/fast
 
-# Convenience name for target.
-src/targetSim/CMakeFiles/target_stream_sim.dir/rule:
-	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/targetSim/CMakeFiles/target_stream_sim.dir/rule
-.PHONY : src/targetSim/CMakeFiles/target_stream_sim.dir/rule
+TrainingFrameGenerator.o: TrainingFrameGenerator.cpp.o
+.PHONY : TrainingFrameGenerator.o
 
-# Convenience name for target.
-target_stream_sim: src/targetSim/CMakeFiles/target_stream_sim.dir/rule
-.PHONY : target_stream_sim
+# target to build an object file
+TrainingFrameGenerator.cpp.o:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/targetSim/CMakeFiles/target_sim.dir/build.make src/targetSim/CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.o
+.PHONY : TrainingFrameGenerator.cpp.o
 
-# fast build rule for target.
-target_stream_sim/fast:
-	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/targetSim/CMakeFiles/target_stream_sim.dir/build.make src/targetSim/CMakeFiles/target_stream_sim.dir/build
-.PHONY : target_stream_sim/fast
+TrainingFrameGenerator.i: TrainingFrameGenerator.cpp.i
+.PHONY : TrainingFrameGenerator.i
+
+# target to preprocess a source file
+TrainingFrameGenerator.cpp.i:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/targetSim/CMakeFiles/target_sim.dir/build.make src/targetSim/CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.i
+.PHONY : TrainingFrameGenerator.cpp.i
+
+TrainingFrameGenerator.s: TrainingFrameGenerator.cpp.s
+.PHONY : TrainingFrameGenerator.s
+
+# target to generate assembly for a file
+TrainingFrameGenerator.cpp.s:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/targetSim/CMakeFiles/target_sim.dir/build.make src/targetSim/CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.s
+.PHONY : TrainingFrameGenerator.cpp.s
 
 targetSim.o: targetSim.cpp.o
 .PHONY : targetSim.o
@@ -213,30 +223,6 @@ targetSim.cpp.s:
 	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/targetSim/CMakeFiles/target_sim.dir/build.make src/targetSim/CMakeFiles/target_sim.dir/targetSim.cpp.s
 .PHONY : targetSim.cpp.s
 
-targetStreamSimulator.o: targetStreamSimulator.cpp.o
-.PHONY : targetStreamSimulator.o
-
-# target to build an object file
-targetStreamSimulator.cpp.o:
-	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/targetSim/CMakeFiles/target_stream_sim.dir/build.make src/targetSim/CMakeFiles/target_stream_sim.dir/targetStreamSimulator.cpp.o
-.PHONY : targetStreamSimulator.cpp.o
-
-targetStreamSimulator.i: targetStreamSimulator.cpp.i
-.PHONY : targetStreamSimulator.i
-
-# target to preprocess a source file
-targetStreamSimulator.cpp.i:
-	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/targetSim/CMakeFiles/target_stream_sim.dir/build.make src/targetSim/CMakeFiles/target_stream_sim.dir/targetStreamSimulator.cpp.i
-.PHONY : targetStreamSimulator.cpp.i
-
-targetStreamSimulator.s: targetStreamSimulator.cpp.s
-.PHONY : targetStreamSimulator.s
-
-# target to generate assembly for a file
-targetStreamSimulator.cpp.s:
-	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/targetSim/CMakeFiles/target_stream_sim.dir/build.make src/targetSim/CMakeFiles/target_stream_sim.dir/targetStreamSimulator.cpp.s
-.PHONY : targetStreamSimulator.cpp.s
-
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -250,13 +236,12 @@ help:
 	@echo "... list_install_components"
 	@echo "... rebuild_cache"
 	@echo "... target_sim"
-	@echo "... target_stream_sim"
+	@echo "... TrainingFrameGenerator.o"
+	@echo "... TrainingFrameGenerator.i"
+	@echo "... TrainingFrameGenerator.s"
 	@echo "... targetSim.o"
 	@echo "... targetSim.i"
 	@echo "... targetSim.s"
-	@echo "... targetStreamSimulator.o"
-	@echo "... targetStreamSimulator.i"
-	@echo "... targetStreamSimulator.s"
 .PHONY : help
 
 

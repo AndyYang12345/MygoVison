@@ -73,27 +73,43 @@ src/targetSim/CMakeFiles/target_sim.dir/targetSim.cpp.o: src/targetSim/CMakeFile
 src/targetSim/CMakeFiles/target_sim.dir/targetSim.cpp.o: /home/harekasa/Mygo/src/targetSim/targetSim.cpp
 src/targetSim/CMakeFiles/target_sim.dir/targetSim.cpp.o: src/targetSim/CMakeFiles/target_sim.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object src/targetSim/CMakeFiles/target_sim.dir/targetSim.cpp.o"
-	cd /home/harekasa/Mygo/build/src/targetSim && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/targetSim/CMakeFiles/target_sim.dir/targetSim.cpp.o -MF CMakeFiles/target_sim.dir/targetSim.cpp.o.d -o CMakeFiles/target_sim.dir/targetSim.cpp.o -c /home/harekasa/Mygo/src/targetSim/targetSim.cpp
+	cd /home/harekasa/Mygo/build/src/targetSim && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/targetSim/CMakeFiles/target_sim.dir/targetSim.cpp.o -MF CMakeFiles/target_sim.dir/targetSim.cpp.o.d -o CMakeFiles/target_sim.dir/targetSim.cpp.o -c /home/harekasa/Mygo/src/targetSim/targetSim.cpp
 
 src/targetSim/CMakeFiles/target_sim.dir/targetSim.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/target_sim.dir/targetSim.cpp.i"
-	cd /home/harekasa/Mygo/build/src/targetSim && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/harekasa/Mygo/src/targetSim/targetSim.cpp > CMakeFiles/target_sim.dir/targetSim.cpp.i
+	cd /home/harekasa/Mygo/build/src/targetSim && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/harekasa/Mygo/src/targetSim/targetSim.cpp > CMakeFiles/target_sim.dir/targetSim.cpp.i
 
 src/targetSim/CMakeFiles/target_sim.dir/targetSim.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/target_sim.dir/targetSim.cpp.s"
-	cd /home/harekasa/Mygo/build/src/targetSim && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/harekasa/Mygo/src/targetSim/targetSim.cpp -o CMakeFiles/target_sim.dir/targetSim.cpp.s
+	cd /home/harekasa/Mygo/build/src/targetSim && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/harekasa/Mygo/src/targetSim/targetSim.cpp -o CMakeFiles/target_sim.dir/targetSim.cpp.s
+
+src/targetSim/CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.o: src/targetSim/CMakeFiles/target_sim.dir/flags.make
+src/targetSim/CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.o: /home/harekasa/Mygo/src/targetSim/TrainingFrameGenerator.cpp
+src/targetSim/CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.o: src/targetSim/CMakeFiles/target_sim.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object src/targetSim/CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.o"
+	cd /home/harekasa/Mygo/build/src/targetSim && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/targetSim/CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.o -MF CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.o.d -o CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.o -c /home/harekasa/Mygo/src/targetSim/TrainingFrameGenerator.cpp
+
+src/targetSim/CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.i"
+	cd /home/harekasa/Mygo/build/src/targetSim && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/harekasa/Mygo/src/targetSim/TrainingFrameGenerator.cpp > CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.i
+
+src/targetSim/CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.s"
+	cd /home/harekasa/Mygo/build/src/targetSim && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/harekasa/Mygo/src/targetSim/TrainingFrameGenerator.cpp -o CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.s
 
 # Object files for target target_sim
 target_sim_OBJECTS = \
-"CMakeFiles/target_sim.dir/targetSim.cpp.o"
+"CMakeFiles/target_sim.dir/targetSim.cpp.o" \
+"CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.o"
 
 # External object files for target target_sim
 target_sim_EXTERNAL_OBJECTS =
 
 lib/libtarget_sim.a: src/targetSim/CMakeFiles/target_sim.dir/targetSim.cpp.o
+lib/libtarget_sim.a: src/targetSim/CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.o
 lib/libtarget_sim.a: src/targetSim/CMakeFiles/target_sim.dir/build.make
 lib/libtarget_sim.a: src/targetSim/CMakeFiles/target_sim.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX static library ../../lib/libtarget_sim.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX static library ../../lib/libtarget_sim.a"
 	cd /home/harekasa/Mygo/build/src/targetSim && $(CMAKE_COMMAND) -P CMakeFiles/target_sim.dir/cmake_clean_target.cmake
 	cd /home/harekasa/Mygo/build/src/targetSim && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/target_sim.dir/link.txt --verbose=$(VERBOSE)
 

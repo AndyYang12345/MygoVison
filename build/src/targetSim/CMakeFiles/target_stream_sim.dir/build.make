@@ -73,15 +73,15 @@ src/targetSim/CMakeFiles/target_stream_sim.dir/targetStreamSimulator.cpp.o: src/
 src/targetSim/CMakeFiles/target_stream_sim.dir/targetStreamSimulator.cpp.o: /home/harekasa/Mygo/src/targetSim/targetStreamSimulator.cpp
 src/targetSim/CMakeFiles/target_stream_sim.dir/targetStreamSimulator.cpp.o: src/targetSim/CMakeFiles/target_stream_sim.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object src/targetSim/CMakeFiles/target_stream_sim.dir/targetStreamSimulator.cpp.o"
-	cd /home/harekasa/Mygo/build/src/targetSim && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/targetSim/CMakeFiles/target_stream_sim.dir/targetStreamSimulator.cpp.o -MF CMakeFiles/target_stream_sim.dir/targetStreamSimulator.cpp.o.d -o CMakeFiles/target_stream_sim.dir/targetStreamSimulator.cpp.o -c /home/harekasa/Mygo/src/targetSim/targetStreamSimulator.cpp
+	cd /home/harekasa/Mygo/build/src/targetSim && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/targetSim/CMakeFiles/target_stream_sim.dir/targetStreamSimulator.cpp.o -MF CMakeFiles/target_stream_sim.dir/targetStreamSimulator.cpp.o.d -o CMakeFiles/target_stream_sim.dir/targetStreamSimulator.cpp.o -c /home/harekasa/Mygo/src/targetSim/targetStreamSimulator.cpp
 
 src/targetSim/CMakeFiles/target_stream_sim.dir/targetStreamSimulator.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/target_stream_sim.dir/targetStreamSimulator.cpp.i"
-	cd /home/harekasa/Mygo/build/src/targetSim && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/harekasa/Mygo/src/targetSim/targetStreamSimulator.cpp > CMakeFiles/target_stream_sim.dir/targetStreamSimulator.cpp.i
+	cd /home/harekasa/Mygo/build/src/targetSim && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/harekasa/Mygo/src/targetSim/targetStreamSimulator.cpp > CMakeFiles/target_stream_sim.dir/targetStreamSimulator.cpp.i
 
 src/targetSim/CMakeFiles/target_stream_sim.dir/targetStreamSimulator.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/target_stream_sim.dir/targetStreamSimulator.cpp.s"
-	cd /home/harekasa/Mygo/build/src/targetSim && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/harekasa/Mygo/src/targetSim/targetStreamSimulator.cpp -o CMakeFiles/target_stream_sim.dir/targetStreamSimulator.cpp.s
+	cd /home/harekasa/Mygo/build/src/targetSim && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/harekasa/Mygo/src/targetSim/targetStreamSimulator.cpp -o CMakeFiles/target_stream_sim.dir/targetStreamSimulator.cpp.s
 
 # Object files for target target_stream_sim
 target_stream_sim_OBJECTS = \

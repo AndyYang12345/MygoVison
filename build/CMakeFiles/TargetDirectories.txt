@@ -5,7 +5,6 @@
 /home/harekasa/Mygo/build/CMakeFiles/install/local.dir
 /home/harekasa/Mygo/build/CMakeFiles/install/strip.dir
 /home/harekasa/Mygo/build/src/targetSim/CMakeFiles/target_sim.dir
-/home/harekasa/Mygo/build/src/targetSim/CMakeFiles/target_stream_sim.dir
 /home/harekasa/Mygo/build/src/targetSim/CMakeFiles/edit_cache.dir
 /home/harekasa/Mygo/build/src/targetSim/CMakeFiles/rebuild_cache.dir
 /home/harekasa/Mygo/build/src/targetSim/CMakeFiles/list_install_components.dir
@@ -13,7 +12,7 @@
 /home/harekasa/Mygo/build/src/targetSim/CMakeFiles/install/local.dir
 /home/harekasa/Mygo/build/src/targetSim/CMakeFiles/install/strip.dir
 /home/harekasa/Mygo/build/src/apps/CMakeFiles/test_basic.dir
-/home/harekasa/Mygo/build/src/apps/CMakeFiles/test_stream.dir
+/home/harekasa/Mygo/build/src/apps/CMakeFiles/test_training.dir
 /home/harekasa/Mygo/build/src/apps/CMakeFiles/edit_cache.dir
 /home/harekasa/Mygo/build/src/apps/CMakeFiles/rebuild_cache.dir
 /home/harekasa/Mygo/build/src/apps/CMakeFiles/list_install_components.dir
