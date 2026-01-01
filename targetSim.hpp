@@ -72,6 +72,13 @@ public:
      *       与算法检测结果进行对比以评估精度。
      */
     std::vector<cv::Point2f> get_blob_centroids() const { return _blob_centroids; }
+    
+    /**
+     * @brief 获取随机位置（确保靶子在画面内）
+     * @return 随机生成的中心点坐标
+     */
+    cv::Point2f get_random_position();
+
 
 private:
     int _width;                         ///< 画布宽度（像素）

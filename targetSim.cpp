@@ -86,6 +86,10 @@ std::vector<cv::Scalar> TargetSim::get_random_colors(int count) {
     return selected_colors;
 }
 
+cv::Point2f TargetSim::get_random_position() {
+    return _get_random_position();
+}
+
 // 私有辅助函数：生成随机位置
 cv::Point2f TargetSim::_get_random_position() {
     float margin = 120.0f; // 留白，避免靶子边缘超出画面
