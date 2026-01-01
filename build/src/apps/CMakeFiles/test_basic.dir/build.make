@@ -73,15 +73,15 @@ src/apps/CMakeFiles/test_basic.dir/test_basic.cpp.o: src/apps/CMakeFiles/test_ba
 src/apps/CMakeFiles/test_basic.dir/test_basic.cpp.o: /home/harekasa/Mygo/src/apps/test_basic.cpp
 src/apps/CMakeFiles/test_basic.dir/test_basic.cpp.o: src/apps/CMakeFiles/test_basic.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object src/apps/CMakeFiles/test_basic.dir/test_basic.cpp.o"
-	cd /home/harekasa/Mygo/build/src/apps && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/apps/CMakeFiles/test_basic.dir/test_basic.cpp.o -MF CMakeFiles/test_basic.dir/test_basic.cpp.o.d -o CMakeFiles/test_basic.dir/test_basic.cpp.o -c /home/harekasa/Mygo/src/apps/test_basic.cpp
+	cd /home/harekasa/Mygo/build/src/apps && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/apps/CMakeFiles/test_basic.dir/test_basic.cpp.o -MF CMakeFiles/test_basic.dir/test_basic.cpp.o.d -o CMakeFiles/test_basic.dir/test_basic.cpp.o -c /home/harekasa/Mygo/src/apps/test_basic.cpp
 
 src/apps/CMakeFiles/test_basic.dir/test_basic.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/test_basic.dir/test_basic.cpp.i"
-	cd /home/harekasa/Mygo/build/src/apps && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/harekasa/Mygo/src/apps/test_basic.cpp > CMakeFiles/test_basic.dir/test_basic.cpp.i
+	cd /home/harekasa/Mygo/build/src/apps && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/harekasa/Mygo/src/apps/test_basic.cpp > CMakeFiles/test_basic.dir/test_basic.cpp.i
 
 src/apps/CMakeFiles/test_basic.dir/test_basic.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/test_basic.dir/test_basic.cpp.s"
-	cd /home/harekasa/Mygo/build/src/apps && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/harekasa/Mygo/src/apps/test_basic.cpp -o CMakeFiles/test_basic.dir/test_basic.cpp.s
+	cd /home/harekasa/Mygo/build/src/apps && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/harekasa/Mygo/src/apps/test_basic.cpp -o CMakeFiles/test_basic.dir/test_basic.cpp.s
 
 # Object files for target test_basic
 test_basic_OBJECTS = \
