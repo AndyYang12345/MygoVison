@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../lib/libtarget_sim.a CMakeFiles/target_sim.dir/targetSim.cpp.o
+/usr/bin/ranlib ../../lib/libtarget_sim.a

@@ -132,14 +132,14 @@ install/strip/fast: preinstall/fast
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/harekasa/Mygo/build/CMakeFiles /home/harekasa/Mygo/build//CMakeFiles/progress.marks
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
+	cd /home/harekasa/Mygo/build && $(CMAKE_COMMAND) -E cmake_progress_start /home/harekasa/Mygo/build/CMakeFiles /home/harekasa/Mygo/build/src/apps//CMakeFiles/progress.marks
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/apps/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/harekasa/Mygo/build/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 clean
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/apps/clean
 .PHONY : clean
 
 # The main clean target
@@ -148,70 +148,94 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 preinstall
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/apps/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 preinstall
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/apps/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	$(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd /home/harekasa/Mygo/build && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
-#=============================================================================
-# Target rules for targets named target_sim
+# Convenience name for target.
+src/apps/CMakeFiles/test_basic.dir/rule:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/apps/CMakeFiles/test_basic.dir/rule
+.PHONY : src/apps/CMakeFiles/test_basic.dir/rule
 
-# Build rule for target.
-target_sim: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 target_sim
-.PHONY : target_sim
-
-# fast build rule for target.
-target_sim/fast:
-	$(MAKE) $(MAKESILENT) -f src/targetSim/CMakeFiles/target_sim.dir/build.make src/targetSim/CMakeFiles/target_sim.dir/build
-.PHONY : target_sim/fast
-
-#=============================================================================
-# Target rules for targets named target_stream_sim
-
-# Build rule for target.
-target_stream_sim: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 target_stream_sim
-.PHONY : target_stream_sim
-
-# fast build rule for target.
-target_stream_sim/fast:
-	$(MAKE) $(MAKESILENT) -f src/targetSim/CMakeFiles/target_stream_sim.dir/build.make src/targetSim/CMakeFiles/target_stream_sim.dir/build
-.PHONY : target_stream_sim/fast
-
-#=============================================================================
-# Target rules for targets named test_basic
-
-# Build rule for target.
-test_basic: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_basic
+# Convenience name for target.
+test_basic: src/apps/CMakeFiles/test_basic.dir/rule
 .PHONY : test_basic
 
 # fast build rule for target.
 test_basic/fast:
-	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_basic.dir/build.make src/apps/CMakeFiles/test_basic.dir/build
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_basic.dir/build.make src/apps/CMakeFiles/test_basic.dir/build
 .PHONY : test_basic/fast
 
-#=============================================================================
-# Target rules for targets named test_stream
+# Convenience name for target.
+src/apps/CMakeFiles/test_stream.dir/rule:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/apps/CMakeFiles/test_stream.dir/rule
+.PHONY : src/apps/CMakeFiles/test_stream.dir/rule
 
-# Build rule for target.
-test_stream: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_stream
+# Convenience name for target.
+test_stream: src/apps/CMakeFiles/test_stream.dir/rule
 .PHONY : test_stream
 
 # fast build rule for target.
 test_stream/fast:
-	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_stream.dir/build.make src/apps/CMakeFiles/test_stream.dir/build
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_stream.dir/build.make src/apps/CMakeFiles/test_stream.dir/build
 .PHONY : test_stream/fast
+
+test_basic.o: test_basic.cpp.o
+.PHONY : test_basic.o
+
+# target to build an object file
+test_basic.cpp.o:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_basic.dir/build.make src/apps/CMakeFiles/test_basic.dir/test_basic.cpp.o
+.PHONY : test_basic.cpp.o
+
+test_basic.i: test_basic.cpp.i
+.PHONY : test_basic.i
+
+# target to preprocess a source file
+test_basic.cpp.i:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_basic.dir/build.make src/apps/CMakeFiles/test_basic.dir/test_basic.cpp.i
+.PHONY : test_basic.cpp.i
+
+test_basic.s: test_basic.cpp.s
+.PHONY : test_basic.s
+
+# target to generate assembly for a file
+test_basic.cpp.s:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_basic.dir/build.make src/apps/CMakeFiles/test_basic.dir/test_basic.cpp.s
+.PHONY : test_basic.cpp.s
+
+test_stream.o: test_stream.cpp.o
+.PHONY : test_stream.o
+
+# target to build an object file
+test_stream.cpp.o:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_stream.dir/build.make src/apps/CMakeFiles/test_stream.dir/test_stream.cpp.o
+.PHONY : test_stream.cpp.o
+
+test_stream.i: test_stream.cpp.i
+.PHONY : test_stream.i
+
+# target to preprocess a source file
+test_stream.cpp.i:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_stream.dir/build.make src/apps/CMakeFiles/test_stream.dir/test_stream.cpp.i
+.PHONY : test_stream.cpp.i
+
+test_stream.s: test_stream.cpp.s
+.PHONY : test_stream.s
+
+# target to generate assembly for a file
+test_stream.cpp.s:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_stream.dir/build.make src/apps/CMakeFiles/test_stream.dir/test_stream.cpp.s
+.PHONY : test_stream.cpp.s
 
 # Help Target
 help:
@@ -225,10 +249,14 @@ help:
 	@echo "... install/strip"
 	@echo "... list_install_components"
 	@echo "... rebuild_cache"
-	@echo "... target_sim"
-	@echo "... target_stream_sim"
 	@echo "... test_basic"
 	@echo "... test_stream"
+	@echo "... test_basic.o"
+	@echo "... test_basic.i"
+	@echo "... test_basic.s"
+	@echo "... test_stream.o"
+	@echo "... test_stream.i"
+	@echo "... test_stream.s"
 .PHONY : help
 
 
@@ -240,6 +268,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	$(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd /home/harekasa/Mygo/build && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 
