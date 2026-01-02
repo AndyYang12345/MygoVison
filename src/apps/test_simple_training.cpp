@@ -126,7 +126,7 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
                 (center.x + frame_data.target_position.x) / 2,
                 (center.y + frame_data.target_position.y) / 2
             );
-            std::string angle_text = std::to_string((int)(generator.get_current_time() * angular_speed * 180 / M_PI)) + "°";
+            std::string angle_text = std::to_string((int)(generator.get_current_time() * angular_speed * 180 / M_PI)) + "degrees";
             cv::putText(display, angle_text, 
                        cv::Point(mid_point.x - 10, mid_point.y - 10),
                        cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
