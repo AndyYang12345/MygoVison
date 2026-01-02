@@ -1,4 +1,3 @@
-// targetSim.hpp
 #ifndef TARGET_SIM_HPP
 #define TARGET_SIM_HPP
 
@@ -8,7 +7,7 @@
 
 /**
  * @class TargetSim
- * @brief 靶子图像仿真器（简化版）- 专为视觉云台追踪训练设计
+ * @brief 靶子图像仿真器 - 专为视觉云台追踪训练设计
  */
 class TargetSim {
 public:
@@ -19,15 +18,15 @@ public:
               cv::Scalar background = cv::Scalar(255, 255, 255));
     
     /**
-     * @brief 生成五角星靶子图像（简化版）
+     * @brief 生成五角星靶子图像
      * @param base_center 靶子中心位置
      * @param rotation_angle 旋转角度（弧度）
+     * @param target_position [输出] 目标色块位置（与中心同色的外围色块）
      * @return 生成的靶子图像
-     * @note 第一个外围色块总是与中心同色（目标色块）
      */
     cv::Mat generate_pentagon_frame(const cv::Point2f& base_center,
-                                float rotation_angle = 0.0f,
-                                int target_idx = 0);  // 添加默认参数
+                                    float rotation_angle = 0.0f,
+                                    cv::Point2f* target_position = nullptr);
     
     /**
      * @brief 生成单色块目标图像
@@ -38,30 +37,15 @@ public:
      * @return 生成的图像
      */
     cv::Mat generate_single_blob_frame(const cv::Point2f& center,
-                                    int size = 30,
-                                    bool use_random_color = false,
-                                    const cv::Scalar& specified_color = cv::Scalar(-1, -1, -1));
-
-    // 添加获取/设置当前颜色的方法
-    cv::Scalar get_current_target_color() const { return _current_target_color; }
-    void set_target_color(const cv::Scalar& color) { _current_target_color = color; }
+                                       int size = 30,
+                                       bool use_random_color = false,
+                                       const cv::Scalar& specified_color = cv::Scalar(-1, -1, -1));
 
     /**
-     * @brief 获取训练用颜色组合
-     * @param center_color [输出] 中心颜色
-     * @param surround_colors [输出] 外围5个颜色
-     * @param target_idx [输出] 目标色块索引
-     * @note 保证外围有且只有一个颜色与中心颜色相同
+     * @brief 获取上一次生成的目标位置
+     * @note 需要在调用 generate_pentagon_frame 后使用
      */
-    static void get_training_colors(cv::Scalar& center_color,
-                                   std::vector<cv::Scalar>& surround_colors,
-                                   int& target_idx);
-
-
-    /**
-     * @brief 获取目标色块位置（总是第一个外围色块）
-     */
-    cv::Point2f get_target_position() const;
+    cv::Point2f get_last_target_position() const { return _last_target_position; }
     
     /**
      * @brief 获取色块中心坐标（Ground Truth）
@@ -78,32 +62,57 @@ public:
     
     cv::Point2f get_random_position(float margin = 120.0f);
 
-    int get_current_target_idx() const { return _current_target_idx; }
+    /**
+     * @brief 获取上一次使用的目标颜色
+     */
+    cv::Scalar get_last_target_color() const { return _last_target_color; }
+
+    /**
+     * @brief 强制重新生成颜色组合
+     * @note 下次调用 generate_pentagon_frame 时会使用新颜色
+     */
+    void regenerate_colors() { _need_regenerate_colors = true; }
 
 private:
     int _width;
     int _height;
     cv::Scalar _background;
     std::vector<cv::Point2f> _blob_centroids;
-    cv::Scalar _current_target_color = cv::Scalar(-1, -1, -1);  // 初始化为无效颜色
-    cv::Scalar _current_center_color;
-    std::vector<cv::Scalar> _current_surround_colors;
-    int _current_target_idx;
-    int _target_idx = 0;
+    cv::Scalar _last_target_color;
+    cv::Point2f _last_target_position;
     
+    // 当前的颜色组合
+    cv::Scalar _center_color;
+    std::vector<cv::Scalar> _surround_colors;
+    
+    // 状态跟踪变量 - 按初始化顺序排列
+    cv::Point2f _current_center;
+    float _current_rotation;
+    int _target_index;  // 目标色块在外围中的索引
+    bool _need_regenerate_colors;
+    /**
+     * @brief 强制重新生成颜色组合
+     */
+    void _regenerate_colors();
+
+    
+    /**
+     * @brief 计算五角星布局
+     */
     std::vector<cv::Point2f> _calculate_pentagon_layout(const cv::Point2f& base_center,
                                                         float rotation_angle);
     
+    /**
+     * @brief 绘制靶子
+     */
     void _draw_target(cv::Mat& image, 
-                     const std::vector<cv::Point2f>& centers,
-                     const cv::Scalar& center_color,
-                     const std::vector<cv::Scalar>& surround_colors,
-                     int target_idx);
+                     const std::vector<cv::Point2f>& centers);
     
     /**
      * @brief 生成符合要求的颜色组合
+     * @param target_index [输出] 目标色块在外围中的索引
      */
-    void _generate_valid_color_combo();
+    void _generate_valid_color_combo(int& target_index);
 };
 
 #endif // TARGET_SIM_HPP

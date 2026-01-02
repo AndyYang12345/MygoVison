@@ -1,9 +1,9 @@
-// targetSim.cpp
 #include "targetSim.hpp"
 #include <cmath>
 #include <iostream>
 #include <algorithm>
 #include <random>
+#include <chrono>
 
 using namespace cv;
 using namespace std;
@@ -26,43 +26,72 @@ const vector<Scalar> TargetSim::COLOR_TABLE = {
 
 TargetSim::TargetSim(int width, int height, Scalar background) 
     : _width(width), _height(height), _background(background),
-      _current_target_color(-1, -1, -1) {
-    srand(static_cast<unsigned int>(time(nullptr)));
-    _generate_valid_color_combo();
+      _last_target_color(-1, -1, -1), _last_target_position(-1, -1),
+      _current_center(-1, -1), _current_rotation(0.0f),  // 先初始化这两个
+      _target_index(-1), _need_regenerate_colors(true) { // 然后是这两个
+    
+    // 使用时间种子初始化随机数生成器
+    unsigned seed = chrono::system_clock::now().time_since_epoch().count();
+    srand(seed);
 }
 
 // 生成五角星靶子图像
-// targetSim.cpp
 Mat TargetSim::generate_pentagon_frame(const Point2f& base_center,
                                       float rotation_angle,
-                                      int target_idx) {  // 新增参数
+                                      cv::Point2f* target_position) {
+    // 如果传入的中心点是特殊值（如 (-1, -1)），则使用随机位置
+    Point2f actual_center = base_center;
+    bool is_random_position = false;
+    
+    if (base_center.x < 0 && base_center.y < 0) {
+        actual_center = get_random_position(120.0f);
+        is_random_position = true;
+    }
+    
     // 计算布局
-    auto centers = _calculate_pentagon_layout(base_center, rotation_angle);
+    auto centers = _calculate_pentagon_layout(actual_center, rotation_angle);
+    
+    // 生成颜色组合（如果需要）
+    if (_need_regenerate_colors || is_random_position) {
+        int target_index;
+        _generate_valid_color_combo(target_index);
+        _need_regenerate_colors = false;
+        _target_index = target_index;
+    }
+    
+    // 计算目标位置
+    if (_target_index >= 0 && centers.size() > static_cast<size_t>(_target_index + 1)) {
+        _last_target_position = centers[_target_index + 1];
+        _last_target_color = _center_color;
+        
+        // 添加实例标识
+        static int instance_id = 0;
+        if (is_random_position) instance_id++;
+        
+        std::cout << "[DEBUG] Instance " << instance_id << " - ";
+        std::cout << (is_random_position ? "RANDOM pentagon" : "MAIN pentagon") << std::endl;
+        std::cout << "  Center: (" << actual_center.x << ", " << actual_center.y << ")" << std::endl;
+        std::cout << "  Rotation: " << (rotation_angle * 180 / M_PI) << "°" << std::endl;
+        std::cout << "  Target index: " << _target_index << std::endl;
+        std::cout << "  Target position: (" << _last_target_position.x << ", " << _last_target_position.y << ")" << std::endl;
+    }
+    
+    // 如果调用者需要目标位置，则输出
+    if (target_position != nullptr) {
+        *target_position = _last_target_position;
+    }
     
     // 创建图像
     Mat image(_height, _width, CV_8UC3, _background);
     
-    // 绘制靶子，传入 target_idx
-    _draw_target(image, centers, _current_center_color, 
-                _current_surround_colors, target_idx);
-    
-    // 保存当前目标索引
-    _current_target_idx = target_idx;
+    // 绘制靶子
+    _draw_target(image, centers);
     
     return image;
 }
 
-cv::Point2f TargetSim::get_target_position() const {
-    // 检查是否有足够的数据
-    if (_blob_centroids.size() > 1 && _current_target_idx >= 0) {
-        // 根据当前目标索引返回正确的外围色块
-        // 注意：_blob_centroids[0] 是中心，外围从索引1开始
-        int target_centroid_idx = _current_target_idx + 1;
-        if (target_centroid_idx < static_cast<int>(_blob_centroids.size())) {
-            return _blob_centroids[target_centroid_idx];
-        }
-    }
-    return cv::Point2f(-1, -1);  // 无效位置
+void TargetSim::_regenerate_colors() {
+    _need_regenerate_colors = true;
 }
 
 // 生成单色块目标图像
@@ -82,15 +111,16 @@ Mat TargetSim::generate_single_blob_frame(const Point2f& center,
         color = COLOR_TABLE[rand() % COLOR_TABLE.size()];
     } else {
         // 使用上次颜色，如果还没有则随机选择一个
-        if (_current_target_color[0] < 0) {  // 还没有设置颜色
+        if (_last_target_color[0] < 0) {  // 还没有设置颜色
             color = COLOR_TABLE[rand() % COLOR_TABLE.size()];
         } else {
-            color = _current_target_color;
+            color = _last_target_color;
         }
     }
     
     // 保存当前颜色
-    _current_target_color = color;
+    _last_target_color = color;
+    _last_target_position = center;
     
     // 绘制单个色块
     circle(image, center, size, color, -1);
@@ -105,51 +135,6 @@ Mat TargetSim::generate_single_blob_frame(const Point2f& center,
     return image;
 }
 
-// 获取训练用颜色组合（静态方法）
-void TargetSim::get_training_colors(Scalar& center_color,
-                                   vector<Scalar>& surround_colors,
-                                   int& target_idx) {
-    // 随机选择中心颜色
-    int center_idx = rand() % COLOR_TABLE.size();
-    center_color = COLOR_TABLE[center_idx];
-    
-    // 随机选择目标索引
-    target_idx = rand() % 5;
-    
-    // 准备可用的颜色索引（排除中心颜色）
-    vector<int> available_indices;
-    for (size_t i = 0; i < COLOR_TABLE.size(); i++) {
-        if (i != static_cast<size_t>(center_idx)) {
-            available_indices.push_back(i);
-        }
-    }
-    
-    // 修复：使用 std::shuffle 替代 random_shuffle
-    std::random_device rd;
-    std::mt19937 g(rd());
-    std::shuffle(available_indices.begin(), available_indices.end(), g);
-    // 删除或注释掉原来的：random_shuffle(available_indices.begin(), available_indices.end());
-    
-    // 清空并生成外围颜色
-    surround_colors.clear();
-    
-    // 先添加4个不同颜色
-    for (int i = 0; i < 4; i++) {
-        if (i < static_cast<int>(available_indices.size())) {
-            surround_colors.push_back(COLOR_TABLE[available_indices[i]]);
-        } else {
-            surround_colors.push_back(Scalar(0, 0, 0)); // 备用颜色
-        }
-    }
-    
-    // 在目标位置插入相同颜色
-    if (target_idx < 4) {
-        surround_colors.insert(surround_colors.begin() + target_idx, center_color);
-    } else {
-        surround_colors.push_back(center_color);
-    }
-}
-
 // 获取随机位置
 Point2f TargetSim::get_random_position(float margin) {
     float x = margin + static_cast<float>(rand()) / RAND_MAX * (_width - 2 * margin);
@@ -158,13 +143,13 @@ Point2f TargetSim::get_random_position(float margin) {
 }
 
 // 私有方法：生成符合要求的颜色组合
-void TargetSim::_generate_valid_color_combo() {
+void TargetSim::_generate_valid_color_combo(int& target_index) {
     // 随机选择中心颜色
     int center_idx = rand() % COLOR_TABLE.size();
-    _current_center_color = COLOR_TABLE[center_idx];
+    _center_color = COLOR_TABLE[center_idx];
     
     // 随机选择目标索引（0-4）
-    _current_target_idx = rand() % 5;
+    target_index = rand() % 5;
     
     // 准备可用的颜色索引（排除中心颜色）
     vector<int> available_indices;
@@ -174,35 +159,33 @@ void TargetSim::_generate_valid_color_combo() {
         }
     }
     
-    // 修复：使用 std::shuffle 替代 random_shuffle
+    // 使用 std::shuffle 替代 random_shuffle（C++17兼容）
     std::random_device rd;
     std::mt19937 g(rd());
     std::shuffle(available_indices.begin(), available_indices.end(), g);
-    // 删除或注释掉原来的：random_shuffle(available_indices.begin(), available_indices.end());
     
     // 生成外围5个颜色
-    _current_surround_colors.clear();
+    _surround_colors.clear();
     
     // 保证有4个颜色与中心不同
     for (int i = 0; i < 4; i++) {
         if (i < static_cast<int>(available_indices.size())) {
-            _current_surround_colors.push_back(COLOR_TABLE[available_indices[i]]);
+            _surround_colors.push_back(COLOR_TABLE[available_indices[i]]);
         } else {
             // 如果可用颜色不够，使用备用颜色
-            _current_surround_colors.push_back(Scalar(0, 0, 0));
+            _surround_colors.push_back(Scalar(0, 0, 0));
         }
     }
     
     // 在目标位置插入与中心相同的颜色
-    if (_current_target_idx < 4) {
-        _current_surround_colors.insert(_current_surround_colors.begin() + _current_target_idx, 
-                                       _current_center_color);
+    if (target_index < 4) {
+        _surround_colors.insert(_surround_colors.begin() + target_index, 
+                               _center_color);
     } else {
         // 如果目标索引是4，放在最后
-        _current_surround_colors.push_back(_current_center_color);
+        _surround_colors.push_back(_center_color);
     }
 }
-
 
 // 私有方法：计算五角星布局
 vector<Point2f> TargetSim::_calculate_pentagon_layout(const Point2f& base_center,
@@ -215,24 +198,30 @@ vector<Point2f> TargetSim::_calculate_pentagon_layout(const Point2f& base_center
     // 外围5个色块（半径100像素）
     float radius = 100.0f;
     
+    // 重要：确保正确使用旋转角度
     for (int i = 0; i < 5; ++i) {
-    // 关键：确保使用正确的起始角度和方向
-    // 如果要让索引0对应"正上方"或特定位置，需要调整
-    float base_angle = i * (2 * M_PI / 5); 
-    
-    // 如果需要从特定位置开始，可以添加偏移
-    // 例如：float base_angle = i * (2 * M_PI / 5) + angle_offset;
-    
-    float current_angle = base_angle + rotation_angle;
-    
-    centers.push_back(Point2f(
-        base_center.x + radius * cos(current_angle),
-        base_center.y + radius * sin(current_angle)
-    ));
-    
-    // 调试输出
-    std::cout << "外围色块 " << i << ": 角度=" << (current_angle * 180 / M_PI) 
-              << "°, 位置=(" << centers.back().x << ", " << centers.back().y << ")" << std::endl;
+        // 计算每个色块的基本角度（均匀分布）
+        float base_angle = i * (2 * M_PI / 5);
+        
+        // 应用旋转角度
+        float current_angle = base_angle + rotation_angle;
+        
+        // 计算位置
+        float x = base_center.x + radius * cos(current_angle);
+        float y = base_center.y + radius * sin(current_angle);
+        
+        centers.push_back(Point2f(x, y));
+        
+        // 调试输出前几次调用
+        static int call_count = 0;
+        if (call_count < 5) {
+            std::cout << "[DEBUG] Layout calculation:" << std::endl;
+            std::cout << "  i=" << i << ", base_angle=" << (base_angle * 180 / M_PI) << "°" 
+                      << ", rotation=" << (rotation_angle * 180 / M_PI) << "°"
+                      << ", final_angle=" << (current_angle * 180 / M_PI) << "°" << std::endl;
+            std::cout << "  Position: (" << x << ", " << y << ")" << std::endl;
+            call_count++;
+        }
     }   
     
     _blob_centroids = centers;
@@ -241,28 +230,15 @@ vector<Point2f> TargetSim::_calculate_pentagon_layout(const Point2f& base_center
 
 // 私有方法：绘制靶子
 void TargetSim::_draw_target(Mat& image, 
-                           const vector<Point2f>& centers,
-                           const Scalar& center_color,
-                           const vector<Scalar>& surround_colors,
-                           int target_idx) {  // target_idx 是关键参数！
+                           const vector<Point2f>& centers) {
     int radius = 30;
     
     // 绘制中心色块
-    circle(image, centers[0], radius, center_color, -1);
+    circle(image, centers[0], radius, _center_color, -1);
     
     // 绘制外围5个色块
-    for (size_t i = 0; i < surround_colors.size(); ++i) {
-        Scalar color = surround_colors[i];
+    for (size_t i = 0; i < _surround_colors.size() && i + 1 < centers.size(); ++i) {
+        Scalar color = _surround_colors[i];
         circle(image, centers[i + 1], radius, color, -1);
-        
-        // 如果是目标色块，添加特殊标记（可选）
-        if (static_cast<int>(i) == target_idx) {
-            // 在目标色块上画一个外圈标记
-            circle(image, centers[i + 1], radius + 5, Scalar(0, 255, 255), 2);
-        }
     }
-    
-    // 保存色块中心坐标和目标索引
-    _blob_centroids = centers;
-    _current_target_idx = target_idx;  // 保存目标索引
 }

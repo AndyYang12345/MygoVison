@@ -1,4 +1,3 @@
-// src/apps/test_target_verification.cpp
 #include "targetSim/targetSim.hpp"
 #include <opencv2/opencv.hpp>
 #include <iostream>
@@ -22,7 +21,7 @@ const cv::Scalar GRAY(200, 200, 200);
  */
 cv::Mat draw_detailed_analysis(const cv::Mat& frame, 
                               const std::vector<cv::Point2f>& centroids,
-                              int target_idx,
+                              const cv::Point2f& target_position,
                               const cv::Point2f& detected_target) {
     cv::Mat result = frame.clone();
     
@@ -38,7 +37,9 @@ cv::Mat draw_detailed_analysis(const cv::Mat& frame,
             radius = 40;
         } else {
             label = std::to_string(i-1);
-            if (static_cast<int>(i-1) == target_idx) {
+            // 检查是否是目标色块（与目标位置匹配）
+            if (std::abs(centroids[i].x - target_position.x) < 1.0f &&
+                std::abs(centroids[i].y - target_position.y) < 1.0f) {
                 color = GREEN;  // 目标色块：绿色
                 radius = 45;
             } else {
@@ -63,14 +64,13 @@ cv::Mat draw_detailed_analysis(const cv::Mat& frame,
     }
     
     // 2. 绘制从中心到目标的连接线
-    if (target_idx >= 0 && centroids.size() > static_cast<size_t>(target_idx + 1)) {
-        cv::Point2f target_pos = centroids[target_idx + 1];
-        cv::line(result, centroids[0], target_pos, RED, 3);
+    if (target_position.x >= 0 && target_position.y >= 0) {
+        cv::line(result, centroids[0], target_position, RED, 3);
         
         // 在线段中间添加"目标"标签
         cv::Point2f mid_point(
-            (centroids[0].x + target_pos.x) / 2,
-            (centroids[0].y + target_pos.y) / 2
+            (centroids[0].x + target_position.x) / 2,
+            (centroids[0].y + target_position.y) / 2
         );
         cv::putText(result, "target match line", 
                    cv::Point(mid_point.x - 40, mid_point.y - 10),
@@ -99,91 +99,108 @@ cv::Mat draw_detailed_analysis(const cv::Mat& frame,
 }
 
 /**
- * @brief 测试单一目标索引
+ * @brief 测试单一目标位置
  */
-bool test_single_target_index(TargetSim& sim, int target_idx, 
-                             const cv::Point2f& center, float rotation_angle,
-                             int test_num) {
-    std::cout << "\n=== 测试 " << test_num << ": 目标索引 " << target_idx 
+bool test_single_target_position(TargetSim& sim, 
+                                const cv::Point2f& center, float rotation_angle,
+                                int test_num) {
+    std::cout << "\n=== 测试 " << test_num 
               << " (旋转 " << (rotation_angle * 180 / M_PI) << "°) ===" << std::endl;
     
-    // 生成靶子图像
-    cv::Mat frame = sim.generate_pentagon_frame(center, rotation_angle, target_idx);
+    // 生成靶子图像并获取目标位置
+    cv::Point2f target_position;
+    cv::Mat frame = sim.generate_pentagon_frame(center, rotation_angle, &target_position);
     
     // 获取理论上的色块中心
     std::vector<cv::Point2f> centroids = sim.get_blob_centroids();
+    cv::Point2f last_target_position = sim.get_last_target_position();
     
-    // 获取理论上的目标位置
-    cv::Point2f theoretical_target = sim.get_target_position();
+    std::cout << "返回的目标位置: (" << std::fixed << std::setprecision(1) 
+              << target_position.x << ", " << target_position.y << ")" << std::endl;
+    std::cout << "存储的目标位置: (" << last_target_position.x << ", " 
+              << last_target_position.y << ")" << std::endl;
     
-    // 获取当前目标索引（从类内部）
-    int actual_target_idx = sim.get_current_target_idx();
-    
-    std::cout << "设置的目标索引: " << target_idx << std::endl;
-    std::cout << "内部存储的目标索引: " << actual_target_idx << std::endl;
-    std::cout << "理论目标位置: (" << std::fixed << std::setprecision(1) 
-              << theoretical_target.x << ", " << theoretical_target.y << ")" << std::endl;
-    
-    // 验证目标索引是否正确
-    bool index_correct = (actual_target_idx == target_idx);
-    
-    // 验证目标位置是否正确（如果centroids足够）
+    // 验证目标位置是否正确（在色块中心列表中）
     bool position_correct = false;
-    if (centroids.size() > static_cast<size_t>(target_idx + 1)) {
-        cv::Point2f expected_target = centroids[target_idx + 1];
-        float distance = cv::norm(theoretical_target - expected_target);
-        position_correct = (distance < 1.0f);  // 允许1像素误差
-        
-        std::cout << "期望的目标位置: (" << expected_target.x << ", " 
-                  << expected_target.y << ")" << std::endl;
-        std::cout << "位置误差: " << distance << " 像素" << std::endl;
+    int matched_index = -1;
+    
+    for (size_t i = 1; i < centroids.size(); i++) {
+        float distance = cv::norm(target_position - centroids[i]);
+        if (distance < 1.0f) {  // 允许1像素误差
+            position_correct = true;
+            matched_index = i - 1;
+            std::cout << "匹配到外围色块 " << matched_index << std::endl;
+            break;
+        }
     }
     
+    if (!position_correct) {
+        std::cout << "警告：目标位置未匹配到任何外围色块！" << std::endl;
+        std::cout << "所有外围色块位置：" << std::endl;
+        for (size_t i = 1; i < centroids.size(); i++) {
+            std::cout << "  色块 " << (i-1) << ": (" << centroids[i].x 
+                      << ", " << centroids[i].y << ")" << std::endl;
+        }
+    }
+    
+    // 验证存储的位置与返回的位置是否一致
+    bool storage_correct = (cv::norm(target_position - last_target_position) < 1.0f);
+    
     // 绘制详细分析图
-    cv::Mat analysis_frame = draw_detailed_analysis(frame, centroids, target_idx, 
-                                                   theoretical_target);
+    cv::Mat analysis_frame = draw_detailed_analysis(frame, centroids, target_position, target_position);
     
     // 添加测试信息
-    std::string status = (index_correct && position_correct) ? "✅ 通过" : "❌ 失败";
+    std::string status = (position_correct && storage_correct) ? "✅ 通过" : "❌ 失败";
     cv::putText(analysis_frame, "test" + std::to_string(test_num) + ": " + status,
                cv::Point(10, 40), cv::FONT_HERSHEY_SIMPLEX, 0.8, 
-               (index_correct && position_correct) ? GREEN : RED, 2);
+               (position_correct && storage_correct) ? GREEN : RED, 2);
     
-    cv::putText(analysis_frame, "target index: " + std::to_string(target_idx),
+    cv::putText(analysis_frame, "target position: (" + 
+               std::to_string((int)target_position.x) + ", " + 
+               std::to_string((int)target_position.y) + ")",
                cv::Point(10, 70), cv::FONT_HERSHEY_SIMPLEX, 0.7, BLACK, 2);
+    
+    if (matched_index >= 0) {
+        cv::putText(analysis_frame, "matched blob: " + std::to_string(matched_index),
+                   cv::Point(10, 100), cv::FONT_HERSHEY_SIMPLEX, 0.7, BLUE, 1);
+    }
     
     cv::putText(analysis_frame, "rotation angle: " + 
                std::to_string((int)(rotation_angle * 180 / M_PI)) + "°",
-               cv::Point(10, 100), cv::FONT_HERSHEY_SIMPLEX, 0.7, BLACK, 1);
+               cv::Point(10, 130), cv::FONT_HERSHEY_SIMPLEX, 0.7, BLACK, 1);
     
     // 显示结果
-    std::string window_name = "test " + std::to_string(test_num) + 
-                             " - target index " + std::to_string(target_idx);
+    std::string window_name = "test " + std::to_string(test_num);
     cv::imshow(window_name, analysis_frame);
     
+    std::cout << "位置验证: " << (position_correct ? "✅" : "❌") << std::endl;
+    std::cout << "存储验证: " << (storage_correct ? "✅" : "❌") << std::endl;
     std::cout << "结果: " << status << std::endl;
     
-    return index_correct && position_correct;
+    return position_correct && storage_correct;
 }
 
 /**
- * @brief 测试所有目标索引（0-4）
+ * @brief 测试所有旋转角度
  */
-void test_all_target_indices(TargetSim& sim, const cv::Point2f& center) {
+void test_all_rotations(TargetSim& sim, const cv::Point2f& center) {
     std::cout << "\n" << std::string(60, '=') << std::endl;
-    std::cout << "测试所有目标索引 (位置: " << center.x << ", " << center.y << ")" << std::endl;
+    std::cout << "测试不同旋转角度 (位置: " << center.x << ", " << center.y << ")" << std::endl;
     std::cout << std::string(60, '=') << std::endl;
     
     int passed_tests = 0;
-    int total_tests = 5;
+    int total_tests = 8;
     
-    // 测试每个目标索引
-    for (int target_idx = 0; target_idx < total_tests; target_idx++) {
-        bool passed = test_single_target_index(sim, target_idx, center, 0.0f, target_idx + 1);
+    // 测试不同旋转角度
+    float angles[] = {0.0f, M_PI/6, M_PI/4, M_PI/3, M_PI/2, 
+                      2*M_PI/3, M_PI, 3*M_PI/2};
+    
+    for (int i = 0; i < total_tests; i++) {
+        bool passed = test_single_target_position(sim, center, angles[i], i + 1);
         if (passed) passed_tests++;
         
         cv::waitKey(1000);  // 显示1秒
-        if (target_idx < total_tests - 1) {
+        if (i < total_tests - 1) {
             // 销毁当前窗口，准备下一个
             cv::destroyAllWindows();
         }
@@ -197,55 +214,7 @@ void test_all_target_indices(TargetSim& sim, const cv::Point2f& center) {
 }
 
 /**
- * @brief 测试旋转对目标位置的影响
- */
-void test_target_with_rotation(TargetSim& sim) {
-    std::cout << "\n" << std::string(60, '=') << std::endl;
-    std::cout << "测试旋转对目标位置的影响" << std::endl;
-    std::cout << std::string(60, '=') << std::endl;
-    
-    cv::Point2f center(400, 300);
-    int target_idx = 2;  // 固定目标索引
-    
-    // 测试不同旋转角度
-    float angles[] = {0.0f, M_PI/6, M_PI/4, M_PI/2, M_PI, 3*M_PI/2};
-    std::string angle_names[] = {"0°", "30°", "45°", "90°", "180°", "270°"};
-    
-    for (int i = 0; i < 6; i++) {
-        std::cout << "\n旋转角度: " << angle_names[i] << std::endl;
-        
-        cv::Mat frame = sim.generate_pentagon_frame(center, angles[i], target_idx);
-        std::vector<cv::Point2f> centroids = sim.get_blob_centroids();
-        cv::Point2f target_pos = sim.get_target_position();
-        
-        if (centroids.size() > static_cast<size_t>(target_idx + 1)) {
-            cv::Point2f expected_pos = centroids[target_idx + 1];
-            float error = cv::norm(target_pos - expected_pos);
-            
-            std::cout << "目标索引: " << target_idx << std::endl;
-            std::cout << "理论位置: (" << target_pos.x << ", " << target_pos.y << ")" << std::endl;
-            std::cout << "实际位置: (" << expected_pos.x << ", " << expected_pos.y << ")" << std::endl;
-            std::cout << "位置误差: " << std::fixed << std::setprecision(2) << error << " 像素" << std::endl;
-            
-            if (error < 1.0f) {
-                std::cout << "✅ 位置准确" << std::endl;
-            } else {
-                std::cout << "❌ 位置偏移过大" << std::endl;
-            }
-        }
-        
-        cv::Mat analysis = draw_detailed_analysis(frame, centroids, target_idx, target_pos);
-        cv::putText(analysis, "旋转角度: " + angle_names[i],
-                   cv::Point(10, 40), cv::FONT_HERSHEY_SIMPLEX, 0.8, BLUE, 2);
-        
-        cv::imshow("旋转测试: " + angle_names[i], analysis);
-        cv::waitKey(1500);
-        cv::destroyAllWindows();
-    }
-}
-
-/**
- * @brief 测试随机位置的目标识别
+ * @brief 测试随机位置
  */
 void test_random_positions(TargetSim& sim) {
     std::cout << "\n" << std::string(60, '=') << std::endl;
@@ -258,22 +227,20 @@ void test_random_positions(TargetSim& sim) {
         // 随机位置
         cv::Point2f random_center = sim.get_random_position(200.0f);
         
-        // 随机目标索引
-        int random_target_idx = rand() % 5;
-        
         // 随机旋转角度
         float random_angle = (rand() % 360) * M_PI / 180.0f;
         
         std::cout << "\n随机测试 " << (i+1) << ":" << std::endl;
         std::cout << "位置: (" << random_center.x << ", " << random_center.y << ")" << std::endl;
-        std::cout << "目标索引: " << random_target_idx << std::endl;
         std::cout << "旋转角度: " << (random_angle * 180 / M_PI) << "°" << std::endl;
         
-        cv::Mat frame = sim.generate_pentagon_frame(random_center, random_angle, random_target_idx);
+        cv::Point2f target_position;
+        cv::Mat frame = sim.generate_pentagon_frame(random_center, random_angle, &target_position);
         std::vector<cv::Point2f> centroids = sim.get_blob_centroids();
-        cv::Point2f target_pos = sim.get_target_position();
         
-        cv::Mat analysis = draw_detailed_analysis(frame, centroids, random_target_idx, target_pos);
+        std::cout << "目标位置: (" << target_position.x << ", " << target_position.y << ")" << std::endl;
+        
+        cv::Mat analysis = draw_detailed_analysis(frame, centroids, target_position, target_position);
         
         cv::putText(analysis, "random test " + std::to_string(i+1),
                    cv::Point(10, 40), cv::FONT_HERSHEY_SIMPLEX, 0.8, MAGENTA, 2);
@@ -285,53 +252,64 @@ void test_random_positions(TargetSim& sim) {
 }
 
 /**
- * @brief 交互式目标索引测试
+ * @brief 交互式目标测试
  */
 void interactive_target_test(TargetSim& sim) {
     std::cout << "\n" << std::string(60, '=') << std::endl;
-    std::cout << "交互式目标索引测试" << std::endl;
+    std::cout << "交互式目标位置测试" << std::endl;
     std::cout << "按键说明:" << std::endl;
-    std::cout << "  0-4: 切换目标索引" << std::endl;
     std::cout << "  + -: 增加/减少旋转角度" << std::endl;
-    std::cout << "  r  : 重置旋转角度" << std::endl;
+    std::cout << "  r  : 重置旋转角度和颜色" << std::endl;
+    std::cout << "  n  : 新颜色组合" << std::endl;
     std::cout << "  c  : 随机改变位置" << std::endl;
     std::cout << "  ESC: 退出测试" << std::endl;
     std::cout << std::string(60, '=') << std::endl;
     
     cv::Point2f center(400, 300);
-    int current_target_idx = 0;
     float current_angle = 0.0f;
     float angle_step = M_PI / 18.0f;  // 10度
     
     while (true) {
         // 生成当前设置的靶子
-        cv::Mat frame = sim.generate_pentagon_frame(center, current_angle, current_target_idx);
+        cv::Point2f target_position;
+        cv::Mat frame = sim.generate_pentagon_frame(center, current_angle, &target_position);
         
         // 获取理论数据
         std::vector<cv::Point2f> centroids = sim.get_blob_centroids();
-        cv::Point2f target_pos = sim.get_target_position();
-        int actual_target_idx = sim.get_current_target_idx();
+        // cv::Point2f last_target_position = sim.get_last_target_position(); // 移除未使用的变量
         
         // 绘制分析
-        cv::Mat display = draw_detailed_analysis(frame, centroids, current_target_idx, target_pos);
+        cv::Mat display = draw_detailed_analysis(frame, centroids, target_position, target_position);
         
-        // 添加控制信息
-        std::string info = "target index: " + std::to_string(current_target_idx) + 
-                          " (actual: " + std::to_string(actual_target_idx) + ")";
+        // 添加控制信息（重新绘制每次）
+        cv::rectangle(display, cv::Point(5, 5), cv::Point(350, 160), cv::Scalar(255, 255, 255), -1);
+        cv::rectangle(display, cv::Point(5, 5), cv::Point(350, 160), cv::Scalar(0, 0, 0), 1);
+        
+        std::string info = "target position: (" + 
+                          std::to_string((int)target_position.x) + ", " + 
+                          std::to_string((int)target_position.y) + ")";
         cv::putText(display, info, cv::Point(10, 40), 
-                   cv::FONT_HERSHEY_SIMPLEX, 0.8, 
-                   (current_target_idx == actual_target_idx) ? GREEN : RED, 2);
+                   cv::FONT_HERSHEY_SIMPLEX, 0.8, GREEN, 2);
         
         std::string angle_info = "rotation angle: " +
                                 std::to_string((int)(current_angle * 180 / M_PI)) + "°";
         cv::putText(display, angle_info, cv::Point(10, 70), 
                    cv::FONT_HERSHEY_SIMPLEX, 0.7, BLUE, 2);
         
-        std::string pos_info = "position: (" + 
+        std::string pos_info = "center position: (" + 
                               std::to_string((int)center.x) + ", " + 
                               std::to_string((int)center.y) + ")";
         cv::putText(display, pos_info, cv::Point(10, 100), 
                    cv::FONT_HERSHEY_SIMPLEX, 0.7, BLACK, 1);
+        
+        // 添加目标颜色信息
+        cv::Scalar target_color = sim.get_last_target_color();
+        std::string color_info = "target color: BGR(" + 
+                               std::to_string((int)target_color[0]) + "," +
+                               std::to_string((int)target_color[1]) + "," +
+                               std::to_string((int)target_color[2]) + ")";
+        cv::putText(display, color_info, cv::Point(10, 130), 
+                   cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(128, 0, 128), 1);
         
         cv::imshow("交互式目标测试", display);
         
@@ -339,9 +317,6 @@ void interactive_target_test(TargetSim& sim) {
         int key = cv::waitKey(30);
         if (key == 27) {  // ESC
             break;
-        } else if (key >= '0' && key <= '4') {
-            current_target_idx = key - '0';
-            std::cout << "切换到目标索引: " << current_target_idx << std::endl;
         } else if (key == '+') {
             current_angle += angle_step;
             if (current_angle > 2 * M_PI) current_angle -= 2 * M_PI;
@@ -351,9 +326,19 @@ void interactive_target_test(TargetSim& sim) {
             if (current_angle < 0) current_angle += 2 * M_PI;
             std::cout << "角度减少至: " << (current_angle * 180 / M_PI) << "°" << std::endl;
         } else if (key == 'r' || key == 'R') {
-            current_angle = 0.0f;
-            std::cout << "角度重置为0°" << std::endl;
-        } else if (key == 'c' || key == 'C') {
+    current_angle = 0.0f;
+    // 使用新的 regenerate_colors 方法
+    sim.regenerate_colors();
+    // 也可以选择随机位置
+    center = sim.get_random_position(200.0f);
+    std::cout << "重置：角度=0°，新位置: (" << center.x << ", " << center.y << ")" << std::endl;
+    } else if (key == 'n' || key == 'N') {
+        // 新颜色组合 - 使用新的 regenerate_colors 方法
+        sim.regenerate_colors();
+        // 生成一帧来应用新颜色
+        sim.generate_pentagon_frame(center, current_angle, nullptr);
+        std::cout << "新颜色组合已生成" << std::endl;
+    } else if (key == 'c' || key == 'C') {
             center = sim.get_random_position(200.0f);
             std::cout << "新位置: (" << center.x << ", " << center.y << ")" << std::endl;
         }
@@ -369,16 +354,13 @@ int main() {
     // 创建靶子仿真器
     TargetSim sim(800, 600, cv::Scalar(240, 240, 240));
     
-    // 测试1: 所有目标索引
-    test_all_target_indices(sim, cv::Point2f(400, 300));
+    // 测试1: 不同旋转角度
+    test_all_rotations(sim, cv::Point2f(400, 300));
     
-    // 测试2: 旋转对目标位置的影响
-    test_target_with_rotation(sim);
-    
-    // 测试3: 随机位置
+    // 测试2: 随机位置
     test_random_positions(sim);
     
-    // 测试4: 交互式测试
+    // 测试3: 交互式测试
     interactive_target_test(sim);
     
     std::cout << "\n✅ 所有测试完成!" << std::endl;

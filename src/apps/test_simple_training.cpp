@@ -27,18 +27,12 @@ int main() {
     std::cout << "Training Frame Generator Test Suite" << std::endl;
     std::cout << "===================================" << std::endl;
     
-    // Create generator
+    // 创建 TrainingFrameGenerator
     TrainingFrameGenerator generator(800, 600, 30.0f);
     std::cout << std::fixed << std::setprecision(2);
     
-    // 运行各个测试
+    // 运行测试
     test_pentagon_rotation(generator);
-    test_circular_motion(generator);
-    test_spiral_motion(generator);
-    test_sine_wave_motion(generator);
-    test_linear_movement_with_bounce(generator);
-    test_random_appearance(generator);
-    test_lissajous_motion(generator);
     
     std::cout << "\n=== All tests completed! ===" << std::endl;
     
@@ -48,34 +42,194 @@ int main() {
 // ==================== 测试函数实现 ====================
 
 /**
- * @brief 测试五角星旋转模式
+ * @brief 测试随机五角星旋转模式
  */
 void test_pentagon_rotation(TrainingFrameGenerator& generator) {
-    std::cout << "\n=== Test 1: Pentagon Rotation Mode ===" << std::endl;
-    generator.set_training_mode(TrainingFrameGenerator::MODE_PENTAGON_ROTATION, 0.5f);
+    std::cout << "\n=== Pentagon Rotation Test ===" << std::endl;
+    std::cout << "Controls:" << std::endl;
+    std::cout << "  ESC: Exit" << std::endl;
+    std::cout << "  SPACE: Pause/Resume rotation" << std::endl;
+    std::cout << "  R: Generate new random pentagon (random position)" << std::endl;
+    std::cout << "  C: Generate new pentagon at center" << std::endl;
+    std::cout << "  T: Toggle target markers (center, target, line)" << std::endl;
+    std::cout << "  +, -: Adjust rotation speed" << std::endl;
+    std::cout << "  0: Reset angle to 0°" << std::endl;
     
-    for (int i = 0; i < 10; i++) {
+    // 设置训练模式为五角星旋转
+    float angular_speed = 0.5f;
+    generator.set_training_mode(TrainingFrameGenerator::MODE_PENTAGON_ROTATION, angular_speed);
+    
+    // 状态变量
+    bool show_markers = true;  // 默认显示标记
+    
+    // 帧率计算
+    auto last_time = std::chrono::high_resolution_clock::now();
+    int frame_count = 0;
+    float fps = 30.0f;
+    int total_frames = 0;
+    
+    cv::namedWindow("Pentagon Rotation", cv::WINDOW_AUTOSIZE);
+    
+    std::cout << "\nTest started. Pentagon is auto-rotating at center." << std::endl;
+    std::cout << "Target markers are ON (default). Press T to toggle." << std::endl;
+    std::cout << "Press SPACE to pause/resume rotation." << std::endl;
+    
+    while (true) {
+        // 计算帧率
+        auto current_time = std::chrono::high_resolution_clock::now();
+        auto elapsed = std::chrono::duration<float>(current_time - last_time).count();
+        frame_count++;
+        
+        if (elapsed >= 1.0f) {
+            fps = frame_count / elapsed;
+            frame_count = 0;
+            last_time = current_time;
+        }
+        
+        // 获取训练帧 - 让 TrainingFrameGenerator 自己处理暂停
         auto frame_data = generator.get_next_frame();
         
-        std::cout << "Frame " << i 
-                  << ": Time=" << frame_data.timestamp << "s"
-                  << ", Target Index=" << frame_data.target_index
-                  << ", Position=(" << frame_data.target_position.x 
-                  << ", " << frame_data.target_position.y << ")" << std::endl;
+        total_frames++;
         
-        // Show frame with target marker
+        // 创建显示图像
         cv::Mat display = frame_data.frame.clone();
-        cv::circle(display, frame_data.target_position, 8, cv::Scalar(0, 0, 255), -1);
-        cv::putText(display, "Target", 
-                    cv::Point(frame_data.target_position.x + 10, frame_data.target_position.y - 10),
-                    cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 2);
         
-        cv::imshow("Pentagon Rotation Test", display);
-        cv::waitKey(100);
+        // 获取当前中心位置
+        cv::Point2f center = generator.get_current_pentagon_center();
+        
+        // === 如果显示标记为true，绘制所有标记 ===
+        if (show_markers) {
+            // 1. 绘制目标色块标记（大红点）
+            cv::circle(display, frame_data.target_position, 15, cv::Scalar(0, 0, 255), -1);
+            cv::circle(display, frame_data.target_position, 18, cv::Scalar(255, 255, 255), 3);
+            
+            // 2. 绘制中心色块标记（小蓝点）
+            cv::circle(display, center, 8, cv::Scalar(255, 0, 0), -1);
+            cv::circle(display, center, 11, cv::Scalar(255, 255, 255), 2);
+            
+            // 3. 绘制从中心到目标的连线（绿线）
+            cv::line(display, center, frame_data.target_position, 
+                    cv::Scalar(0, 255, 0), 2);
+            
+            // 4. 在目标旁边显示"TARGET"标签
+            cv::putText(display, "TARGET", 
+                       cv::Point(frame_data.target_position.x + 25, frame_data.target_position.y - 10),
+                       cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 255), 1);
+            
+            // 5. 在中心旁边显示"CENTER"标签
+            cv::putText(display, "CENTER", 
+                       cv::Point(center.x + 15, center.y),
+                       cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 0, 0), 1);
+            
+            // 6. 在连线中间显示角度信息
+            cv::Point2f mid_point(
+                (center.x + frame_data.target_position.x) / 2,
+                (center.y + frame_data.target_position.y) / 2
+            );
+            std::string angle_text = std::to_string((int)(generator.get_current_time() * angular_speed * 180 / M_PI)) + "°";
+            cv::putText(display, angle_text, 
+                       cv::Point(mid_point.x - 10, mid_point.y - 10),
+                       cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
+        }
+        
+        // === 在左上角显示控制信息 ===
+        cv::rectangle(display, cv::Point(5, 5), cv::Point(400, 200), cv::Scalar(255, 255, 255, 220), -1);  // 增加高度到200
+        cv::rectangle(display, cv::Point(5, 5), cv::Point(400, 200), cv::Scalar(0, 0, 0), 1);
+        
+        // 标题
+        cv::putText(display, "Pentagon Rotation Test", 
+                   cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 0.8, 
+                   cv::Scalar(0, 0, 0), 2);
+        
+        // 帧率信息
+        cv::putText(display, "FPS: " + std::to_string(int(fps)), 
+                   cv::Point(10, 60), cv::FONT_HERSHEY_SIMPLEX, 0.6, 
+                   cv::Scalar(0, 0, 0), 1);
+        
+        cv::putText(display, "Frame: " + std::to_string(total_frames), 
+                   cv::Point(10, 85), cv::FONT_HERSHEY_SIMPLEX, 0.6, 
+                   cv::Scalar(0, 0, 0), 1);
+        
+        // 时间信息
+        cv::putText(display, "Time: " + std::to_string(frame_data.timestamp).substr(0,4) + "s", 
+                   cv::Point(10, 110), cv::FONT_HERSHEY_SIMPLEX, 0.6, 
+                   cv::Scalar(0, 0, 0), 1);
+        
+        // 旋转状态
+        std::string rotate_status = "Rotation: ";
+        rotate_status += generator.is_paused() ? "PAUSED" : "RUNNING";
+        cv::Scalar status_color = generator.is_paused() ? cv::Scalar(200, 0, 0) : cv::Scalar(0, 150, 0);
+        cv::putText(display, rotate_status, 
+                   cv::Point(10, 135), cv::FONT_HERSHEY_SIMPLEX, 0.6, 
+                   status_color, 1);
+        
+        // 标记状态
+        std::string marker_status = "Markers: ";
+        marker_status += show_markers ? "ON" : "OFF";
+        cv::Scalar marker_color = show_markers ? cv::Scalar(0, 150, 0) : cv::Scalar(200, 0, 0);
+        cv::putText(display, marker_status, 
+                   cv::Point(10, 160), cv::FONT_HERSHEY_SIMPLEX, 0.6, 
+                   marker_color, 1);
+        
+        // 当标记关闭时，在信息框中添加一个更明显的提示
+        if (!show_markers) {
+            cv::putText(display, "! Press T to show markers !", 
+                       cv::Point(10, 185), cv::FONT_HERSHEY_SIMPLEX, 0.6, 
+                       cv::Scalar(200, 0, 0), 1);
+        }
+        
+        // 显示
+        cv::imshow("Pentagon Rotation", display);
+        
+        // 处理按键
+        int key = cv::waitKey(30);
+        if (key == 27) { // ESC
+            break;
+        } else if (key == 32) { // SPACE 暂停/继续
+            if (generator.is_paused()) {
+                generator.resume();
+                std::cout << "Rotation RESUMED at time: " << generator.get_current_time() << "s" << std::endl;
+            } else {
+                generator.pause();
+                std::cout << "Rotation PAUSED at time: " << generator.get_current_time() << "s" << std::endl;
+            }
+        } else if (key == 't' || key == 'T') { // T键切换标记显示
+            show_markers = !show_markers;
+            std::cout << "Target markers: " << (show_markers ? "ON" : "OFF") << std::endl;
+        } else if (key == 'r' || key == 'R') { // R键生成随机位置的新靶子
+            generator.regenerate_pentagon(cv::Point2f(-1, -1)); // 随机位置
+            std::cout << "Generated new pentagon at random position" << std::endl;
+        } else if (key == 'c' || key == 'C') { // C键生成中心位置的新靶子
+            generator.regenerate_pentagon(generator.get_target_sim_center());
+            std::cout << "Generated new pentagon at center" << std::endl;
+        } else if (key == '+') { // +键增加旋转速度
+            angular_speed += 0.1f;
+            generator.set_training_mode(TrainingFrameGenerator::MODE_PENTAGON_ROTATION, angular_speed);
+            std::cout << "Rotation speed increased to: " << angular_speed << " rad/s" << std::endl;
+        } else if (key == '-') { // -键减少旋转速度
+            angular_speed = std::max(0.1f, angular_speed - 0.1f);
+            generator.set_training_mode(TrainingFrameGenerator::MODE_PENTAGON_ROTATION, angular_speed);
+            std::cout << "Rotation speed decreased to: " << angular_speed << " rad/s" << std::endl;
+        } else if (key == '0') { // 0键重置角度和时间
+            generator.reset();
+            std::cout << "Training reset (time = 0, angle = 0)" << std::endl;
+        }
+        
+        // 每100帧输出一次状态
+        if (total_frames % 100 == 0) {
+            std::cout << "Frame " << total_frames 
+                      << ", Time: " << frame_data.timestamp << "s"
+                      << ", FPS: " << int(fps) 
+                      << ", Speed: " << angular_speed << " rad/s"
+                      << ", State: " << (generator.is_paused() ? "PAUSED" : "RUNNING")
+                      << ", Markers: " << (show_markers ? "ON" : "OFF") << std::endl;
+        }
     }
     
     cv::destroyAllWindows();
+    std::cout << "\nTest completed. Total frames: " << total_frames << std::endl;
 }
+
 
 /**
  * @brief 测试圆周运动
@@ -491,9 +645,6 @@ void test_lissajous_motion(TrainingFrameGenerator& generator) {
 
 // ==================== 辅助函数实现 ====================
 
-/**
- * @brief 在图像上绘制轨迹
- */
 /**
  * @brief 在图像上绘制轨迹（安全版本）
  */
