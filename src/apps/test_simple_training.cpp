@@ -4,17 +4,53 @@
 #include <thread>
 #include <iomanip>
 #include <functional>
+#include <vector>
 
+// ==================== 测试函数声明 ====================
+void test_pentagon_rotation(TrainingFrameGenerator& generator);
+void test_circular_motion(TrainingFrameGenerator& generator);
+void test_spiral_motion(TrainingFrameGenerator& generator);
+void test_sine_wave_motion(TrainingFrameGenerator& generator);
+void test_linear_movement_with_bounce(TrainingFrameGenerator& generator);
+void test_random_appearance(TrainingFrameGenerator& generator);
+void test_lissajous_motion(TrainingFrameGenerator& generator);
+
+// ==================== 辅助函数 ====================
+void draw_trajectory(cv::Mat& image, const std::vector<cv::Point2f>& trajectory, 
+                     const cv::Scalar& color);
+void display_info(cv::Mat& image, const std::string& title, 
+                  const cv::Point2f& position, const cv::Point2f& velocity,
+                  float timestamp);
+
+// ==================== 主函数 ====================
 int main() {
-    std::cout << "Training Frame Generator Test (Enhanced)" << std::endl;
-    std::cout << "==========================================" << std::endl;
+    std::cout << "Training Frame Generator Test Suite" << std::endl;
+    std::cout << "===================================" << std::endl;
     
     // Create generator
     TrainingFrameGenerator generator(800, 600, 30.0f);
-    
     std::cout << std::fixed << std::setprecision(2);
     
-    // Test 1: Pentagon Rotation Mode
+    // 运行各个测试
+    test_pentagon_rotation(generator);
+    test_circular_motion(generator);
+    test_spiral_motion(generator);
+    test_sine_wave_motion(generator);
+    test_linear_movement_with_bounce(generator);
+    test_random_appearance(generator);
+    test_lissajous_motion(generator);
+    
+    std::cout << "\n=== All tests completed! ===" << std::endl;
+    
+    return 0;
+}
+
+// ==================== 测试函数实现 ====================
+
+/**
+ * @brief 测试五角星旋转模式
+ */
+void test_pentagon_rotation(TrainingFrameGenerator& generator) {
     std::cout << "\n=== Test 1: Pentagon Rotation Mode ===" << std::endl;
     generator.set_training_mode(TrainingFrameGenerator::MODE_PENTAGON_ROTATION, 0.5f);
     
@@ -39,21 +75,26 @@ int main() {
     }
     
     cv::destroyAllWindows();
+}
+
+/**
+ * @brief 测试圆周运动
+ */
+void test_circular_motion(TrainingFrameGenerator& generator) {
+    std::cout << "\n=== Test 2: Circular Motion ===" << std::endl;
     
-    // Test 2: Parametric Motion - Circular Motion
-    std::cout << "\n=== Test 2: Circular Motion (Parametric) ===" << std::endl;
-    
-    // 使用预定义的圆周运动
     cv::Point2f center(400, 300);
     float radius = 150.0f;
-    float angular_speed = 1.0f;  // 1 rad/s
+    float angular_speed = 1.0f;
     
     generator.set_circular_motion(center, radius, angular_speed, true);
+    
+    std::vector<cv::Point2f> trajectory;
     
     for (int i = 0; i < 60; i++) {  // 2秒的圆周运动
         auto frame_data = generator.get_next_frame();
         
-        if (i % 10 == 0) {  // 每10帧输出一次
+        if (i % 10 == 0) {
             std::cout << "Frame " << i 
                       << ": Time=" << frame_data.timestamp << "s"
                       << ", Position=(" << frame_data.target_position.x 
@@ -62,11 +103,20 @@ int main() {
                       << ", " << frame_data.velocity.y << ")" << std::endl;
         }
         
-        // Show frame with motion visualization
+        // 记录轨迹
+        trajectory.push_back(frame_data.target_position);
+        if (trajectory.size() > 100) {
+            trajectory.erase(trajectory.begin());
+        }
+        
+        // 显示帧
         cv::Mat display = frame_data.frame.clone();
         
         // 绘制圆周轨迹
         cv::circle(display, center, static_cast<int>(radius), cv::Scalar(200, 200, 200), 1);
+        
+        // 绘制历史轨迹
+        draw_trajectory(display, trajectory, cv::Scalar(255, 150, 0));
         
         // 绘制当前位置
         cv::circle(display, frame_data.target_position, 12, cv::Scalar(0, 255, 255), -1);
@@ -79,25 +129,24 @@ int main() {
         cv::arrowedLine(display, frame_data.target_position, vel_end, 
                        cv::Scalar(0, 255, 0), 2);
         
-        // 添加信息
-        std::string info = "Circular Motion - Angular Speed: " + std::to_string(angular_speed) + " rad/s";
-        cv::putText(display, info, cv::Point(10, 30), 
-                   cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 0), 2);
-        
-        std::string time_text = "Time: " + std::to_string(frame_data.timestamp).substr(0, 4) + "s";
-        cv::putText(display, time_text, cv::Point(10, 60), 
-                   cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 0), 1);
+        // 显示信息
+        display_info(display, "Circular Motion", 
+                    frame_data.target_position, frame_data.velocity,
+                    frame_data.timestamp);
         
         cv::imshow("Circular Motion Test", display);
-        if (cv::waitKey(33) == 27) break;  // ~30 FPS
+        if (cv::waitKey(33) == 27) break;
     }
     
     cv::destroyAllWindows();
+}
+
+/**
+ * @brief 测试螺旋线运动
+ */
+void test_spiral_motion(TrainingFrameGenerator& generator) {
+    std::cout << "\n=== Test 3: Spiral Motion ===" << std::endl;
     
-    // Test 3: Parametric Motion - Custom Function
-    std::cout << "\n=== Test 3: Custom Parametric Motion ===" << std::endl;
-    
-    // 自定义参数方程：螺旋线运动
     auto spiral_x = [](float t) -> float {
         return 400 + 100 * (1 - std::exp(-0.1 * t)) * std::cos(2 * t);
     };
@@ -108,120 +157,114 @@ int main() {
     
     generator.set_parametric_motion_mode(spiral_x, spiral_y, 15.0f, false);
     
+    std::vector<cv::Point2f> trajectory;
+    
     for (int i = 0; i < 180; i++) {  // 6秒的螺旋线运动
         auto frame_data = generator.get_next_frame();
         
-        if (i % 30 == 0) {  // 每秒输出一次
+        if (i % 30 == 0) {
             std::cout << "Frame " << i 
                       << ": Time=" << frame_data.timestamp << "s"
                       << ", Position=(" << frame_data.target_position.x 
                       << ", " << frame_data.target_position.y << ")" << std::endl;
         }
         
-        // Show frame
+        // 记录轨迹
+        trajectory.push_back(frame_data.target_position);
+        if (trajectory.size() > 150) {
+            trajectory.erase(trajectory.begin());
+        }
+        
+        // 显示帧
         cv::Mat display = frame_data.frame.clone();
+        
+        // 绘制轨迹
+        draw_trajectory(display, trajectory, cv::Scalar(255, 0, 0));
         
         // 绘制当前位置
         cv::circle(display, frame_data.target_position, 10, cv::Scalar(255, 0, 0), -1);
         
-        // 绘制轨迹点（记录历史位置）
-        static std::vector<cv::Point2f> trajectory;
-        trajectory.push_back(frame_data.target_position);
-        if (trajectory.size() > 100) {
-            trajectory.erase(trajectory.begin());
-        }
+        // 显示信息
+        display_info(display, "Spiral Motion", 
+                    frame_data.target_position, frame_data.velocity,
+                    frame_data.timestamp);
         
-        // 绘制轨迹
-        for (size_t j = 1; j < trajectory.size(); j++) {
-            int alpha = static_cast<int>(255 * j / trajectory.size());
-            cv::line(display, trajectory[j-1], trajectory[j], 
-                    cv::Scalar(255, 0, 0, alpha), 2);
-        }
-        
-        std::string info = "Spiral Motion - Custom Parametric";
-        cv::putText(display, info, cv::Point(10, 30), 
-                   cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 0), 2);
-        
-        cv::imshow("Custom Parametric Motion", display);
+        cv::imshow("Spiral Motion Test", display);
         if (cv::waitKey(33) == 27) break;
     }
     
     cv::destroyAllWindows();
+}
+
+/**
+ * @brief 测试正弦波运动
+ */
+void test_sine_wave_motion(TrainingFrameGenerator& generator) {
+    std::cout << "\n=== Test 4: Sine Wave Motion ===" << std::endl;
     
-    // Test 4: Sine Wave Motion
-   // 在测试文件中，修改sine运动测试部分：
-    // Test 4: Sine Wave Motion - 更快的速度和更大的范围
-    std::cout << "\n=== Test 4: Sine Wave Motion (Enhanced) ===" << std::endl;
-
-    // 使用更大的振幅和更高的频率
-    float amplitude = 100.0f;    // 振幅100像素
-    float frequency = 1.0f;      // 频率1Hz
-    float speed = 80.0f;         // 前进速度80像素/秒
-    float direction = 30.0f;     // 30度方向
-
-    // 创建自定义的快速正弦运动
+    float amplitude = 100.0f;
+    float frequency = 1.0f;
+    float speed = 80.0f;
+    float direction = 30.0f;
+    
     auto fast_sine_x = [start_point = cv::Point2f(100, 300), amplitude, frequency, speed, direction](float t) -> float {
         float dir_rad = direction * M_PI / 180.0f;
         float dx = std::cos(dir_rad);
         float dy = std::sin(dir_rad);
-        // 垂直方向向量
         float perp_dx = -dy;
         
         float main_motion = dx * speed * t;
         float oscillation = perp_dx * amplitude * std::sin(2 * M_PI * frequency * t);
         return start_point.x + main_motion + oscillation;
     };
-
+    
     auto fast_sine_y = [start_point = cv::Point2f(100, 300), amplitude, frequency, speed, direction](float t) -> float {
         float dir_rad = direction * M_PI / 180.0f;
         float dx = std::cos(dir_rad);
         float dy = std::sin(dir_rad);
-        // 垂直方向向量
         float perp_dy = dx;
         
         float main_motion = dy * speed * t;
         float oscillation = perp_dy * amplitude * std::sin(2 * M_PI * frequency * t);
         return start_point.y + main_motion + oscillation;
     };
-
+    
     generator.set_parametric_motion_mode(fast_sine_x, fast_sine_y, 10.0f, true);
-
+    
     std::cout << "Sine wave motion parameters:" << std::endl;
     std::cout << "  Amplitude: " << amplitude << " pixels" << std::endl;
     std::cout << "  Frequency: " << frequency << " Hz" << std::endl;
     std::cout << "  Speed: " << speed << " px/s" << std::endl;
     std::cout << "  Direction: " << direction << " degrees" << std::endl;
-
+    
+    std::vector<cv::Point2f> trajectory;
+    
     for (int i = 0; i < 300; i++) {  // 10秒的运动
         auto frame_data = generator.get_next_frame();
         
-        if (i % 30 == 0) {  // 每秒输出一次
+        if (i % 30 == 0) {
+            float current_speed = std::sqrt(frame_data.velocity.x * frame_data.velocity.x + 
+                                           frame_data.velocity.y * frame_data.velocity.y);
             std::cout << "Frame " << i 
-                    << ": Time=" << frame_data.timestamp << "s"
-                    << ", Position=(" << frame_data.target_position.x 
-                    << ", " << frame_data.target_position.y << ")"
-                    << ", Speed=" << std::sqrt(frame_data.velocity.x * frame_data.velocity.x + 
-                                            frame_data.velocity.y * frame_data.velocity.y) 
-                    << " px/s" << std::endl;
+                      << ": Time=" << frame_data.timestamp << "s"
+                      << ", Position=(" << frame_data.target_position.x 
+                      << ", " << frame_data.target_position.y << ")"
+                      << ", Speed=" << current_speed << " px/s" << std::endl;
         }
         
-        cv::Mat display = frame_data.frame.clone();
-        
-        // 绘制轨迹
-        static std::vector<cv::Point2f> trajectory;
+        // 记录轨迹
         trajectory.push_back(frame_data.target_position);
         if (trajectory.size() > 150) {
             trajectory.erase(trajectory.begin());
         }
         
-        // 绘制轨迹线
-        for (size_t j = 1; j < trajectory.size(); j++) {
-            int alpha = static_cast<int>(200 * j / trajectory.size());
-            cv::line(display, trajectory[j-1], trajectory[j], 
-                    cv::Scalar(255, 100, 100, alpha), 2);
-        }
+        // 显示帧
+        cv::Mat display = frame_data.frame.clone();
         
-        // 绘制当前点
+        // 绘制轨迹
+        draw_trajectory(display, trajectory, cv::Scalar(255, 100, 100));
+        
+        // 绘制当前位置
         cv::circle(display, frame_data.target_position, 10, cv::Scalar(0, 0, 255), -1);
         
         // 绘制速度向量
@@ -230,33 +273,292 @@ int main() {
             frame_data.target_position.y + frame_data.velocity.y * 0.5
         );
         cv::arrowedLine(display, frame_data.target_position, vel_end,
-                    cv::Scalar(0, 255, 0), 2);
+                       cv::Scalar(0, 255, 0), 2);
         
         // 显示信息
-        std::string info = "Fast Sine Wave Motion";
-        cv::putText(display, info, cv::Point(10, 30), 
-                cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 0, 0), 2);
+        display_info(display, "Sine Wave Motion", 
+                    frame_data.target_position, frame_data.velocity,
+                    frame_data.timestamp);
         
-        std::string speed_text = "Speed: " + 
-            std::to_string(static_cast<int>(std::sqrt(frame_data.velocity.x * frame_data.velocity.x + 
-                                                    frame_data.velocity.y * frame_data.velocity.y))) + 
-            " px/s";
-        cv::putText(display, speed_text, cv::Point(10, 60), 
-                cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 100, 0), 2);
-        
-        cv::imshow("Fast Sine Wave Motion", display);
-        if (cv::waitKey(20) == 27) break;  // 更快的刷新率，约50FPS
+        cv::imshow("Sine Wave Motion Test", display);
+        if (cv::waitKey(20) == 27) break;
     }
-
     
     cv::destroyAllWindows();
+}
+
+/**
+ * @brief 测试线性运动（带反弹）
+ */
+void test_linear_movement_with_bounce(TrainingFrameGenerator& generator) {
+    std::cout << "\n=== Test 5: Linear Movement with Bounce ===" << std::endl;
     
-    std::cout << "\n=== All tests completed! ===" << std::endl;
-    std::cout << "Summary:" << std::endl;
-    std::cout << "1. Pentagon Rotation Mode" << std::endl;
-    std::cout << "2. Circular Motion (Parametric)" << std::endl;
-    std::cout << "3. Custom Parametric Motion (Spiral)" << std::endl;
-    std::cout << "4. Sine Wave Motion" << std::endl;
+    float vx = 60.0f, vy = 40.0f;
+    generator.set_training_mode(TrainingFrameGenerator::MODE_LINEAR_MOVEMENT, vx, vy);
     
-    return 0;
+    std::cout << "Linear movement with bounce:" << std::endl;
+    std::cout << "  Initial velocity: (" << vx << ", " << vy << ") px/s" << std::endl;
+    std::cout << "  Image size: " << generator.get_target_sim_center().x * 2 
+              << "x" << generator.get_target_sim_center().y * 2 << std::endl;
+    
+    std::vector<cv::Point2f> trajectory;
+    int bounce_count = 0;
+    
+    for (int i = 0; i < 300; i++) {  // 10秒的运动
+        auto frame_data = generator.get_next_frame();
+        
+        // 检测反弹事件（通过速度变化）
+        static cv::Point2f last_velocity(0, 0);
+        if (i > 0) {
+            float velocity_change = cv::norm(frame_data.velocity - last_velocity);
+            if (velocity_change > 10.0f) {  // 速度变化明显，可能是反弹
+                bounce_count++;
+                std::cout << "[Bounce #" << bounce_count << "] at t=" << frame_data.timestamp << "s" 
+                          << ", New velocity: (" << frame_data.velocity.x 
+                          << ", " << frame_data.velocity.y << ") px/s" << std::endl;
+            }
+        }
+        last_velocity = frame_data.velocity;
+        
+        if (i % 30 == 0) {
+            std::cout << "Frame " << i 
+                      << ": Time=" << frame_data.timestamp << "s"
+                      << ", Position=(" << frame_data.target_position.x 
+                      << ", " << frame_data.target_position.y << ")" << std::endl;
+        }
+        
+        // 记录轨迹
+        trajectory.push_back(frame_data.target_position);
+        if (trajectory.size() > 100) {
+            trajectory.erase(trajectory.begin());
+        }
+        
+        // 显示帧
+        cv::Mat display = frame_data.frame.clone();
+        
+        // 绘制轨迹
+        draw_trajectory(display, trajectory, cv::Scalar(0, 100, 255));
+        
+        // 绘制当前位置
+        cv::circle(display, frame_data.target_position, 12, cv::Scalar(255, 100, 0), -1);
+        
+        // 绘制速度向量
+        cv::Point2f vel_end(
+            frame_data.target_position.x + frame_data.velocity.x * 0.3,
+            frame_data.target_position.y + frame_data.velocity.y * 0.3
+        );
+        cv::arrowedLine(display, frame_data.target_position, vel_end,
+                       cv::Scalar(0, 255, 0), 2);
+        
+        // 显示信息
+        display_info(display, "Linear Movement with Bounce", 
+                    frame_data.target_position, frame_data.velocity,
+                    frame_data.timestamp);
+        
+        // 添加反弹计数
+        std::string bounce_text = "Bounces: " + std::to_string(bounce_count);
+        cv::putText(display, bounce_text, cv::Point(10, 120), 
+                   cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 255), 2);
+        
+        cv::imshow("Linear Movement with Bounce", display);
+        if (cv::waitKey(33) == 27) break;
+    }
+    
+    cv::destroyAllWindows();
+}
+
+/**
+ * @brief 测试随机出现模式
+ */
+void test_random_appearance(TrainingFrameGenerator& generator) {
+    std::cout << "\n=== Test 6: Random Appearance Mode ===" << std::endl;
+    
+    float appearance_interval = 1.5f;
+    generator.set_training_mode(TrainingFrameGenerator::MODE_RANDOM_APPEARANCE, appearance_interval);
+    
+    std::cout << "Random appearance test:" << std::endl;
+    std::cout << "  Interval: " << appearance_interval << " seconds" << std::endl;
+    std::cout << "  Testing for " << (appearance_interval * 5) << " seconds" << std::endl;
+    
+    std::vector<cv::Point2f> positions;
+    
+    for (int i = 0; i < static_cast<int>(appearance_interval * 5 * 30); i++) {
+        auto frame_data = generator.get_next_frame();
+        
+        if (i % 15 == 0) {
+            std::cout << "Frame " << i 
+                      << ": Time=" << frame_data.timestamp << "s"
+                      << ", Position=(" << frame_data.target_position.x 
+                      << ", " << frame_data.target_position.y << ")" << std::endl;
+        }
+        
+        // 记录位置
+        positions.push_back(frame_data.target_position);
+        if (positions.size() > 10) {
+            positions.erase(positions.begin());
+        }
+        
+        // 显示帧
+        cv::Mat display = frame_data.frame.clone();
+        
+        // 绘制所有出现过的位置
+        for (const auto& pos : positions) {
+            cv::circle(display, pos, 8, cv::Scalar(150, 150, 255), -1);
+        }
+        
+        // 绘制当前位置
+        cv::circle(display, frame_data.target_position, 15, cv::Scalar(0, 200, 255), 3);
+        
+        // 显示信息
+        display_info(display, "Random Appearance", 
+                    frame_data.target_position, frame_data.velocity,
+                    frame_data.timestamp);
+        
+        // 添加位置计数
+        std::string pos_text = "Positions: " + std::to_string(positions.size());
+        cv::putText(display, pos_text, cv::Point(10, 120), 
+                   cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 100, 200), 2);
+        
+        cv::imshow("Random Appearance Test", display);
+        if (cv::waitKey(33) == 27) break;
+    }
+    
+    cv::destroyAllWindows();
+}
+
+/**
+ * @brief 测试李萨如图形
+ */
+void test_lissajous_motion(TrainingFrameGenerator& generator) {
+    std::cout << "\n=== Test 7: Lissajous Motion ===" << std::endl;
+    
+    cv::Point2f center(400, 300);
+    float a = 150.0f, b = 100.0f;
+    float wx = 2.0f, wy = 3.0f;
+    float phase = M_PI / 4;
+    
+    generator.set_lissajous_motion(center, a, b, wx, wy, phase, true);
+    
+    std::cout << "Lissajous motion parameters:" << std::endl;
+    std::cout << "  Center: (" << center.x << ", " << center.y << ")" << std::endl;
+    std::cout << "  Amplitudes: (" << a << ", " << b << ")" << std::endl;
+    std::cout << "  Frequencies: (" << wx << ", " << wy << ") rad/s" << std::endl;
+    std::cout << "  Phase: " << phase << " rad" << std::endl;
+    
+    std::vector<cv::Point2f> trajectory;
+    
+    for (int i = 0; i < 300; i++) {  // 10秒的运动
+        auto frame_data = generator.get_next_frame();
+        
+        if (i % 50 == 0) {
+            std::cout << "Frame " << i 
+                      << ": Time=" << frame_data.timestamp << "s"
+                      << ", Position=(" << frame_data.target_position.x 
+                      << ", " << frame_data.target_position.y << ")" << std::endl;
+        }
+        
+        // 记录轨迹
+        trajectory.push_back(frame_data.target_position);
+        if (trajectory.size() > 200) {
+            trajectory.erase(trajectory.begin());
+        }
+        
+        // 显示帧
+        cv::Mat display = frame_data.frame.clone();
+        
+        // 绘制轨迹
+        draw_trajectory(display, trajectory, cv::Scalar(200, 0, 200));
+        
+        // 绘制当前位置
+        cv::circle(display, frame_data.target_position, 8, cv::Scalar(200, 0, 200), -1);
+        
+        // 显示信息
+        display_info(display, "Lissajous Motion", 
+                    frame_data.target_position, frame_data.velocity,
+                    frame_data.timestamp);
+        
+        // 添加频率信息
+        std::string freq_text = "Freq ratio: " + std::to_string(wx) + ":" + std::to_string(wy);
+        cv::putText(display, freq_text, cv::Point(10, 120), 
+                   cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(150, 0, 150), 2);
+        
+        cv::imshow("Lissajous Motion Test", display);
+        if (cv::waitKey(33) == 27) break;
+    }
+    
+    cv::destroyAllWindows();
+}
+
+// ==================== 辅助函数实现 ====================
+
+/**
+ * @brief 在图像上绘制轨迹
+ */
+/**
+ * @brief 在图像上绘制轨迹（安全版本）
+ */
+void draw_trajectory(cv::Mat& image, const std::vector<cv::Point2f>& trajectory, 
+                     const cv::Scalar& color) {
+    if (trajectory.size() < 2) return;
+    
+    for (size_t i = 1; i < trajectory.size(); i++) {
+        // 确保点坐标有效
+        if (trajectory[i-1].x < 0 || trajectory[i-1].y < 0 || 
+            trajectory[i].x < 0 || trajectory[i].y < 0) {
+            continue;  // 跳过无效点
+        }
+        
+        // 确保点坐标在图像范围内
+        if (trajectory[i-1].x >= image.cols || trajectory[i-1].y >= image.rows ||
+            trajectory[i].x >= image.cols || trajectory[i].y >= image.rows) {
+            continue;  // 跳过超出图像的点
+        }
+        
+        // 计算线宽（确保至少为1）
+        float alpha = static_cast<float>(i) / trajectory.size();
+        int line_width = std::max(1, static_cast<int>(3 * alpha));
+        
+        // 确保线宽不超过最大值
+        line_width = std::min(line_width, 10);
+        
+        try {
+            cv::line(image, trajectory[i-1], trajectory[i], 
+                    color, line_width);
+        } catch (const cv::Exception& e) {
+            std::cerr << "Error drawing trajectory line: " << e.what() << std::endl;
+            std::cerr << "  Point1: (" << trajectory[i-1].x << ", " << trajectory[i-1].y << ")" << std::endl;
+            std::cerr << "  Point2: (" << trajectory[i].x << ", " << trajectory[i].y << ")" << std::endl;
+            std::cerr << "  Line width: " << line_width << std::endl;
+            // 继续绘制其他线段
+        }
+    }
+}
+
+/**
+ * @brief 在图像上显示信息
+ */
+void display_info(cv::Mat& image, const std::string& title, 
+                  const cv::Point2f& position, const cv::Point2f& velocity,
+                  float timestamp) {
+    // 显示标题
+    cv::putText(image, title, cv::Point(10, 30), 
+               cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 0, 0), 2);
+    
+    // 显示时间
+    std::string time_text = "Time: " + std::to_string(timestamp).substr(0, 4) + "s";
+    cv::putText(image, time_text, cv::Point(10, 60), 
+               cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 0), 1);
+    
+    // 显示位置
+    std::string pos_text = "Pos: (" + 
+                          std::to_string(static_cast<int>(position.x)) + ", " +
+                          std::to_string(static_cast<int>(position.y)) + ")";
+    cv::putText(image, pos_text, cv::Point(10, 90), 
+               cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 0), 1);
+    
+    // 显示速度
+    float speed = std::sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
+    std::string vel_text = "Speed: " + std::to_string(static_cast<int>(speed)) + " px/s";
+    cv::putText(image, vel_text, cv::Point(10, 150), 
+               cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 100, 0), 1);
 }

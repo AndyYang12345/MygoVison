@@ -32,10 +32,10 @@ public:
     TrainingFrameGenerator(int width = 800, int height = 600, float fps = 30.0f);
     
     /**
-     * @brief Set training mode
-     * @param mode Training mode
-     * @param param1 Mode parameter 1
-     * @param param2 Mode parameter 2
+     * @brief 设置训练模式
+     * @param mode 训练模式 
+     * @param param1 模式参数 1
+     * @param param2 模式参数 2
      */
     void set_training_mode(TrainingMode mode, float param1 = 0.0f, float param2 = 0.0f);
     
@@ -70,7 +70,7 @@ public:
      * @param loop 是否循环运动
      */
     void set_sine_motion(const cv::Point2f& start_point, float amplitude, 
-                        float frequency, float direction = 0.0f, bool loop = true);
+                        float frequency, float direction = 0.0f, float speed = 50.0f, bool loop = true, float duration = 10.0f);
     
     /**
      * @brief 预定义参数方程：Lissajous曲线
@@ -83,7 +83,7 @@ public:
      * @param loop 是否循环运动
      */
     void set_lissajous_motion(const cv::Point2f& center, float a, float b,
-                             float wx, float wy, float phase = 0.0f, bool loop = true);
+                             float wx, float wy, float phase = 0.0f, bool loop = true, float duration = 10.0f);
     
     /**
      * @brief Get next training frame
