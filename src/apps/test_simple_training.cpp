@@ -33,6 +33,12 @@ int main() {
     
     // 运行测试
     test_pentagon_rotation(generator);
+    // test_circular_motion(generator);
+    // test_spiral_motion(generator);
+    // test_sine_wave_motion(generator);
+    // test_linear_movement_with_bounce(generator);
+    // test_random_appearance(generator);
+    // test_lissajous_motion(generator);
     
     std::cout << "\n=== All tests completed! ===" << std::endl;
     

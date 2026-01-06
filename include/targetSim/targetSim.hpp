@@ -106,7 +106,7 @@ private:
      * @brief 绘制靶子
      */
     void _draw_target(cv::Mat& image, 
-                     const std::vector<cv::Point2f>& centers);
+                     const std::vector<cv::Point2f>& centers, float pixels_per_mm = 1.0f);
     
     /**
      * @brief 生成符合要求的颜色组合

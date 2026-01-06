@@ -194,9 +194,9 @@ vector<Point2f> TargetSim::_calculate_pentagon_layout(const Point2f& base_center
     
     // 中心色块
     centers.push_back(base_center);
-    
-    // 外围5个色块（半径100像素）
-    float radius = 100.0f;
+
+    // 外围5个色块（半径160像素）
+    float radius = 160.0f;
     
     // 重要：确保正确使用旋转角度
     for (int i = 0; i < 5; ++i) {
@@ -229,16 +229,48 @@ vector<Point2f> TargetSim::_calculate_pentagon_layout(const Point2f& base_center
 }
 
 // 私有方法：绘制靶子
-void TargetSim::_draw_target(Mat& image, 
-                           const vector<Point2f>& centers) {
-    int radius = 30;
+// 完整的修改建议
+void TargetSim::_draw_target(Mat& image, const vector<Point2f>& centers,
+                           float pixels_per_mm) {
+    // 根据比例因子计算像素尺寸
+    int circle_radius_px = static_cast<int>(40.0f * pixels_per_mm);      // 80mm
+    int square_size_px = static_cast<int>(80.0f * pixels_per_mm);        // 80mm边长
     
-    // 绘制中心色块
-    circle(image, centers[0], radius, _center_color, -1);
+    // 1. 绘制中心圆
+    circle(image, centers[0], circle_radius_px, _center_color, -1);
     
-    // 绘制外围5个色块
+    // 2. 绘制外围正方形（共5个）
     for (size_t i = 0; i < _surround_colors.size() && i + 1 < centers.size(); ++i) {
+        Point2f square_center = centers[i + 1];
         Scalar color = _surround_colors[i];
-        circle(image, centers[i + 1], radius, color, -1);
+        
+        // 计算指向中心的旋转角度
+        Point2f direction = centers[0] - square_center;
+        double angle_deg = atan2(direction.y, direction.x) * 180.0 / CV_PI;
+        
+        // 重要：正方形对角线指向中心，所以需要旋转-45度
+        // 因为正方形的默认方向是对角线水平/垂直的
+        double rotation_angle = angle_deg - 45.0;
+        
+        // 使用RotatedRect（更可靠）
+        RotatedRect rect(square_center, 
+                        Size2f(square_size_px, square_size_px),
+                        rotation_angle);
+        
+        // 获取顶点并绘制
+        Point2f vertices[4];
+        rect.points(vertices);
+        
+        // 转换为整数坐标
+        vector<Point> int_vertices;
+        for (int j = 0; j < 4; j++) {
+            // 确保坐标在图像范围内
+            int x = cvRound(vertices[j].x);
+            int y = cvRound(vertices[j].y);
+            x = max(0, min(x, image.cols - 1));
+            y = max(0, min(y, image.rows - 1));
+            int_vertices.push_back(Point(x, y));
+        }
+        fillConvexPoly(image, int_vertices, color, LINE_AA);
     }
 }
