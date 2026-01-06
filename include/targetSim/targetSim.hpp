@@ -7,13 +7,19 @@
 
 /**
  * @class TargetSim
- * @brief 靶子图像仿真器 - 专为视觉云台追踪训练设计
+ * @brief 靶子图像仿真器 - 能生成二维靶子图像
  */
 class TargetSim {
 public:
     // 预定义的12种颜色（BGR格式）
     static const std::vector<cv::Scalar> COLOR_TABLE;
     
+    /**
+     * @brief 构造函数
+     * @param width 生成图像的宽度（像素）
+     * @param height 生成图像的高度（像素）
+     * @param background 图像背景颜色（默认白色）
+     */
     TargetSim(int width = 800, int height = 480, 
               cv::Scalar background = cv::Scalar(255, 255, 255));
     
@@ -21,7 +27,7 @@ public:
      * @brief 生成五角星靶子图像
      * @param base_center 靶子中心位置
      * @param rotation_angle 旋转角度（弧度）
-     * @param target_position [输出] 目标色块位置（与中心同色的外围色块）
+     * @param target_position 目标色块位置（与中心同色的外围色块）
      * @return 生成的靶子图像
      */
     cv::Mat generate_pentagon_frame(const cv::Point2f& base_center,
@@ -53,13 +59,23 @@ public:
      */
     std::vector<cv::Point2f> get_blob_centroids() const { return _blob_centroids; }
     
+    /**
+     * @brief 获取图像中心点坐标
+     */
     cv::Point2f get_center() const { 
         return cv::Point2f(_width / 2.0f, _height / 2.0f); 
     }
     
+    /**
+     * @brief 获取图像宽度和高度
+     */
     int get_width() const { return _width; }
     int get_height() const { return _height; }
     
+    /**
+     * @brief 获取随机位置
+     * @param margin 边缘留白（默认120像素）
+     */
     cv::Point2f get_random_position(float margin = 120.0f);
 
     /**
@@ -74,12 +90,12 @@ public:
     void regenerate_colors() { _need_regenerate_colors = true; }
 
 private:
-    int _width;
-    int _height;
-    cv::Scalar _background;
-    std::vector<cv::Point2f> _blob_centroids;
-    cv::Scalar _last_target_color;
-    cv::Point2f _last_target_position;
+    int _width;// 图像宽度
+    int _height;// 图像高度
+    cv::Scalar _background;// 图像背景颜色
+    std::vector<cv::Point2f> _blob_centroids;// 色块中心坐标（Ground Truth）
+    cv::Scalar _last_target_color;// 上一次使用的目标颜色
+    cv::Point2f _last_target_position;// 上一次使用的目标位置
     
     // 当前的颜色组合
     cv::Scalar _center_color;
@@ -90,10 +106,6 @@ private:
     float _current_rotation;
     int _target_index;  // 目标色块在外围中的索引
     bool _need_regenerate_colors;
-    /**
-     * @brief 强制重新生成颜色组合
-     */
-    void _regenerate_colors();
 
     
     /**

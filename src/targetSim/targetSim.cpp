@@ -27,10 +27,8 @@ const vector<Scalar> TargetSim::COLOR_TABLE = {
 TargetSim::TargetSim(int width, int height, Scalar background) 
     : _width(width), _height(height), _background(background),
       _last_target_color(-1, -1, -1), _last_target_position(-1, -1),
-      _current_center(-1, -1), _current_rotation(0.0f),  // 先初始化这两个
-      _target_index(-1), _need_regenerate_colors(true) { // 然后是这两个
-    
-    // 使用时间种子初始化随机数生成器
+      _current_center(-1, -1), _current_rotation(0.0f),
+      _target_index(-1), _need_regenerate_colors(true) {
     unsigned seed = chrono::system_clock::now().time_since_epoch().count();
     srand(seed);
 }
@@ -90,9 +88,7 @@ Mat TargetSim::generate_pentagon_frame(const Point2f& base_center,
     return image;
 }
 
-void TargetSim::_regenerate_colors() {
-    _need_regenerate_colors = true;
-}
+
 
 // 生成单色块目标图像
 Mat TargetSim::generate_single_blob_frame(const Point2f& center,
@@ -125,9 +121,6 @@ Mat TargetSim::generate_single_blob_frame(const Point2f& center,
     // 绘制单个色块
     circle(image, center, size, color, -1);
     
-    // 可选：添加边框提高可见性
-    circle(image, center, size + 3, Scalar(0, 0, 0), 2);
-    
     // 更新中心坐标记录
     _blob_centroids.clear();
     _blob_centroids.push_back(center);
@@ -159,7 +152,7 @@ void TargetSim::_generate_valid_color_combo(int& target_index) {
         }
     }
     
-    // 使用 std::shuffle 替代 random_shuffle（C++17兼容）
+
     std::random_device rd;
     std::mt19937 g(rd());
     std::shuffle(available_indices.begin(), available_indices.end(), g);
@@ -229,7 +222,6 @@ vector<Point2f> TargetSim::_calculate_pentagon_layout(const Point2f& base_center
 }
 
 // 私有方法：绘制靶子
-// 完整的修改建议
 void TargetSim::_draw_target(Mat& image, const vector<Point2f>& centers,
                            float pixels_per_mm) {
     // 根据比例因子计算像素尺寸
