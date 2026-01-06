@@ -1,9 +1,3 @@
-/*
-    * TrainingFrameGenerator.hpp
-    * 用于生成训练帧的类定义，之后仍需进行投影才能得到最终图像
-    *  Created on: 2026-01-06
-*/
-
 #ifndef TRAINING_FRAME_GENERATOR_HPP
 #define TRAINING_FRAME_GENERATOR_HPP
 
@@ -30,6 +24,31 @@ public:
     using ParametricFunction = std::function<float(float t)>;
     // 角速度函数类型
     using AngularVelocityFunction = std::function<float(float t)>;
+    
+    // 性能数据结构（需要在类声明中定义）
+    struct FrameMetrics {
+        float frame_time_ms;
+        float generation_time_ms;
+        float rendering_time_ms;
+        float wait_time_ms;
+        float fps;
+    };
+    
+    /**
+     * @brief 训练帧结构体，包含图像和Ground Truth信息
+     */
+    struct TrainingFrame {
+        cv::Mat frame;              // 生成的图像帧
+        cv::Point2f target_position;   // Ground Truth目标位置
+        float timestamp;               // 帧时间戳（秒）
+        cv::Point2f velocity;          // 速度向量
+        
+        // 新增性能指标字段
+        float actual_fps;              // 实际帧率
+        float frame_time_ms;           // 帧处理总时间（毫秒）
+        float generation_time_ms;      // 帧生成时间（毫秒）
+        float rendering_time_ms;       // 帧渲染时间（毫秒）
+    };
     
     /**
      * @brief 构造函数
@@ -91,16 +110,6 @@ public:
      */
     void set_lissajous_motion(const cv::Point2f& center, float a, float b,
                              float wx, float wy, float phase = 0.0f, bool loop = true, float duration = 10.0f);
-    
-    /**
-     * @brief 训练帧结构体，包含图像和Ground Truth信息
-     */
-    struct TrainingFrame {
-        cv::Mat frame;              // 生成的图像帧
-        cv::Point2f target_position;   // Ground Truth目标位置
-        float timestamp;               // 帧时间戳（秒）
-        cv::Point2f velocity;          // 速度向量
-    };
     
     /**
      * @brief 获取下一个训练帧，带可选位置控制
@@ -195,12 +204,26 @@ private:
     cv::Point2f _current_position;
     float _last_appear_time;
     cv::Point2f _last_random_position;
-    private:
-
+    
     // 五角星旋转模式状态
     cv::Point2f _current_pentagon_center;
     bool _need_regenerate_pentagon;
     float _current_pentagon_angle;
+    
+    // 性能监控数据
+    struct PerformanceData {
+        std::chrono::time_point<std::chrono::high_resolution_clock> frame_start;
+        std::chrono::time_point<std::chrono::high_resolution_clock> generation_done;
+        std::chrono::time_point<std::chrono::high_resolution_clock> rendering_done;
+        std::chrono::time_point<std::chrono::high_resolution_clock> last_fps_time;
+        int frame_count;
+        float current_fps;
+        float avg_fps;
+        float min_fps;
+        float max_fps;
+        int samples;
+    } _perf_data;
+    bool _performance_monitoring;
     
     // Mode processing functions
     TrainingFrame _generate_pentagon_rotation(float timestamp);
@@ -211,6 +234,12 @@ private:
     // 辅助函数
     cv::Point2f _calculate_parametric_position(float t);
     cv::Point2f _calculate_parametric_velocity(float t, float dt = 0.01f);
+    
+    // 性能监控辅助函数
+    void _start_frame_timing();
+    void _mark_generation_done();
+    void _mark_rendering_done();
+    FrameMetrics _end_frame_timing();  // 移除了PerformanceData::前缀
 };
 
 #endif // TRAINING_FRAME_GENERATOR_HPP

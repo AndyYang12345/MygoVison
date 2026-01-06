@@ -92,7 +92,7 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
             last_time = current_time;
         }
         
-        // 获取训练帧 - 让 TrainingFrameGenerator 自己处理暂停
+        // 获取训练帧
         auto frame_data = generator.get_next_frame();
         
         total_frames++;
@@ -132,57 +132,37 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
                 (center.x + frame_data.target_position.x) / 2,
                 (center.y + frame_data.target_position.y) / 2
             );
-            std::string angle_text = std::to_string((int)(generator.get_current_time() * angular_speed * 180 / M_PI)) + "degrees";
+            std::string angle_text = std::to_string((int)(generator.get_current_time() * angular_speed * 180 / M_PI)) + "°";
             cv::putText(display, angle_text, 
                        cv::Point(mid_point.x - 10, mid_point.y - 10),
                        cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
         }
         
-        // // === 在左上角显示控制信息 ===
-        // cv::rectangle(display, cv::Point(5, 5), cv::Point(400, 200), cv::Scalar(255, 255, 255, 220), -1);  // 增加高度到200
-        // cv::rectangle(display, cv::Point(5, 5), cv::Point(400, 200), cv::Scalar(0, 0, 0), 1);
+        // === 显示FPS ===
+        std::string fps_text = "FPS: " + std::to_string(int(fps));
+        cv::putText(display, fps_text, 
+                   cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 0.6, 
+                   cv::Scalar(0, 255, 0), 1);
         
-        // // 标题
-        // cv::putText(display, "Pentagon Rotation Test", 
-        //            cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 0.8, 
-        //            cv::Scalar(0, 0, 0), 2);
+        // 显示帧数
+        std::string frame_text = "Frame: " + std::to_string(total_frames);
+        cv::putText(display, frame_text, 
+                   cv::Point(10, 55), cv::FONT_HERSHEY_SIMPLEX, 0.5, 
+                   cv::Scalar(255, 255, 255), 1);
         
-        // 帧率信息
-        cv::putText(display, "FPS: " + std::to_string(int(fps)), 
-                   cv::Point(10, 60), cv::FONT_HERSHEY_SIMPLEX, 0.6, 
-                   cv::Scalar(0, 0, 0), 1);
+        // 显示时间
+        std::string time_text = "Time: " + std::to_string(frame_data.timestamp).substr(0,4) + "s";
+        cv::putText(display, time_text, 
+                   cv::Point(10, 80), cv::FONT_HERSHEY_SIMPLEX, 0.5, 
+                   cv::Scalar(255, 255, 255), 1);
         
-        // cv::putText(display, "Frame: " + std::to_string(total_frames), 
-        //            cv::Point(10, 85), cv::FONT_HERSHEY_SIMPLEX, 0.6, 
-        //            cv::Scalar(0, 0, 0), 1);
-        
-        // // 时间信息
-        // cv::putText(display, "Time: " + std::to_string(frame_data.timestamp).substr(0,4) + "s", 
-        //            cv::Point(10, 110), cv::FONT_HERSHEY_SIMPLEX, 0.6, 
-        //            cv::Scalar(0, 0, 0), 1);
-        
-        // // 旋转状态
-        // std::string rotate_status = "Rotation: ";
-        // rotate_status += generator.is_paused() ? "PAUSED" : "RUNNING";
-        // cv::Scalar status_color = generator.is_paused() ? cv::Scalar(200, 0, 0) : cv::Scalar(0, 150, 0);
-        // cv::putText(display, rotate_status, 
-        //            cv::Point(10, 135), cv::FONT_HERSHEY_SIMPLEX, 0.6, 
-        //            status_color, 1);
-        
-        // // 标记状态
-        // std::string marker_status = "Markers: ";
-        // marker_status += show_markers ? "ON" : "OFF";
-        // cv::Scalar marker_color = show_markers ? cv::Scalar(0, 150, 0) : cv::Scalar(200, 0, 0);
-        // cv::putText(display, marker_status, 
-        //            cv::Point(10, 160), cv::FONT_HERSHEY_SIMPLEX, 0.6, 
-        //            marker_color, 1);
-        
-        // // 当标记关闭时，在信息框中添加一个更明显的提示
-        // if (!show_markers) {
-        //     cv::putText(display, "! Press T to show markers !", 
-        //                cv::Point(10, 185), cv::FONT_HERSHEY_SIMPLEX, 0.6, 
-        //                cv::Scalar(200, 0, 0), 1);
-        // }
+        // 显示状态
+        std::string status_text = "Status: ";
+        status_text += generator.is_paused() ? "PAUSED" : "RUNNING";
+        cv::Scalar status_color = generator.is_paused() ? cv::Scalar(0, 0, 255) : cv::Scalar(0, 255, 0);
+        cv::putText(display, status_text, 
+                   cv::Point(10, 105), cv::FONT_HERSHEY_SIMPLEX, 0.5, 
+                   status_color, 1);
         
         // 显示
         cv::imshow("Pentagon Rotation", display);
@@ -221,21 +201,19 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
             std::cout << "Training reset (time = 0, angle = 0)" << std::endl;
         }
         
-        // // 每100帧输出一次状态
-        // if (total_frames % 100 == 0) {
-        //     std::cout << "Frame " << total_frames 
-        //               << ", Time: " << frame_data.timestamp << "s"
-        //               << ", FPS: " << int(fps) 
-        //               << ", Speed: " << angular_speed << " rad/s"
-        //               << ", State: " << (generator.is_paused() ? "PAUSED" : "RUNNING")
-        //               << ", Markers: " << (show_markers ? "ON" : "OFF") << std::endl;
-        // }
+        // 每100帧输出一次状态
+        if (total_frames % 100 == 0) {
+            std::cout << "Frame " << total_frames 
+                      << ", Time: " << frame_data.timestamp << "s"
+                      << ", FPS: " << int(fps) 
+                      << ", Speed: " << angular_speed << " rad/s"
+                      << ", State: " << (generator.is_paused() ? "PAUSED" : "RUNNING") << std::endl;
+        }
     }
     
     cv::destroyAllWindows();
     std::cout << "\nTest completed. Total frames: " << total_frames << std::endl;
 }
-
 
 /**
  * @brief 测试圆周运动

@@ -7,26 +7,33 @@
 
 using namespace std;
 using namespace cv;
+
 TrainingFrameGenerator::TrainingFrameGenerator(int width, int height, float fps)
     : _target_sim(width, height), _fps(fps), _current_time(0.0f),
       _current_mode(MODE_PENTAGON_ROTATION), _paused(false),
       _param1(0.0f), _param2(0.0f),
       _angular_velocity_func(nullptr),
       _parametric_duration(0.0f), _loop_motion(true),
-      _current_pentagon_center(-1, -1),  // 初始化为无效值
-      _need_regenerate_pentagon(true),   // 需要重新生成
-      _current_pentagon_angle(0.0f)      // 初始角度为0
+      _current_pentagon_center(-1, -1),
+      _need_regenerate_pentagon(true),
+      _current_pentagon_angle(0.0f),
+      _performance_monitoring(false)
 {
     std::cout << "Training Frame Generator Initialized: " 
               << width << "x" << height 
               << " @ " << fps << " FPS" << std::endl;
     
+    // 初始化性能监控数据
+    _perf_data.frame_count = 0;
+    _perf_data.current_fps = 0.0f;
+    _perf_data.avg_fps = 0.0f;
+    _perf_data.min_fps = 9999.0f;
+    _perf_data.max_fps = 0.0f;
+    _perf_data.samples = 0;
+    _perf_data.last_fps_time = std::chrono::high_resolution_clock::now();
+    
     // 默认中心为图像中心
     _current_pentagon_center = _target_sim.get_center();
-    
-    // 注意：TargetSim 类没有 set_target_color 方法
-    // 我们可以通过生成一个单色块帧来初始化颜色
-    // 或者让 TargetSim 在第一次调用时自己初始化
     
     std::cout << "Initial pentagon center: (" 
               << _current_pentagon_center.x << ", " 
@@ -60,7 +67,7 @@ void TrainingFrameGenerator::set_training_mode(TrainingMode mode,
     
     std::cout << "\nSet training mode: ";
     switch (mode) {
-        case MODE_PENTAGON_ROTATION:// 对于五角星旋转模式，参数1用于固定角速度，参数二无效，如果设定了角速度参数方程，则使用参数方程
+        case MODE_PENTAGON_ROTATION:
             std::cout << "Pentagon Rotation Mode" << std::endl;
             if (_angular_velocity_func) {
                 std::cout << "  Using custom angular velocity function" << std::endl;
@@ -69,18 +76,16 @@ void TrainingFrameGenerator::set_training_mode(TrainingMode mode,
             }
             std::cout << "  Center: (" << _current_pentagon_center.x 
                       << ", " << _current_pentagon_center.y << ")" << std::endl;
-            std::cout << "  Use get_next_frame(pentagon_center) to change position" << std::endl;
-            std::cout << "  Use regenerate_pentagon(center) for new random pentagon" << std::endl;
             break;
-        case MODE_LINEAR_MOVEMENT:// 对于线性运动模式，参数1和参数2分别表示x和y方向的速度（像素/秒）
+        case MODE_LINEAR_MOVEMENT:
             std::cout << "Linear Movement Mode" << std::endl;
             std::cout << "  Velocity: (" << param1 << ", " << param2 << ") px/s" << std::endl;
             break;
-        case MODE_RANDOM_APPEARANCE:// 对于随机出现模式，参数1表示更换间隔时间（秒），参数2无效
+        case MODE_RANDOM_APPEARANCE:
             std::cout << "Random Appearance Mode" << std::endl;
             std::cout << "  Interval: " << param1 << " seconds" << std::endl;
             break;
-        case MODE_PARAMETRIC_MOTION:// 对于参数方程运动模式，参数1和参数2无效，需调用 set_parametric_motion_mode 设置方程
+        case MODE_PARAMETRIC_MOTION:
             std::cout << "Parametric Motion Mode" << std::endl;
             std::cout << "  Using custom parametric functions" << std::endl;
             break;
@@ -136,11 +141,9 @@ void TrainingFrameGenerator::set_sine_motion(const cv::Point2f& start_point,
     float omega = 2 * M_PI * frequency;
     float dir_rad = direction * M_PI / 180.0f;
     
-    // 方向向量
     float dx = std::cos(dir_rad);
     float dy = std::sin(dir_rad);
     
-    // 垂直方向向量
     float perp_dx = -dy;
     float perp_dy = dx;
     
@@ -189,6 +192,11 @@ void TrainingFrameGenerator::set_lissajous_motion(const cv::Point2f& center,
 TrainingFrameGenerator::TrainingFrame 
 TrainingFrameGenerator::get_next_frame(float timestamp, 
                                       const cv::Point2f& pentagon_center) {
+    // 开始帧计时
+    _start_frame_timing();
+    auto start_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        _perf_data.frame_start.time_since_epoch()).count();
+    
     // 如果指定了新的中心位置（仅在五角星旋转模式下有效）
     if (_current_mode == MODE_PENTAGON_ROTATION) {
         if (pentagon_center.x != -1 || pentagon_center.y != -1) {
@@ -211,22 +219,48 @@ TrainingFrameGenerator::get_next_frame(float timestamp,
         if (timestamp >= 0) {
             _current_time = timestamp;
         }
-        // 否则保持 _current_time 不变
     }
     
+    
     // Generate frame based on current mode
+    TrainingFrame frame_data;
     switch (_current_mode) {
         case MODE_PENTAGON_ROTATION:
-            return _generate_pentagon_rotation(_current_time);
+            frame_data = _generate_pentagon_rotation(_current_time);
+            break;
         case MODE_LINEAR_MOVEMENT:
-            return _generate_linear_movement(_current_time);
+            frame_data = _generate_linear_movement(_current_time);
+            break;
         case MODE_RANDOM_APPEARANCE:
-            return _generate_random_appearance(_current_time);
+            frame_data = _generate_random_appearance(_current_time);
+            break;
         case MODE_PARAMETRIC_MOTION:
-            return _generate_parametric_motion(_current_time);
+            frame_data = _generate_parametric_motion(_current_time);
+            break;
         default:
-            return _generate_pentagon_rotation(_current_time);
+            frame_data = _generate_pentagon_rotation(_current_time);
     }
+    // 标记生成开始
+    _mark_generation_done();
+    // 标记渲染完成
+    _mark_rendering_done();
+    auto gen_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        _perf_data.generation_done.time_since_epoch()).count();
+    auto render_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        _perf_data.rendering_done.time_since_epoch()).count();
+    
+    std::cout << "[DEBUG] Start: " << start_ns 
+              << ", Gen done: " << gen_ns 
+              << ", Diff: " << (gen_ns - start_ns) / 1000000.0 << "ms" << std::endl;
+    
+    // 结束帧计时并填充性能数据
+    auto metrics = _end_frame_timing();
+    frame_data.actual_fps = metrics.fps;
+    frame_data.frame_time_ms = metrics.frame_time_ms;
+    frame_data.generation_time_ms = metrics.generation_time_ms;
+    frame_data.rendering_time_ms = metrics.rendering_time_ms;
+    
+    return frame_data;
 }
 
 void TrainingFrameGenerator::regenerate_pentagon(const cv::Point2f& center) {
@@ -260,6 +294,15 @@ void TrainingFrameGenerator::reset() {
     // 重置五角星角度
     _current_pentagon_angle = 0.0f;
     _need_regenerate_pentagon = true;
+    
+    // 重置性能数据
+    _perf_data.frame_count = 0;
+    _perf_data.current_fps = 0.0f;
+    _perf_data.avg_fps = 0.0f;
+    _perf_data.min_fps = 9999.0f;
+    _perf_data.max_fps = 0.0f;
+    _perf_data.samples = 0;
+    _perf_data.last_fps_time = std::chrono::high_resolution_clock::now();
 }
 
 cv::Point2f TrainingFrameGenerator::_calculate_parametric_position(float t) {
@@ -267,7 +310,6 @@ cv::Point2f TrainingFrameGenerator::_calculate_parametric_position(float t) {
         return _target_sim.get_center();
     }
     
-    // 如果循环运动且周期大于0，对时间取模
     if (_loop_motion && _parametric_duration > 0) {
         t = std::fmod(t, _parametric_duration);
     }
@@ -299,18 +341,13 @@ TrainingFrameGenerator::_generate_pentagon_rotation(float timestamp) {
     // 计算当前角速度
     float current_angular_velocity = 0.0f;
     if (_angular_velocity_func) {
-        // 使用自定义角速度函数
         current_angular_velocity = _angular_velocity_func(timestamp);
     } else {
-        // 使用恒定角速度
         current_angular_velocity = _param1;
     }
     
-    // 计算旋转角度 - 基于时间戳，而不是累积
-    // 角度 = 角速度 × 时间
+    // 计算旋转角度
     _current_pentagon_angle = current_angular_velocity * timestamp;
-    
-    // 规范化角度
     float display_angle = std::fmod(_current_pentagon_angle, 2 * M_PI);
     
     // 生成五角星图像
@@ -324,12 +361,11 @@ TrainingFrameGenerator::_generate_pentagon_rotation(float timestamp) {
     frame_data.target_position = target_pos;
     frame_data.timestamp = timestamp;
     
-    // 计算线速度（v = ω × r）
+    // 计算线速度
     cv::Point2f center_to_target = frame_data.target_position - _current_pentagon_center;
     float radius = cv::norm(center_to_target);
     
     if (radius > 0.001f) {
-        // 切线方向
         cv::Point2f tangent(-center_to_target.y / radius, center_to_target.x / radius);
         float linear_speed = current_angular_velocity * radius;
         frame_data.velocity = tangent * linear_speed;
@@ -337,11 +373,10 @@ TrainingFrameGenerator::_generate_pentagon_rotation(float timestamp) {
         frame_data.velocity = cv::Point2f(0, 0);
     }
     
-    // 重置重新生成标志
     _need_regenerate_pentagon = false;
     
     // 调试输出
-    if (static_cast<int>(timestamp * _fps) % 60 == 0) {  // 每2秒输出一次
+    if (static_cast<int>(timestamp * _fps) % 60 == 0) {
         std::cout << "[TrainingFrame] t=" << timestamp 
                   << "s, Center: (" << _current_pentagon_center.x 
                   << ", " << _current_pentagon_center.y << ")"
@@ -359,31 +394,25 @@ TrainingFrameGenerator::TrainingFrame
 TrainingFrameGenerator::_generate_linear_movement(float timestamp) {
     TrainingFrame frame_data;
     
-    // 边界参数
     float margin = 120.0f;
     int width = _target_sim.get_width();
     int height = _target_sim.get_height();
     
-    // 使用静态变量跟踪速度和位置
     static cv::Point2f current_velocity(_param1, _param2);
     static cv::Point2f current_position = _target_sim.get_center();
     static float last_timestamp = 0.0f;
     
-    // 如果时间重置，重新初始化
     if (timestamp <= 0.0f || timestamp < last_timestamp) {
         current_velocity = cv::Point2f(_param1, _param2);
         current_position = _target_sim.get_center();
     }
     
-    // 计算时间增量
     float dt = (last_timestamp == 0.0f) ? 0.0f : (timestamp - last_timestamp);
     last_timestamp = timestamp;
     
-    // 更新位置
     current_position.x += current_velocity.x * dt;
     current_position.y += current_velocity.y * dt;
     
-    // 检查并处理边界碰撞
     if (current_position.x < margin) {
         current_position.x = margin;
         current_velocity.x = std::abs(current_velocity.x);
@@ -400,15 +429,12 @@ TrainingFrameGenerator::_generate_linear_movement(float timestamp) {
         current_velocity.y = -std::abs(current_velocity.y);
     }
     
-    // 确保位置在边界内
     _current_position.x = std::max(margin, std::min(current_position.x, static_cast<float>(width - margin)));
     _current_position.y = std::max(margin, std::min(current_position.y, static_cast<float>(height - margin)));
     
-    // 生成单色块目标
     frame_data.frame = _target_sim.generate_single_blob_frame(
         _current_position, 40, false, cv::Scalar(-1, -1, -1));
     
-    // 获取目标位置
     frame_data.target_position = _target_sim.get_last_target_position();
     frame_data.timestamp = timestamp;
     frame_data.velocity = current_velocity;
@@ -420,17 +446,14 @@ TrainingFrameGenerator::TrainingFrame
 TrainingFrameGenerator::_generate_random_appearance(float timestamp) {
     TrainingFrame frame_data;
     
-    // 检查是否需要更新位置
     if (timestamp - _last_appear_time >= _param1 || _last_appear_time == 0.0f) {
         _last_random_position = _target_sim.get_random_position(150.0f);
         _last_appear_time = timestamp;
     }
     
-    // 生成单色块目标
     frame_data.frame = _target_sim.generate_single_blob_frame(
         _last_random_position, 40, false, cv::Scalar(-1, -1, -1));
     
-    // 获取目标位置
     frame_data.target_position = _target_sim.get_last_target_position();
     frame_data.timestamp = timestamp;
     frame_data.velocity = cv::Point2f(0, 0);
@@ -442,20 +465,71 @@ TrainingFrameGenerator::TrainingFrame
 TrainingFrameGenerator::_generate_parametric_motion(float timestamp) {
     TrainingFrame frame_data;
     
-    // 计算当前位置
     _current_position = _calculate_parametric_position(timestamp);
-    
-    // 计算速度
     cv::Point2f velocity = _calculate_parametric_velocity(timestamp);
     
-    // 生成单色块目标
     frame_data.frame = _target_sim.generate_single_blob_frame(
         _current_position, 40, false, cv::Scalar(-1, -1, -1));
     
-    // 获取目标位置
     frame_data.target_position = _target_sim.get_last_target_position();
     frame_data.timestamp = timestamp;
     frame_data.velocity = velocity;
     
     return frame_data;
+}
+
+// 性能监控辅助函数实现
+void TrainingFrameGenerator::_start_frame_timing() {
+    _perf_data.frame_start = std::chrono::high_resolution_clock::now();
+}
+
+void TrainingFrameGenerator::_mark_generation_done() {
+    _perf_data.generation_done = std::chrono::high_resolution_clock::now();
+}
+
+void TrainingFrameGenerator::_mark_rendering_done() {
+    _perf_data.rendering_done = std::chrono::high_resolution_clock::now();
+}
+
+TrainingFrameGenerator::FrameMetrics TrainingFrameGenerator::_end_frame_timing() {
+    auto frame_end = std::chrono::high_resolution_clock::now();
+    
+    FrameMetrics metrics;
+    metrics.generation_time_ms = std::chrono::duration<float, std::milli>(
+        _perf_data.generation_done - _perf_data.frame_start).count();
+    metrics.rendering_time_ms = std::chrono::duration<float, std::milli>(
+        _perf_data.rendering_done - _perf_data.generation_done).count();
+    metrics.wait_time_ms = std::chrono::duration<float, std::milli>(
+        frame_end - _perf_data.rendering_done).count();
+    metrics.frame_time_ms = metrics.generation_time_ms + 
+                           metrics.rendering_time_ms + 
+                           metrics.wait_time_ms;
+    
+    // 计算FPS
+    _perf_data.frame_count++;
+    float elapsed = std::chrono::duration<float>(
+        frame_end - _perf_data.last_fps_time).count();
+    
+    if (elapsed >= 1.0f) {
+        metrics.fps = _perf_data.frame_count / elapsed;
+        _perf_data.frame_count = 0;
+        _perf_data.last_fps_time = frame_end;
+        
+        // 更新统计
+        _perf_data.samples++;
+        _perf_data.avg_fps = (_perf_data.avg_fps * (_perf_data.samples - 1) + metrics.fps) / _perf_data.samples;
+        _perf_data.min_fps = std::min(_perf_data.min_fps, metrics.fps);
+        _perf_data.max_fps = std::max(_perf_data.max_fps, metrics.fps);
+        _perf_data.current_fps = metrics.fps;
+        
+        // 性能警告
+        if (_fps > 0 && metrics.fps < _fps * 0.8f) {
+            std::cout << "[PERF WARNING] Low FPS: " << metrics.fps 
+                      << " (target: " << _fps << ")" << std::endl;
+        }
+    } else {
+        metrics.fps = _perf_data.current_fps;
+    }
+    
+    return metrics;
 }
