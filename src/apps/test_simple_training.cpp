@@ -28,7 +28,7 @@ int main() {
     std::cout << "===================================" << std::endl;
     
     // 创建 TrainingFrameGenerator
-    TrainingFrameGenerator generator(800, 600, 30.0f);
+    TrainingFrameGenerator generator(800, 600, 60.0f);
     std::cout << std::fixed << std::setprecision(2);
     
     // 运行测试
@@ -138,57 +138,57 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
                        cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
         }
         
-        // === 在左上角显示控制信息 ===
-        cv::rectangle(display, cv::Point(5, 5), cv::Point(400, 200), cv::Scalar(255, 255, 255, 220), -1);  // 增加高度到200
-        cv::rectangle(display, cv::Point(5, 5), cv::Point(400, 200), cv::Scalar(0, 0, 0), 1);
+        // // === 在左上角显示控制信息 ===
+        // cv::rectangle(display, cv::Point(5, 5), cv::Point(400, 200), cv::Scalar(255, 255, 255, 220), -1);  // 增加高度到200
+        // cv::rectangle(display, cv::Point(5, 5), cv::Point(400, 200), cv::Scalar(0, 0, 0), 1);
         
-        // 标题
-        cv::putText(display, "Pentagon Rotation Test", 
-                   cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 0.8, 
-                   cv::Scalar(0, 0, 0), 2);
+        // // 标题
+        // cv::putText(display, "Pentagon Rotation Test", 
+        //            cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 0.8, 
+        //            cv::Scalar(0, 0, 0), 2);
         
         // 帧率信息
         cv::putText(display, "FPS: " + std::to_string(int(fps)), 
                    cv::Point(10, 60), cv::FONT_HERSHEY_SIMPLEX, 0.6, 
                    cv::Scalar(0, 0, 0), 1);
         
-        cv::putText(display, "Frame: " + std::to_string(total_frames), 
-                   cv::Point(10, 85), cv::FONT_HERSHEY_SIMPLEX, 0.6, 
-                   cv::Scalar(0, 0, 0), 1);
+        // cv::putText(display, "Frame: " + std::to_string(total_frames), 
+        //            cv::Point(10, 85), cv::FONT_HERSHEY_SIMPLEX, 0.6, 
+        //            cv::Scalar(0, 0, 0), 1);
         
-        // 时间信息
-        cv::putText(display, "Time: " + std::to_string(frame_data.timestamp).substr(0,4) + "s", 
-                   cv::Point(10, 110), cv::FONT_HERSHEY_SIMPLEX, 0.6, 
-                   cv::Scalar(0, 0, 0), 1);
+        // // 时间信息
+        // cv::putText(display, "Time: " + std::to_string(frame_data.timestamp).substr(0,4) + "s", 
+        //            cv::Point(10, 110), cv::FONT_HERSHEY_SIMPLEX, 0.6, 
+        //            cv::Scalar(0, 0, 0), 1);
         
-        // 旋转状态
-        std::string rotate_status = "Rotation: ";
-        rotate_status += generator.is_paused() ? "PAUSED" : "RUNNING";
-        cv::Scalar status_color = generator.is_paused() ? cv::Scalar(200, 0, 0) : cv::Scalar(0, 150, 0);
-        cv::putText(display, rotate_status, 
-                   cv::Point(10, 135), cv::FONT_HERSHEY_SIMPLEX, 0.6, 
-                   status_color, 1);
+        // // 旋转状态
+        // std::string rotate_status = "Rotation: ";
+        // rotate_status += generator.is_paused() ? "PAUSED" : "RUNNING";
+        // cv::Scalar status_color = generator.is_paused() ? cv::Scalar(200, 0, 0) : cv::Scalar(0, 150, 0);
+        // cv::putText(display, rotate_status, 
+        //            cv::Point(10, 135), cv::FONT_HERSHEY_SIMPLEX, 0.6, 
+        //            status_color, 1);
         
-        // 标记状态
-        std::string marker_status = "Markers: ";
-        marker_status += show_markers ? "ON" : "OFF";
-        cv::Scalar marker_color = show_markers ? cv::Scalar(0, 150, 0) : cv::Scalar(200, 0, 0);
-        cv::putText(display, marker_status, 
-                   cv::Point(10, 160), cv::FONT_HERSHEY_SIMPLEX, 0.6, 
-                   marker_color, 1);
+        // // 标记状态
+        // std::string marker_status = "Markers: ";
+        // marker_status += show_markers ? "ON" : "OFF";
+        // cv::Scalar marker_color = show_markers ? cv::Scalar(0, 150, 0) : cv::Scalar(200, 0, 0);
+        // cv::putText(display, marker_status, 
+        //            cv::Point(10, 160), cv::FONT_HERSHEY_SIMPLEX, 0.6, 
+        //            marker_color, 1);
         
-        // 当标记关闭时，在信息框中添加一个更明显的提示
-        if (!show_markers) {
-            cv::putText(display, "! Press T to show markers !", 
-                       cv::Point(10, 185), cv::FONT_HERSHEY_SIMPLEX, 0.6, 
-                       cv::Scalar(200, 0, 0), 1);
-        }
+        // // 当标记关闭时，在信息框中添加一个更明显的提示
+        // if (!show_markers) {
+        //     cv::putText(display, "! Press T to show markers !", 
+        //                cv::Point(10, 185), cv::FONT_HERSHEY_SIMPLEX, 0.6, 
+        //                cv::Scalar(200, 0, 0), 1);
+        // }
         
         // 显示
         cv::imshow("Pentagon Rotation", display);
         
         // 处理按键
-        int key = cv::waitKey(30);
+        int key = cv::waitKey(10);
         if (key == 27) { // ESC
             break;
         } else if (key == 32) { // SPACE 暂停/继续
@@ -221,15 +221,15 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
             std::cout << "Training reset (time = 0, angle = 0)" << std::endl;
         }
         
-        // 每100帧输出一次状态
-        if (total_frames % 100 == 0) {
-            std::cout << "Frame " << total_frames 
-                      << ", Time: " << frame_data.timestamp << "s"
-                      << ", FPS: " << int(fps) 
-                      << ", Speed: " << angular_speed << " rad/s"
-                      << ", State: " << (generator.is_paused() ? "PAUSED" : "RUNNING")
-                      << ", Markers: " << (show_markers ? "ON" : "OFF") << std::endl;
-        }
+        // // 每100帧输出一次状态
+        // if (total_frames % 100 == 0) {
+        //     std::cout << "Frame " << total_frames 
+        //               << ", Time: " << frame_data.timestamp << "s"
+        //               << ", FPS: " << int(fps) 
+        //               << ", Speed: " << angular_speed << " rad/s"
+        //               << ", State: " << (generator.is_paused() ? "PAUSED" : "RUNNING")
+        //               << ", Markers: " << (show_markers ? "ON" : "OFF") << std::endl;
+        // }
     }
     
     cv::destroyAllWindows();

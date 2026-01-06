@@ -60,7 +60,7 @@ void TrainingFrameGenerator::set_training_mode(TrainingMode mode,
     
     std::cout << "\nSet training mode: ";
     switch (mode) {
-        case MODE_PENTAGON_ROTATION:
+        case MODE_PENTAGON_ROTATION:// 对于五角星旋转模式，参数1用于固定角速度，参数二无效，如果设定了角速度参数方程，则使用参数方程
             std::cout << "Pentagon Rotation Mode" << std::endl;
             if (_angular_velocity_func) {
                 std::cout << "  Using custom angular velocity function" << std::endl;
@@ -72,15 +72,15 @@ void TrainingFrameGenerator::set_training_mode(TrainingMode mode,
             std::cout << "  Use get_next_frame(pentagon_center) to change position" << std::endl;
             std::cout << "  Use regenerate_pentagon(center) for new random pentagon" << std::endl;
             break;
-        case MODE_LINEAR_MOVEMENT:
+        case MODE_LINEAR_MOVEMENT:// 对于线性运动模式，参数1和参数2分别表示x和y方向的速度（像素/秒）
             std::cout << "Linear Movement Mode" << std::endl;
             std::cout << "  Velocity: (" << param1 << ", " << param2 << ") px/s" << std::endl;
             break;
-        case MODE_RANDOM_APPEARANCE:
+        case MODE_RANDOM_APPEARANCE:// 对于随机出现模式，参数1表示更换间隔时间（秒），参数2无效
             std::cout << "Random Appearance Mode" << std::endl;
             std::cout << "  Interval: " << param1 << " seconds" << std::endl;
             break;
-        case MODE_PARAMETRIC_MOTION:
+        case MODE_PARAMETRIC_MOTION:// 对于参数方程运动模式，参数1和参数2无效，需调用 set_parametric_motion_mode 设置方程
             std::cout << "Parametric Motion Mode" << std::endl;
             std::cout << "  Using custom parametric functions" << std::endl;
             break;

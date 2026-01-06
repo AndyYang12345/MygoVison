@@ -1,3 +1,9 @@
+/*
+    * TrainingFrameGenerator.hpp
+    * 用于生成训练帧的类定义，之后仍需进行投影才能得到最终图像
+    *  Created on: 2026-01-06
+*/
+
 #ifndef TRAINING_FRAME_GENERATOR_HPP
 #define TRAINING_FRAME_GENERATOR_HPP
 
@@ -7,8 +13,8 @@
 #include <memory>
 
 /**
- * @class TrainingFrameGenerator
- * @brief Training frame generator - designed for PID tuning and algorithm training
+ * @class TrainingFrameGenerator 用于生成训练帧
+ * @brief Training frame generator - 用于生成包含靶子图像的训练帧，可以根据传入函数生成不同运动轨迹
  */
 class TrainingFrameGenerator {
 public:
@@ -26,10 +32,10 @@ public:
     using AngularVelocityFunction = std::function<float(float t)>;
     
     /**
-     * @brief Constructor
-     * @param width Image width
-     * @param height Image height
-     * @param fps Frame rate
+     * @brief 构造函数
+     * @param width 生成图像的宽度（像素）
+     * @param height 生成图像的高度（像素）
+     * @param fps 帧率（帧/秒）
      */
     TrainingFrameGenerator(int width = 800, int height = 600, float fps = 30.0f);
     
@@ -87,22 +93,20 @@ public:
                              float wx, float wy, float phase = 0.0f, bool loop = true, float duration = 10.0f);
     
     /**
-     * @brief Get next training frame
-     * @param timestamp Timestamp (seconds), if -1 use internal time
-     * @return Training frame and ground truth target position
+     * @brief 训练帧结构体，包含图像和Ground Truth信息
      */
     struct TrainingFrame {
-        cv::Mat frame;
-        cv::Point2f target_position;   // Ground truth target position (pixels)
-        float timestamp;
+        cv::Mat frame;              // 生成的图像帧
+        cv::Point2f target_position;   // Ground Truth目标位置
+        float timestamp;               // 帧时间戳（秒）
         cv::Point2f velocity;          // 速度向量
     };
     
     /**
-     * @brief Get next training frame with optional position control
-     * @param timestamp Timestamp (seconds), if -1 use internal time
+     * @brief 获取下一个训练帧，带可选位置控制
+     * @param timestamp 时间戳（秒），如果为-1则使用内部时间
      * @param pentagon_center 五角星中心位置，如果为(-1,-1)则使用当前中心
-     * @return Training frame and ground truth target position
+     * @return 训练帧和Ground Truth目标位置
      */
     TrainingFrame get_next_frame(float timestamp = -1.0f, 
                                 const cv::Point2f& pentagon_center = cv::Point2f(-1, -1));
@@ -149,7 +153,7 @@ public:
     void set_current_time(float time) { _current_time = time; }
     
     /**
-     * @brief 获取靶子仿真器的中心位置
+     * @brief 获取靶子仿真器的中心位置，也就是整个图像的中心位置
      */
     cv::Point2f get_target_sim_center() const { return _target_sim.get_center(); }
     
