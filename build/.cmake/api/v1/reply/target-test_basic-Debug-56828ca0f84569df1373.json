@@ -28,13 +28,13 @@
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 2,
+				"line" : 5,
 				"parent" : 0
 			},
 			{
 				"command" : 1,
 				"file" : 0,
-				"line" : 6,
+				"line" : 9,
 				"parent" : 0
 			},
 			{
@@ -43,19 +43,13 @@
 			{
 				"command" : 2,
 				"file" : 1,
-				"line" : 37,
+				"line" : 31,
 				"parent" : 3
 			},
 			{
 				"command" : 3,
 				"file" : 1,
-				"line" : 19,
-				"parent" : 3
-			},
-			{
-				"command" : 3,
-				"file" : 1,
-				"line" : 26,
+				"line" : 18,
 				"parent" : 3
 			}
 		]
@@ -88,7 +82,7 @@
 					"path" : "/home/harekasa/Mygo/include"
 				},
 				{
-					"backtrace" : 6,
+					"backtrace" : 2,
 					"path" : "/home/harekasa/Mygo/include/targetSim"
 				},
 				{

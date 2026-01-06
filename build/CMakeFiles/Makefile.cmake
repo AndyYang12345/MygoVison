@@ -44,13 +44,13 @@ set(CMAKE_MAKEFILE_OUTPUTS
 # Byproducts of CMake generate step:
 set(CMAKE_MAKEFILE_PRODUCTS
   "CMakeFiles/CMakeDirectoryInformation.cmake"
-  "src/targetSim/CMakeFiles/CMakeDirectoryInformation.cmake"
   "src/apps/CMakeFiles/CMakeDirectoryInformation.cmake"
+  "src/targetSim/CMakeFiles/CMakeDirectoryInformation.cmake"
   )
 
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
-  "src/targetSim/CMakeFiles/target_sim.dir/DependInfo.cmake"
   "src/apps/CMakeFiles/test_basic.dir/DependInfo.cmake"
   "src/apps/CMakeFiles/test_training.dir/DependInfo.cmake"
+  "src/targetSim/CMakeFiles/target_sim.dir/DependInfo.cmake"
   )

@@ -130,6 +130,30 @@ target_sim/fast:
 	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/targetSim/CMakeFiles/target_sim.dir/build.make src/targetSim/CMakeFiles/target_sim.dir/build
 .PHONY : target_sim/fast
 
+PerformanceMonitor.o: PerformanceMonitor.cpp.o
+.PHONY : PerformanceMonitor.o
+
+# target to build an object file
+PerformanceMonitor.cpp.o:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/targetSim/CMakeFiles/target_sim.dir/build.make src/targetSim/CMakeFiles/target_sim.dir/PerformanceMonitor.cpp.o
+.PHONY : PerformanceMonitor.cpp.o
+
+PerformanceMonitor.i: PerformanceMonitor.cpp.i
+.PHONY : PerformanceMonitor.i
+
+# target to preprocess a source file
+PerformanceMonitor.cpp.i:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/targetSim/CMakeFiles/target_sim.dir/build.make src/targetSim/CMakeFiles/target_sim.dir/PerformanceMonitor.cpp.i
+.PHONY : PerformanceMonitor.cpp.i
+
+PerformanceMonitor.s: PerformanceMonitor.cpp.s
+.PHONY : PerformanceMonitor.s
+
+# target to generate assembly for a file
+PerformanceMonitor.cpp.s:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/targetSim/CMakeFiles/target_sim.dir/build.make src/targetSim/CMakeFiles/target_sim.dir/PerformanceMonitor.cpp.s
+.PHONY : PerformanceMonitor.cpp.s
+
 TrainingFrameGenerator.o: TrainingFrameGenerator.cpp.o
 .PHONY : TrainingFrameGenerator.o
 
@@ -187,6 +211,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... target_sim"
+	@echo "... PerformanceMonitor.o"
+	@echo "... PerformanceMonitor.i"
+	@echo "... PerformanceMonitor.s"
 	@echo "... TrainingFrameGenerator.o"
 	@echo "... TrainingFrameGenerator.i"
 	@echo "... TrainingFrameGenerator.s"

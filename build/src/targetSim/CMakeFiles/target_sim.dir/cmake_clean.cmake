@@ -1,6 +1,8 @@
 file(REMOVE_RECURSE
   "../../lib/libtarget_sim.a"
   "../../lib/libtarget_sim.pdb"
+  "CMakeFiles/target_sim.dir/PerformanceMonitor.cpp.o"
+  "CMakeFiles/target_sim.dir/PerformanceMonitor.cpp.o.d"
   "CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.o"
   "CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.o.d"
   "CMakeFiles/target_sim.dir/targetSim.cpp.o"

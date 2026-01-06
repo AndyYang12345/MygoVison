@@ -1,2 +1,2 @@
-/usr/bin/ar qc ../../lib/libtarget_sim.a CMakeFiles/target_sim.dir/targetSim.cpp.o CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.o
+/usr/bin/ar qc ../../lib/libtarget_sim.a CMakeFiles/target_sim.dir/targetSim.cpp.o CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.o CMakeFiles/target_sim.dir/PerformanceMonitor.cpp.o
 /usr/bin/ranlib ../../lib/libtarget_sim.a

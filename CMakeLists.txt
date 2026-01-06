@@ -14,23 +14,17 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 # 查找OpenCV
 find_package(OpenCV REQUIRED)
 
-# 设置包含目录 - 关键步骤！
-# 方法1：使用绝对路径（推荐）
+# 设置全局包含目录
 include_directories(
-    ${CMAKE_SOURCE_DIR}/include  # 包含targetSim.hpp的目录
+    ${CMAKE_SOURCE_DIR}/include
     ${OpenCV_INCLUDE_DIRS}
 )
 
-# 或者方法2：更精确的设置
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/targetSim)
-include_directories(${OpenCV_INCLUDE_DIRS})
-
 # 打印调试信息
 message(STATUS "Project source directory: ${CMAKE_SOURCE_DIR}")
-message(STATUS "Include directories:")
-message(STATUS "  - ${CMAKE_SOURCE_DIR}/include")
-message(STATUS "  - ${OpenCV_INCLUDE_DIRS}")
+message(STATUS "OpenCV found: ${OpenCV_VERSION}")
+message(STATUS "OpenCV include dirs: ${OpenCV_INCLUDE_DIRS}")
+message(STATUS "OpenCV libs: ${OpenCV_LIBS}")
 
 # 设置编译选项
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
@@ -38,7 +32,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 endif()
 
 # 添加子目录
-add_subdirectory(src/targetSim)
 add_subdirectory(src/apps)
+add_subdirectory(src/targetSim)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

@@ -114,10 +114,10 @@
 			"path" : "/usr/local/lib/cmake/opencv4/OpenCVModules-release.cmake"
 		},
 		{
-			"path" : "src/targetSim/CMakeLists.txt"
+			"path" : "src/apps/CMakeLists.txt"
 		},
 		{
-			"path" : "src/apps/CMakeLists.txt"
+			"path" : "src/targetSim/CMakeLists.txt"
 		}
 	],
 	"kind" : "cmakeFiles",

@@ -20,21 +20,6 @@
 					"source" : "."
 				},
 				{
-					"build" : "src/targetSim",
-					"jsonFile" : "directory-src.targetSim-Debug-150aeafeb52912b71f56.json",
-					"minimumCMakeVersion" : 
-					{
-						"string" : "3.15"
-					},
-					"parentIndex" : 0,
-					"projectIndex" : 0,
-					"source" : "src/targetSim",
-					"targetIndexes" : 
-					[
-						0
-					]
-				},
-				{
 					"build" : "src/apps",
 					"jsonFile" : "directory-src.apps-Debug-50dbd47a2650d25d642b.json",
 					"minimumCMakeVersion" : 
@@ -48,6 +33,21 @@
 					[
 						1,
 						2
+					]
+				},
+				{
+					"build" : "src/targetSim",
+					"jsonFile" : "directory-src.targetSim-Debug-150aeafeb52912b71f56.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.15"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/targetSim",
+					"targetIndexes" : 
+					[
+						0
 					]
 				}
 			],
@@ -73,23 +73,23 @@
 			"targets" : 
 			[
 				{
-					"directoryIndex" : 1,
+					"directoryIndex" : 2,
 					"id" : "target_sim::@6dd341a3e845b0f95420",
-					"jsonFile" : "target-target_sim-Debug-f4d9a2ac86072d24bc34.json",
+					"jsonFile" : "target-target_sim-Debug-340136dbd5985aa910a0.json",
 					"name" : "target_sim",
 					"projectIndex" : 0
 				},
 				{
-					"directoryIndex" : 2,
+					"directoryIndex" : 1,
 					"id" : "test_basic::@57fecd540e8aa42f9f2f",
-					"jsonFile" : "target-test_basic-Debug-f6ec7887a0b413e21480.json",
+					"jsonFile" : "target-test_basic-Debug-56828ca0f84569df1373.json",
 					"name" : "test_basic",
 					"projectIndex" : 0
 				},
 				{
-					"directoryIndex" : 2,
+					"directoryIndex" : 1,
 					"id" : "test_training::@57fecd540e8aa42f9f2f",
-					"jsonFile" : "target-test_training-Debug-7d86a68bd9d5d070b9f3.json",
+					"jsonFile" : "target-test_training-Debug-26d135b8a553899f728c.json",
 					"name" : "test_training",
 					"projectIndex" : 0
 				}

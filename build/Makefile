@@ -117,19 +117,6 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named target_sim
-
-# Build rule for target.
-target_sim: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 target_sim
-.PHONY : target_sim
-
-# fast build rule for target.
-target_sim/fast:
-	$(MAKE) $(MAKESILENT) -f src/targetSim/CMakeFiles/target_sim.dir/build.make src/targetSim/CMakeFiles/target_sim.dir/build
-.PHONY : target_sim/fast
-
-#=============================================================================
 # Target rules for targets named test_basic
 
 # Build rule for target.
@@ -154,6 +141,19 @@ test_training: cmake_check_build_system
 test_training/fast:
 	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_training.dir/build.make src/apps/CMakeFiles/test_training.dir/build
 .PHONY : test_training/fast
+
+#=============================================================================
+# Target rules for targets named target_sim
+
+# Build rule for target.
+target_sim: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 target_sim
+.PHONY : target_sim
+
+# fast build rule for target.
+target_sim/fast:
+	$(MAKE) $(MAKESILENT) -f src/targetSim/CMakeFiles/target_sim.dir/build.make src/targetSim/CMakeFiles/target_sim.dir/build
+.PHONY : target_sim/fast
 
 # Help Target
 help:
