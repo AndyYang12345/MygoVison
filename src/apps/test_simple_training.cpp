@@ -52,14 +52,6 @@ int main() {
  */
 void test_pentagon_rotation(TrainingFrameGenerator& generator) {
     std::cout << "\n=== Pentagon Rotation Test ===" << std::endl;
-    std::cout << "Controls:" << std::endl;
-    std::cout << "  ESC: Exit" << std::endl;
-    std::cout << "  SPACE: Pause/Resume rotation" << std::endl;
-    std::cout << "  R: Generate new random pentagon (random position)" << std::endl;
-    std::cout << "  C: Generate new pentagon at center" << std::endl;
-    std::cout << "  T: Toggle target markers (center, target, line)" << std::endl;
-    std::cout << "  +, -: Adjust rotation speed" << std::endl;
-    std::cout << "  0: Reset angle to 0°" << std::endl;
     
     // 设置训练模式为五角星旋转
     float angular_speed = 0.5f;
@@ -68,10 +60,8 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
     // 状态变量
     bool show_markers = true;  // 默认显示标记
     
-    // 帧率计算
-    auto last_time = std::chrono::high_resolution_clock::now();
-    int frame_count = 0;
-    float fps = 30.0f;
+    // 使用简化的性能监视器
+    PerformanceMonitor perf_monitor;
     int total_frames = 0;
     
     cv::namedWindow("Pentagon Rotation", cv::WINDOW_AUTOSIZE);
@@ -81,20 +71,11 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
     std::cout << "Press SPACE to pause/resume rotation." << std::endl;
     
     while (true) {
-        // 计算帧率
-        auto current_time = std::chrono::high_resolution_clock::now();
-        auto elapsed = std::chrono::duration<float>(current_time - last_time).count();
-        frame_count++;
-        
-        if (elapsed >= 1.0f) {
-            fps = frame_count / elapsed;
-            frame_count = 0;
-            last_time = current_time;
-        }
-        
         // 获取训练帧
         auto frame_data = generator.get_next_frame();
         
+        // 更新FPS
+        float fps = perf_monitor.tick();
         total_frames++;
         
         // 创建显示图像
@@ -138,25 +119,32 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
                        cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
         }
         
-        // === 显示FPS ===
+        // === 显示性能信息 ===
+        // FPS信息（带颜色编码）
         std::string fps_text = "FPS: " + std::to_string(int(fps));
+        cv::Scalar fps_color = cv::Scalar(0, 255, 0); // 默认绿色
+        
+        if (fps < 30.0f) {
+            fps_color = cv::Scalar(0, 0, 255); // 红色（低帧率）
+        } else if (fps < 50.0f) {
+            fps_color = cv::Scalar(0, 165, 255); // 橙色
+        }
+        
         cv::putText(display, fps_text, 
                    cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 0.6, 
-                   cv::Scalar(0, 255, 0), 1);
+                   fps_color, 1);
         
-        // 显示帧数
-        std::string frame_text = "Frame: " + std::to_string(total_frames);
-        cv::putText(display, frame_text, 
+        // 帧数
+        cv::putText(display, "Frame: " + std::to_string(total_frames), 
                    cv::Point(10, 55), cv::FONT_HERSHEY_SIMPLEX, 0.5, 
                    cv::Scalar(255, 255, 255), 1);
         
-        // 显示时间
-        std::string time_text = "Time: " + std::to_string(frame_data.timestamp).substr(0,4) + "s";
-        cv::putText(display, time_text, 
+        // 时间
+        cv::putText(display, "Time: " + std::to_string(frame_data.timestamp).substr(0,4) + "s", 
                    cv::Point(10, 80), cv::FONT_HERSHEY_SIMPLEX, 0.5, 
                    cv::Scalar(255, 255, 255), 1);
         
-        // 显示状态
+        // 状态
         std::string status_text = "Status: ";
         status_text += generator.is_paused() ? "PAUSED" : "RUNNING";
         cv::Scalar status_color = generator.is_paused() ? cv::Scalar(0, 0, 255) : cv::Scalar(0, 255, 0);
@@ -198,21 +186,22 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
             std::cout << "Rotation speed decreased to: " << angular_speed << " rad/s" << std::endl;
         } else if (key == '0') { // 0键重置角度和时间
             generator.reset();
+            perf_monitor.reset();
             std::cout << "Training reset (time = 0, angle = 0)" << std::endl;
-        }
-        
-        // 每100帧输出一次状态
-        if (total_frames % 100 == 0) {
-            std::cout << "Frame " << total_frames 
-                      << ", Time: " << frame_data.timestamp << "s"
-                      << ", FPS: " << int(fps) 
-                      << ", Speed: " << angular_speed << " rad/s"
-                      << ", State: " << (generator.is_paused() ? "PAUSED" : "RUNNING") << std::endl;
         }
     }
     
     cv::destroyAllWindows();
-    std::cout << "\nTest completed. Total frames: " << total_frames << std::endl;
+    
+    // 测试结束时的性能总结
+    std::cout << "\n=== Test Summary ===" << std::endl;
+    std::cout << "Total frames: " << total_frames << std::endl;
+    std::cout << "Average FPS: " << perf_monitor.get_average_fps() << std::endl;
+    std::cout << "Minimum FPS: " << perf_monitor.get_min_fps() << std::endl;
+    std::cout << "Maximum FPS: " << perf_monitor.get_max_fps() << std::endl;
+    std::cout << "===================" << std::endl;
+    
+    std::cout << "\nTest completed." << std::endl;
 }
 
 /**

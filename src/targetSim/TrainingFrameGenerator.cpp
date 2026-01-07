@@ -194,9 +194,6 @@ TrainingFrameGenerator::get_next_frame(float timestamp,
                                       const cv::Point2f& pentagon_center) {
     // 开始帧计时
     _start_frame_timing();
-    auto start_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
-        _perf_data.frame_start.time_since_epoch()).count();
-    
     // 如果指定了新的中心位置（仅在五角星旋转模式下有效）
     if (_current_mode == MODE_PENTAGON_ROTATION) {
         if (pentagon_center.x != -1 || pentagon_center.y != -1) {
@@ -240,26 +237,6 @@ TrainingFrameGenerator::get_next_frame(float timestamp,
         default:
             frame_data = _generate_pentagon_rotation(_current_time);
     }
-    // 标记生成开始
-    _mark_generation_done();
-    // 标记渲染完成
-    _mark_rendering_done();
-    auto gen_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
-        _perf_data.generation_done.time_since_epoch()).count();
-    auto render_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
-        _perf_data.rendering_done.time_since_epoch()).count();
-    
-    std::cout << "[DEBUG] Start: " << start_ns 
-              << ", Gen done: " << gen_ns 
-              << ", Diff: " << (gen_ns - start_ns) / 1000000.0 << "ms" << std::endl;
-    
-    // 结束帧计时并填充性能数据
-    auto metrics = _end_frame_timing();
-    frame_data.actual_fps = metrics.fps;
-    frame_data.frame_time_ms = metrics.frame_time_ms;
-    frame_data.generation_time_ms = metrics.generation_time_ms;
-    frame_data.rendering_time_ms = metrics.rendering_time_ms;
-    
     return frame_data;
 }
 

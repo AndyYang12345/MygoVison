@@ -5,41 +5,54 @@
 
 /**
  * @class PerformanceMonitor
- * @brief 性能监视器 - 用于监视帧生成和渲染的性能指标
+ * @brief 简化版性能监视器 - 只提供FPS计算功能
  */
 class PerformanceMonitor {
 public:
-    struct FrameMetrics {
-        float frame_time_ms;      // 总帧时间
-        float generation_time_ms; // 帧生成时间
-        float rendering_time_ms;  // 渲染时间
-        float wait_time_ms;       // 等待时间
-        float fps;               // 当前FPS
-    };
-    
+    /**
+     * @brief 构造函数
+     */
     PerformanceMonitor();
     
-    // 开始帧计时
-    void begin_frame();
+    /**
+     * @brief 每帧调用，更新计时
+     * @return 当前的FPS值（如果满1秒则更新，否则返回上次的FPS）
+     */
+    float tick();
     
-    // 标记生成完成
-    void mark_generation_done();
+    /**
+     * @brief 获取当前FPS
+     */
+    float get_fps() const { return _current_fps; }
     
-    // 标记渲染完成
-    void mark_rendering_done();
-    
-    // 结束帧并获取指标
-    FrameMetrics end_frame();
-    
+    /**
+     * @brief 重置计数器
+     */
     void reset();
     
+    /**
+     * @brief 获取平均FPS
+     */
+    float get_average_fps() const { return _avg_fps; }
+    
+    /**
+     * @brief 获取最小FPS
+     */
+    float get_min_fps() const { return _min_fps; }
+    
+    /**
+     * @brief 获取最大FPS
+     */
+    float get_max_fps() const { return _max_fps; }
+    
 private:
-    std::chrono::time_point<std::chrono::high_resolution_clock> _frame_start;
-    std::chrono::time_point<std::chrono::high_resolution_clock> _generation_done;
-    std::chrono::time_point<std::chrono::high_resolution_clock> _rendering_done;
-    std::chrono::time_point<std::chrono::high_resolution_clock> _last_fps_time;
+    std::chrono::time_point<std::chrono::high_resolution_clock> _last_time;
     int _frame_count;
     float _current_fps;
+    float _avg_fps;
+    float _min_fps;
+    float _max_fps;
+    int _samples;
 };
 
 #endif // PERFORMANCE_MONITOR_HPP

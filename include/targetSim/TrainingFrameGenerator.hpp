@@ -2,6 +2,7 @@
 #define TRAINING_FRAME_GENERATOR_HPP
 
 #include "targetSim.hpp"
+#include "PerformanceMonitor.hpp"
 #include <functional>
 #include <vector>
 #include <memory>
@@ -42,12 +43,6 @@ public:
         cv::Point2f target_position;   // Ground Truth目标位置
         float timestamp;               // 帧时间戳（秒）
         cv::Point2f velocity;          // 速度向量
-        
-        // 新增性能指标字段
-        float actual_fps;              // 实际帧率
-        float frame_time_ms;           // 帧处理总时间（毫秒）
-        float generation_time_ms;      // 帧生成时间（毫秒）
-        float rendering_time_ms;       // 帧渲染时间（毫秒）
     };
     
     /**
