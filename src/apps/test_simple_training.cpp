@@ -5,6 +5,8 @@
 #include <iomanip>
 #include <functional>
 #include <vector>
+#include <random>
+#include <cmath>
 
 // ==================== 测试函数声明 ====================
 void test_pentagon_rotation(TrainingFrameGenerator& generator);
@@ -46,7 +48,29 @@ int main() {
 }
 
 // ==================== 测试函数实现 ====================
-
+TrainingFrameGenerator::AngularVelocityFunction energy_mechanism_velocity_generator() {
+    // 随机数生成器
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    
+    // 参数范围
+    std::uniform_real_distribution<float> a_dist(0.780f, 1.045f);  // a ∈ [0.780, 1.045]
+    std::uniform_real_distribution<float> omega_dist(1.884f, 2.000f); // ω ∈ [1.884, 2.000]
+    
+    // 随机生成参数
+    float a = a_dist(gen);
+    float omega = omega_dist(gen);
+    float b = 2.090f - a;  // b = 2.090 - a
+    
+    std::cout << "[Energy Mechanism] Generated parameters: "
+              << "a = " << a << ", ω = " << omega 
+              << ", b = " << b << ", spd(t) = " << a << " * sin(" << omega << " * t) + " << b 
+              << std::endl;
+    
+    return [a, omega, b](float t) -> float {
+        return a * std::sin(omega * t) + b;
+    };
+}
 /**
  * @brief 测试随机五角星旋转模式
  */
@@ -55,7 +79,9 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
     
     // 设置训练模式为五角星旋转
     float angular_speed = 0.5f;
-    generator.set_training_mode(TrainingFrameGenerator::MODE_PENTAGON_ROTATION, angular_speed);
+    TrainingFrameGenerator::AngularVelocityFunction angular_velocity_func = 
+        energy_mechanism_velocity_generator();
+    generator.set_training_mode(TrainingFrameGenerator::MODE_PENTAGON_ROTATION, 1, 1, angular_velocity_func);
     
     // 状态变量
     bool show_markers = true;  // 默认显示标记

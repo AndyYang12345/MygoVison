@@ -271,6 +271,8 @@ void TrainingFrameGenerator::reset() {
     // 重置五角星角度
     _current_pentagon_angle = 0.0f;
     _need_regenerate_pentagon = true;
+    _last_integration_time = 0.0f;
+    _accumulated_angle = 0.0f;
     
     // 重置性能数据
     _perf_data.frame_count = 0;
@@ -323,8 +325,26 @@ TrainingFrameGenerator::_generate_pentagon_rotation(float timestamp) {
         current_angular_velocity = _param1;
     }
     
-    // 计算旋转角度
-    _current_pentagon_angle = current_angular_velocity * timestamp;
+    // === 修正：使用积分而不是直接乘法 ===
+    // 静态变量记录上一次的时间戳和累积角度
+    static float last_timestamp = 0.0f;
+    static float accumulated_angle = 0.0f;
+    
+    // 如果是第一次调用或重置后
+    if (timestamp <= 0.0f || timestamp < last_timestamp) {
+        last_timestamp = timestamp;
+        accumulated_angle = 0.0f;
+    }
+    
+    // 计算时间增量并积分
+    float dt = timestamp - last_timestamp;
+    if (dt > 0) {
+        accumulated_angle += current_angular_velocity * dt;
+        last_timestamp = timestamp;
+    }
+    
+    // 使用累积角度
+    _current_pentagon_angle = accumulated_angle;
     float display_angle = std::fmod(_current_pentagon_angle, 2 * M_PI);
     
     // 生成五角星图像
@@ -352,13 +372,13 @@ TrainingFrameGenerator::_generate_pentagon_rotation(float timestamp) {
     
     _need_regenerate_pentagon = false;
     
-    // 调试输出
+    // 调试输出（添加方向信息）
     if (static_cast<int>(timestamp * _fps) % 60 == 0) {
+        std::string direction = (current_angular_velocity >= 0) ? "正向" : "反向";
         std::cout << "[TrainingFrame] t=" << timestamp 
-                  << "s, Center: (" << _current_pentagon_center.x 
-                  << ", " << _current_pentagon_center.y << ")"
-                  << ", ω=" << current_angular_velocity << " rad/s"
-                  << ", θ=" << display_angle << " rad"
+                  << "s, ω=" << current_angular_velocity << " rad/s (" << direction << ")"
+                  << ", θ_accum=" << _current_pentagon_angle << " rad"
+                  << ", θ_display=" << display_angle << " rad"
                   << ", Target: (" << frame_data.target_position.x 
                   << ", " << frame_data.target_position.y << ")"
                   << ", v=" << cv::norm(frame_data.velocity) << " px/s" << std::endl;
