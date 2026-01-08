@@ -182,8 +182,6 @@ private:
     float _current_time;
     TrainingMode _current_mode;
     bool _paused;
-    float _last_integration_time;
-    float _accumulated_angle;
     
     // Mode parameters
     float _param1, _param2;

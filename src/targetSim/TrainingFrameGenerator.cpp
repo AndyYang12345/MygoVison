@@ -271,8 +271,6 @@ void TrainingFrameGenerator::reset() {
     // 重置五角星角度
     _current_pentagon_angle = 0.0f;
     _need_regenerate_pentagon = true;
-    _last_integration_time = 0.0f;
-    _accumulated_angle = 0.0f;
     
     // 重置性能数据
     _perf_data.frame_count = 0;
