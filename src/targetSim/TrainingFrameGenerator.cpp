@@ -65,34 +65,35 @@ void TrainingFrameGenerator::set_training_mode(TrainingMode mode,
         _need_regenerate_pentagon = true;  // 模式切换时需要重新生成
     }
     
-    std::cout << "\nSet training mode: ";
-    switch (mode) {
-        case MODE_PENTAGON_ROTATION:
-            std::cout << "Pentagon Rotation Mode" << std::endl;
-            if (_angular_velocity_func) {
-                std::cout << "  Using custom angular velocity function" << std::endl;
-            } else {
-                std::cout << "  Angular Velocity: " << param1 << " rad/s (constant)" << std::endl;
-            }
-            std::cout << "  Center: (" << _current_pentagon_center.x 
-                      << ", " << _current_pentagon_center.y << ")" << std::endl;
-            break;
-        case MODE_LINEAR_MOVEMENT:
-            std::cout << "Linear Movement Mode" << std::endl;
-            std::cout << "  Velocity: (" << param1 << ", " << param2 << ") px/s" << std::endl;
-            break;
-        case MODE_RANDOM_APPEARANCE:
-            std::cout << "Random Appearance Mode" << std::endl;
-            std::cout << "  Interval: " << param1 << " seconds" << std::endl;
-            break;
-        case MODE_PARAMETRIC_MOTION:
-            std::cout << "Parametric Motion Mode" << std::endl;
-            std::cout << "  Using custom parametric functions" << std::endl;
-            break;
-        default:
-            std::cout << "Unknown Mode" << std::endl;
-            break;
-    }
+    //模式设置调试输出
+    // std::cout << "\nSet training mode: "; 
+    // switch (mode) {
+    //     case MODE_PENTAGON_ROTATION:
+    //         std::cout << "Pentagon Rotation Mode" << std::endl;
+    //         if (_angular_velocity_func) {
+    //             std::cout << "  Using custom angular velocity function" << std::endl;
+    //         } else {
+    //             std::cout << "  Angular Velocity: " << param1 << " rad/s (constant)" << std::endl;
+    //         }
+    //         std::cout << "  Center: (" << _current_pentagon_center.x 
+    //                   << ", " << _current_pentagon_center.y << ")" << std::endl;
+    //         break;
+    //     case MODE_LINEAR_MOVEMENT:
+    //         std::cout << "Linear Movement Mode" << std::endl;
+    //         std::cout << "  Velocity: (" << param1 << ", " << param2 << ") px/s" << std::endl;
+    //         break;
+    //     case MODE_RANDOM_APPEARANCE:
+    //         std::cout << "Random Appearance Mode" << std::endl;
+    //         std::cout << "  Interval: " << param1 << " seconds" << std::endl;
+    //         break;
+    //     case MODE_PARAMETRIC_MOTION:
+    //         std::cout << "Parametric Motion Mode" << std::endl;
+    //         std::cout << "  Using custom parametric functions" << std::endl;
+    //         break;
+    //     default:
+    //         std::cout << "Unknown Mode" << std::endl;
+    //         break;
+    // }
     
     reset();
 }
@@ -256,9 +257,9 @@ void TrainingFrameGenerator::regenerate_pentagon(const cv::Point2f& center) {
     _current_pentagon_angle = 0.0f;
     _need_regenerate_pentagon = true;
     
-    std::cout << "Pentagon regenerated at: (" 
-              << _current_pentagon_center.x << ", " 
-              << _current_pentagon_center.y << ")" << std::endl;
+    // std::cout << "Pentagon regenerated at: (" 
+    //           << _current_pentagon_center.x << ", " 
+    //           << _current_pentagon_center.y << ")" << std::endl;
 }
 
 void TrainingFrameGenerator::reset() {
@@ -369,18 +370,6 @@ TrainingFrameGenerator::_generate_pentagon_rotation(float timestamp) {
     }
     
     _need_regenerate_pentagon = false;
-    
-    // 调试输出（添加方向信息）
-    if (static_cast<int>(timestamp * _fps) % 60 == 0) {
-        std::string direction = (current_angular_velocity >= 0) ? "正向" : "反向";
-        std::cout << "[TrainingFrame] t=" << timestamp 
-                  << "s, ω=" << current_angular_velocity << " rad/s (" << direction << ")"
-                  << ", θ_accum=" << _current_pentagon_angle << " rad"
-                  << ", θ_display=" << display_angle << " rad"
-                  << ", Target: (" << frame_data.target_position.x 
-                  << ", " << frame_data.target_position.y << ")"
-                  << ", v=" << cv::norm(frame_data.velocity) << " px/s" << std::endl;
-    }
     
     return frame_data;
 }

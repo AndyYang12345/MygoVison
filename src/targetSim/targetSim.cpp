@@ -66,12 +66,12 @@ Mat TargetSim::generate_pentagon_frame(const Point2f& base_center,
         static int instance_id = 0;
         if (is_random_position) instance_id++;
         
-        std::cout << "[DEBUG] Instance " << instance_id << " - ";
-        std::cout << (is_random_position ? "RANDOM pentagon" : "MAIN pentagon") << std::endl;
-        std::cout << "  Center: (" << actual_center.x << ", " << actual_center.y << ")" << std::endl;
-        std::cout << "  Rotation: " << (rotation_angle * 180 / M_PI) << "°" << std::endl;
-        std::cout << "  Target index: " << _target_index << std::endl;
-        std::cout << "  Target position: (" << _last_target_position.x << ", " << _last_target_position.y << ")" << std::endl;
+        // std::cout << "[DEBUG] Instance " << instance_id << " - ";
+        // std::cout << (is_random_position ? "RANDOM pentagon" : "MAIN pentagon") << std::endl;
+        // std::cout << "  Center: (" << actual_center.x << ", " << actual_center.y << ")" << std::endl;
+        // std::cout << "  Rotation: " << (rotation_angle * 180 / M_PI) << "°" << std::endl;
+        // std::cout << "  Target index: " << _target_index << std::endl;
+        // std::cout << "  Target position: (" << _last_target_position.x << ", " << _last_target_position.y << ")" << std::endl;
     }
     
     // 如果调用者需要目标位置，则输出
@@ -205,16 +205,16 @@ vector<Point2f> TargetSim::_calculate_pentagon_layout(const Point2f& base_center
         
         centers.push_back(Point2f(x, y));
         
-        // 调试输出前几次调用
-        static int call_count = 0;
-        if (call_count < 5) {
-            std::cout << "[DEBUG] Layout calculation:" << std::endl;
-            std::cout << "  i=" << i << ", base_angle=" << (base_angle * 180 / M_PI) << "°" 
-                      << ", rotation=" << (rotation_angle * 180 / M_PI) << "°"
-                      << ", final_angle=" << (current_angle * 180 / M_PI) << "°" << std::endl;
-            std::cout << "  Position: (" << x << ", " << y << ")" << std::endl;
-            call_count++;
-        }
+        // // 调试输出前几次调用
+        // static int call_count = 0;
+        // if (call_count < 5) {
+        //     std::cout << "[DEBUG] Layout calculation:" << std::endl;
+        //     std::cout << "  i=" << i << ", base_angle=" << (base_angle * 180 / M_PI) << "°" 
+        //               << ", rotation=" << (rotation_angle * 180 / M_PI) << "°"
+        //               << ", final_angle=" << (current_angle * 180 / M_PI) << "°" << std::endl;
+        //     std::cout << "  Position: (" << x << ", " << y << ")" << std::endl;
+        //     call_count++;
+        // }
     }   
     
     _blob_centroids = centers;

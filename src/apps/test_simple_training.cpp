@@ -30,7 +30,7 @@ int main() {
     std::cout << "===================================" << std::endl;
     
     // 创建 TrainingFrameGenerator
-    TrainingFrameGenerator generator(800, 600, 60.0f);
+    TrainingFrameGenerator generator(450, 450, 60.0f);
     std::cout << std::fixed << std::setprecision(2);
     
     // 运行测试
