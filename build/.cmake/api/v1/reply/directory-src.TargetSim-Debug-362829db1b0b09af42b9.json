@@ -8,7 +8,7 @@
 	"installers" : [],
 	"paths" : 
 	{
-		"build" : "src/targetSim",
-		"source" : "src/targetSim"
+		"build" : "src/TargetSim",
+		"source" : "src/TargetSim"
 	}
 }

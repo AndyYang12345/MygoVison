@@ -117,7 +117,7 @@
 			"path" : "src/apps/CMakeLists.txt"
 		},
 		{
-			"path" : "src/targetSim/CMakeLists.txt"
+			"path" : "src/TargetSim/CMakeLists.txt"
 		}
 	],
 	"kind" : "cmakeFiles",

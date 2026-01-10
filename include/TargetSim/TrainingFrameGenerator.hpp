@@ -1,7 +1,7 @@
 #ifndef TRAINING_FRAME_GENERATOR_HPP
 #define TRAINING_FRAME_GENERATOR_HPP
 
-#include "targetSim.hpp"
+#include "TargetSim.hpp"
 #include "PerformanceMonitor.hpp"
 #include <functional>
 #include <vector>

@@ -1,4 +1,4 @@
-#include "targetSim.hpp"
+#include "TargetSim.hpp"
 #include <cmath>
 #include <iostream>
 #include <algorithm>

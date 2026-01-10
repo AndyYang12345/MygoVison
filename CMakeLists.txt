@@ -33,6 +33,6 @@ endif()
 
 # 添加子目录
 add_subdirectory(src/apps)
-add_subdirectory(src/targetSim)
+add_subdirectory(src/TargetSim)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

@@ -1,15 +1,15 @@
 # 列出所有源文件
 set(TARGET_SIM_SOURCES
-    targetSim.cpp
+    TargetSim.cpp
     TrainingFrameGenerator.cpp
     PerformanceMonitor.cpp  # 新增PerformanceMonitor
 )
 
 # 列出所有头文件（用于IDE组织）
 set(TARGET_SIM_HEADERS
-    ${CMAKE_SOURCE_DIR}/include/targetSim/targetSim.hpp
-    ${CMAKE_SOURCE_DIR}/include/targetSim/TrainingFrameGenerator.hpp
-    ${CMAKE_SOURCE_DIR}/include/targetSim/PerformanceMonitor.hpp  # 新增
+    ${CMAKE_SOURCE_DIR}/include/TargetSim/TargetSim.hpp
+    ${CMAKE_SOURCE_DIR}/include/TargetSim/TrainingFrameGenerator.hpp
+    ${CMAKE_SOURCE_DIR}/include/TargetSim/PerformanceMonitor.hpp  # 新增
 )
 
 # 创建静态库 target_sim
@@ -19,7 +19,7 @@ add_library(target_sim STATIC ${TARGET_SIM_SOURCES})
 target_include_directories(target_sim
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
-        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include/targetSim>
+        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include/TargetSim>
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
@@ -44,8 +44,8 @@ set_target_properties(target_sim PROPERTIES
 # )
 
 # 安装头文件（可选）
-# install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/targetSim/
-#     DESTINATION include/targetSim
+# install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/TargetSim/
+#     DESTINATION include/TargetSim
 #     FILES_MATCHING PATTERN "*.hpp"
 # )
 

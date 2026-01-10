@@ -10,8 +10,8 @@ set(CMAKE_MAKEFILE_DEPENDS
   "/home/harekasa/Mygo/CMakeLists.txt"
   "CMakeFiles/3.28.3/CMakeCXXCompiler.cmake"
   "CMakeFiles/3.28.3/CMakeSystem.cmake"
+  "/home/harekasa/Mygo/src/TargetSim/CMakeLists.txt"
   "/home/harekasa/Mygo/src/apps/CMakeLists.txt"
-  "/home/harekasa/Mygo/src/targetSim/CMakeLists.txt"
   "/usr/local/lib/cmake/opencv4/OpenCVConfig-version.cmake"
   "/usr/local/lib/cmake/opencv4/OpenCVConfig.cmake"
   "/usr/local/lib/cmake/opencv4/OpenCVModules-release.cmake"
@@ -45,12 +45,12 @@ set(CMAKE_MAKEFILE_OUTPUTS
 set(CMAKE_MAKEFILE_PRODUCTS
   "CMakeFiles/CMakeDirectoryInformation.cmake"
   "src/apps/CMakeFiles/CMakeDirectoryInformation.cmake"
-  "src/targetSim/CMakeFiles/CMakeDirectoryInformation.cmake"
+  "src/TargetSim/CMakeFiles/CMakeDirectoryInformation.cmake"
   )
 
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
   "src/apps/CMakeFiles/test_basic.dir/DependInfo.cmake"
   "src/apps/CMakeFiles/test_training.dir/DependInfo.cmake"
-  "src/targetSim/CMakeFiles/target_sim.dir/DependInfo.cmake"
+  "src/TargetSim/CMakeFiles/target_sim.dir/DependInfo.cmake"
   )

@@ -4,6 +4,6 @@
 /home/harekasa/Mygo/build/src/apps/CMakeFiles/test_training.dir
 /home/harekasa/Mygo/build/src/apps/CMakeFiles/edit_cache.dir
 /home/harekasa/Mygo/build/src/apps/CMakeFiles/rebuild_cache.dir
-/home/harekasa/Mygo/build/src/targetSim/CMakeFiles/target_sim.dir
-/home/harekasa/Mygo/build/src/targetSim/CMakeFiles/edit_cache.dir
-/home/harekasa/Mygo/build/src/targetSim/CMakeFiles/rebuild_cache.dir
+/home/harekasa/Mygo/build/src/TargetSim/CMakeFiles/target_sim.dir
+/home/harekasa/Mygo/build/src/TargetSim/CMakeFiles/edit_cache.dir
+/home/harekasa/Mygo/build/src/TargetSim/CMakeFiles/rebuild_cache.dir

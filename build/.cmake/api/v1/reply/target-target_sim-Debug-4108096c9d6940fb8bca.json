@@ -20,7 +20,7 @@
 		],
 		"files" : 
 		[
-			"src/targetSim/CMakeLists.txt",
+			"src/TargetSim/CMakeLists.txt",
 			"CMakeLists.txt"
 		],
 		"nodes" : 
@@ -105,11 +105,11 @@
 				},
 				{
 					"backtrace" : 6,
-					"path" : "/home/harekasa/Mygo/include/targetSim"
+					"path" : "/home/harekasa/Mygo/include/TargetSim"
 				},
 				{
 					"backtrace" : 6,
-					"path" : "/home/harekasa/Mygo/src/targetSim"
+					"path" : "/home/harekasa/Mygo/src/TargetSim"
 				},
 				{
 					"backtrace" : 5,
@@ -134,13 +134,13 @@
 			]
 		}
 	],
-	"id" : "target_sim::@6dd341a3e845b0f95420",
+	"id" : "target_sim::@cfdc25a7abde0447e653",
 	"name" : "target_sim",
 	"nameOnDisk" : "libtarget_sim.a",
 	"paths" : 
 	{
-		"build" : "src/targetSim",
-		"source" : "src/targetSim"
+		"build" : "src/TargetSim",
+		"source" : "src/TargetSim"
 	},
 	"sourceGroups" : 
 	[
@@ -159,19 +159,19 @@
 		{
 			"backtrace" : 1,
 			"compileGroupIndex" : 0,
-			"path" : "src/targetSim/targetSim.cpp",
+			"path" : "src/TargetSim/TargetSim.cpp",
 			"sourceGroupIndex" : 0
 		},
 		{
 			"backtrace" : 1,
 			"compileGroupIndex" : 0,
-			"path" : "src/targetSim/TrainingFrameGenerator.cpp",
+			"path" : "src/TargetSim/TrainingFrameGenerator.cpp",
 			"sourceGroupIndex" : 0
 		},
 		{
 			"backtrace" : 1,
 			"compileGroupIndex" : 0,
-			"path" : "src/targetSim/PerformanceMonitor.cpp",
+			"path" : "src/TargetSim/PerformanceMonitor.cpp",
 			"sourceGroupIndex" : 0
 		}
 	],

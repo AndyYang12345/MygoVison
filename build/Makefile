@@ -152,7 +152,7 @@ target_sim: cmake_check_build_system
 
 # fast build rule for target.
 target_sim/fast:
-	$(MAKE) $(MAKESILENT) -f src/targetSim/CMakeFiles/target_sim.dir/build.make src/targetSim/CMakeFiles/target_sim.dir/build
+	$(MAKE) $(MAKESILENT) -f src/TargetSim/CMakeFiles/target_sim.dir/build.make src/TargetSim/CMakeFiles/target_sim.dir/build
 .PHONY : target_sim/fast
 
 # Help Target

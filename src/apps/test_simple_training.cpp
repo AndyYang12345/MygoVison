@@ -1,4 +1,4 @@
-#include "targetSim/TrainingFrameGenerator.hpp"
+#include "TargetSim/TrainingFrameGenerator.hpp"
 #include <iostream>
 #include <chrono>
 #include <thread>
@@ -34,6 +34,7 @@ int main() {
     std::cout << std::fixed << std::setprecision(2);
     
     // 运行测试
+
     test_pentagon_rotation(generator);
     // test_circular_motion(generator);
     // test_spiral_motion(generator);
@@ -139,7 +140,7 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
                 (center.x + frame_data.target_position.x) / 2,
                 (center.y + frame_data.target_position.y) / 2
             );
-            std::string angle_text = std::to_string((int)(generator.get_current_time() * angular_speed * 180 / M_PI)) + "°";
+            std::string angle_text = std::to_string((int)(generator.get_current_time() * angular_speed * 180 / M_PI)) + "degrees";
             cv::putText(display, angle_text, 
                        cv::Point(mid_point.x - 10, mid_point.y - 10),
                        cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
@@ -163,12 +164,12 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
         // 帧数
         cv::putText(display, "Frame: " + std::to_string(total_frames), 
                    cv::Point(10, 55), cv::FONT_HERSHEY_SIMPLEX, 0.5, 
-                   cv::Scalar(255, 255, 255), 1);
+                   cv::Scalar(255, 255, 0), 1);
         
         // 时间
         cv::putText(display, "Time: " + std::to_string(frame_data.timestamp).substr(0,4) + "s", 
                    cv::Point(10, 80), cv::FONT_HERSHEY_SIMPLEX, 0.5, 
-                   cv::Scalar(255, 255, 255), 1);
+                   cv::Scalar(255, 255, 0), 1);
         
         // 状态
         std::string status_text = "Status: ";
