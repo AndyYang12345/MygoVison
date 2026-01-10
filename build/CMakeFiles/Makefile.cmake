@@ -11,6 +11,7 @@ set(CMAKE_MAKEFILE_DEPENDS
   "CMakeFiles/3.28.3/CMakeCXXCompiler.cmake"
   "CMakeFiles/3.28.3/CMakeSystem.cmake"
   "/home/harekasa/Mygo/src/TargetSim/CMakeLists.txt"
+  "/home/harekasa/Mygo/src/TargetTracking/CMakeLists.txt"
   "/home/harekasa/Mygo/src/apps/CMakeLists.txt"
   "/usr/local/lib/cmake/opencv4/OpenCVConfig-version.cmake"
   "/usr/local/lib/cmake/opencv4/OpenCVConfig.cmake"
@@ -46,6 +47,7 @@ set(CMAKE_MAKEFILE_PRODUCTS
   "CMakeFiles/CMakeDirectoryInformation.cmake"
   "src/apps/CMakeFiles/CMakeDirectoryInformation.cmake"
   "src/TargetSim/CMakeFiles/CMakeDirectoryInformation.cmake"
+  "src/TargetTracking/CMakeFiles/CMakeDirectoryInformation.cmake"
   )
 
 # Dependency information for all targets:
@@ -53,4 +55,5 @@ set(CMAKE_DEPEND_INFO_FILES
   "src/apps/CMakeFiles/test_basic.dir/DependInfo.cmake"
   "src/apps/CMakeFiles/test_training.dir/DependInfo.cmake"
   "src/TargetSim/CMakeFiles/target_sim.dir/DependInfo.cmake"
+  "src/TargetTracking/CMakeFiles/target_tracker.dir/DependInfo.cmake"
   )

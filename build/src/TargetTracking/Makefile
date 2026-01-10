@@ -87,14 +87,14 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/harekasa/Mygo/build/CMakeFiles /home/harekasa/Mygo/build//CMakeFiles/progress.marks
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
+	cd /home/harekasa/Mygo/build && $(CMAKE_COMMAND) -E cmake_progress_start /home/harekasa/Mygo/build/CMakeFiles /home/harekasa/Mygo/build/src/TargetTracking//CMakeFiles/progress.marks
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/TargetTracking/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/harekasa/Mygo/build/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 clean
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/TargetTracking/clean
 .PHONY : clean
 
 # The main clean target
@@ -103,70 +103,56 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 preinstall
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/TargetTracking/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 preinstall
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/TargetTracking/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	$(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd /home/harekasa/Mygo/build && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
-#=============================================================================
-# Target rules for targets named test_basic
+# Convenience name for target.
+src/TargetTracking/CMakeFiles/target_tracker.dir/rule:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/TargetTracking/CMakeFiles/target_tracker.dir/rule
+.PHONY : src/TargetTracking/CMakeFiles/target_tracker.dir/rule
 
-# Build rule for target.
-test_basic: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_basic
-.PHONY : test_basic
-
-# fast build rule for target.
-test_basic/fast:
-	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_basic.dir/build.make src/apps/CMakeFiles/test_basic.dir/build
-.PHONY : test_basic/fast
-
-#=============================================================================
-# Target rules for targets named test_training
-
-# Build rule for target.
-test_training: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_training
-.PHONY : test_training
-
-# fast build rule for target.
-test_training/fast:
-	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_training.dir/build.make src/apps/CMakeFiles/test_training.dir/build
-.PHONY : test_training/fast
-
-#=============================================================================
-# Target rules for targets named target_sim
-
-# Build rule for target.
-target_sim: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 target_sim
-.PHONY : target_sim
-
-# fast build rule for target.
-target_sim/fast:
-	$(MAKE) $(MAKESILENT) -f src/TargetSim/CMakeFiles/target_sim.dir/build.make src/TargetSim/CMakeFiles/target_sim.dir/build
-.PHONY : target_sim/fast
-
-#=============================================================================
-# Target rules for targets named target_tracker
-
-# Build rule for target.
-target_tracker: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 target_tracker
+# Convenience name for target.
+target_tracker: src/TargetTracking/CMakeFiles/target_tracker.dir/rule
 .PHONY : target_tracker
 
 # fast build rule for target.
 target_tracker/fast:
-	$(MAKE) $(MAKESILENT) -f src/TargetTracking/CMakeFiles/target_tracker.dir/build.make src/TargetTracking/CMakeFiles/target_tracker.dir/build
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/TargetTracking/CMakeFiles/target_tracker.dir/build.make src/TargetTracking/CMakeFiles/target_tracker.dir/build
 .PHONY : target_tracker/fast
+
+TargetTracker.o: TargetTracker.cpp.o
+.PHONY : TargetTracker.o
+
+# target to build an object file
+TargetTracker.cpp.o:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/TargetTracking/CMakeFiles/target_tracker.dir/build.make src/TargetTracking/CMakeFiles/target_tracker.dir/TargetTracker.cpp.o
+.PHONY : TargetTracker.cpp.o
+
+TargetTracker.i: TargetTracker.cpp.i
+.PHONY : TargetTracker.i
+
+# target to preprocess a source file
+TargetTracker.cpp.i:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/TargetTracking/CMakeFiles/target_tracker.dir/build.make src/TargetTracking/CMakeFiles/target_tracker.dir/TargetTracker.cpp.i
+.PHONY : TargetTracker.cpp.i
+
+TargetTracker.s: TargetTracker.cpp.s
+.PHONY : TargetTracker.s
+
+# target to generate assembly for a file
+TargetTracker.cpp.s:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/TargetTracking/CMakeFiles/target_tracker.dir/build.make src/TargetTracking/CMakeFiles/target_tracker.dir/TargetTracker.cpp.s
+.PHONY : TargetTracker.cpp.s
 
 # Help Target
 help:
@@ -176,10 +162,10 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... target_sim"
 	@echo "... target_tracker"
-	@echo "... test_basic"
-	@echo "... test_training"
+	@echo "... TargetTracker.o"
+	@echo "... TargetTracker.i"
+	@echo "... TargetTracker.s"
 .PHONY : help
 
 
@@ -191,6 +177,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	$(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd /home/harekasa/Mygo/build && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

@@ -1,4 +1,4 @@
-#include "TargetSim/TrainingFrameGenerator.hpp"
+#include "TargetTracking/TargetTracker.hpp"
 #include <iostream>
 #include <chrono>
 #include <thread>
@@ -96,11 +96,12 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
     std::cout << "\nTest started. Pentagon is auto-rotating at center." << std::endl;
     std::cout << "Target markers are ON (default). Press T to toggle." << std::endl;
     std::cout << "Press SPACE to pause/resume rotation." << std::endl;
-    
+    TargetTracker tracker;
     while (true) {
         // 获取训练帧
         auto frame_data = generator.get_next_frame();
-        
+        auto tracker_result = tracker.process_frame(frame_data);
+        std::cout << "Tracker result: position=(" << tracker_result.position.x << ", " << tracker_result.position.y << ")" << std::endl;
         // 更新FPS
         float fps = perf_monitor.tick();
         total_frames++;

@@ -93,6 +93,7 @@ test_training_EXTERNAL_OBJECTS =
 bin/test_training: src/apps/CMakeFiles/test_training.dir/test_simple_training.cpp.o
 bin/test_training: src/apps/CMakeFiles/test_training.dir/build.make
 bin/test_training: lib/libtarget_sim.a
+bin/test_training: lib/libtarget_tracker.a
 bin/test_training: /usr/local/lib/libopencv_gapi.so.4.7.0
 bin/test_training: /usr/local/lib/libopencv_highgui.so.4.7.0
 bin/test_training: /usr/local/lib/libopencv_ml.so.4.7.0

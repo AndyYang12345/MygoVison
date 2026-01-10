@@ -7,3 +7,6 @@
 /home/harekasa/Mygo/build/src/TargetSim/CMakeFiles/target_sim.dir
 /home/harekasa/Mygo/build/src/TargetSim/CMakeFiles/edit_cache.dir
 /home/harekasa/Mygo/build/src/TargetSim/CMakeFiles/rebuild_cache.dir
+/home/harekasa/Mygo/build/src/TargetTracking/CMakeFiles/target_tracker.dir
+/home/harekasa/Mygo/build/src/TargetTracking/CMakeFiles/edit_cache.dir
+/home/harekasa/Mygo/build/src/TargetTracking/CMakeFiles/rebuild_cache.dir

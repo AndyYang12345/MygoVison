@@ -65,16 +65,19 @@ CMAKE_BINARY_DIR = /home/harekasa/Mygo/build
 # The main recursive "all" target.
 all: src/apps/all
 all: src/TargetSim/all
+all: src/TargetTracking/all
 .PHONY : all
 
 # The main recursive "preinstall" target.
 preinstall: src/apps/preinstall
 preinstall: src/TargetSim/preinstall
+preinstall: src/TargetTracking/preinstall
 .PHONY : preinstall
 
 # The main recursive "clean" target.
 clean: src/apps/clean
 clean: src/TargetSim/clean
+clean: src/TargetTracking/clean
 .PHONY : clean
 
 #=============================================================================
@@ -91,6 +94,21 @@ src/TargetSim/preinstall:
 # Recursive "clean" directory target.
 src/TargetSim/clean: src/TargetSim/CMakeFiles/target_sim.dir/clean
 .PHONY : src/TargetSim/clean
+
+#=============================================================================
+# Directory level rules for directory src/TargetTracking
+
+# Recursive "all" directory target.
+src/TargetTracking/all: src/TargetTracking/CMakeFiles/target_tracker.dir/all
+.PHONY : src/TargetTracking/all
+
+# Recursive "preinstall" directory target.
+src/TargetTracking/preinstall:
+.PHONY : src/TargetTracking/preinstall
+
+# Recursive "clean" directory target.
+src/TargetTracking/clean: src/TargetTracking/CMakeFiles/target_tracker.dir/clean
+.PHONY : src/TargetTracking/clean
 
 #=============================================================================
 # Directory level rules for directory src/apps
@@ -116,7 +134,7 @@ src/apps/clean: src/apps/CMakeFiles/test_training.dir/clean
 src/apps/CMakeFiles/test_basic.dir/all: src/TargetSim/CMakeFiles/target_sim.dir/all
 	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_basic.dir/build.make src/apps/CMakeFiles/test_basic.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_basic.dir/build.make src/apps/CMakeFiles/test_basic.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=5,6 "Built target test_basic"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=7,8 "Built target test_basic"
 .PHONY : src/apps/CMakeFiles/test_basic.dir/all
 
 # Build rule for subdir invocation for target.
@@ -140,14 +158,15 @@ src/apps/CMakeFiles/test_basic.dir/clean:
 
 # All Build rule for target.
 src/apps/CMakeFiles/test_training.dir/all: src/TargetSim/CMakeFiles/target_sim.dir/all
+src/apps/CMakeFiles/test_training.dir/all: src/TargetTracking/CMakeFiles/target_tracker.dir/all
 	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_training.dir/build.make src/apps/CMakeFiles/test_training.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_training.dir/build.make src/apps/CMakeFiles/test_training.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=7,8 "Built target test_training"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=9,10 "Built target test_training"
 .PHONY : src/apps/CMakeFiles/test_training.dir/all
 
 # Build rule for subdir invocation for target.
 src/apps/CMakeFiles/test_training.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/harekasa/Mygo/build/CMakeFiles 6
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/harekasa/Mygo/build/CMakeFiles 8
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/apps/CMakeFiles/test_training.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/harekasa/Mygo/build/CMakeFiles 0
 .PHONY : src/apps/CMakeFiles/test_training.dir/rule
@@ -186,6 +205,32 @@ target_sim: src/TargetSim/CMakeFiles/target_sim.dir/rule
 src/TargetSim/CMakeFiles/target_sim.dir/clean:
 	$(MAKE) $(MAKESILENT) -f src/TargetSim/CMakeFiles/target_sim.dir/build.make src/TargetSim/CMakeFiles/target_sim.dir/clean
 .PHONY : src/TargetSim/CMakeFiles/target_sim.dir/clean
+
+#=============================================================================
+# Target rules for target src/TargetTracking/CMakeFiles/target_tracker.dir
+
+# All Build rule for target.
+src/TargetTracking/CMakeFiles/target_tracker.dir/all:
+	$(MAKE) $(MAKESILENT) -f src/TargetTracking/CMakeFiles/target_tracker.dir/build.make src/TargetTracking/CMakeFiles/target_tracker.dir/depend
+	$(MAKE) $(MAKESILENT) -f src/TargetTracking/CMakeFiles/target_tracker.dir/build.make src/TargetTracking/CMakeFiles/target_tracker.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=5,6 "Built target target_tracker"
+.PHONY : src/TargetTracking/CMakeFiles/target_tracker.dir/all
+
+# Build rule for subdir invocation for target.
+src/TargetTracking/CMakeFiles/target_tracker.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/harekasa/Mygo/build/CMakeFiles 2
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/TargetTracking/CMakeFiles/target_tracker.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/harekasa/Mygo/build/CMakeFiles 0
+.PHONY : src/TargetTracking/CMakeFiles/target_tracker.dir/rule
+
+# Convenience name for target.
+target_tracker: src/TargetTracking/CMakeFiles/target_tracker.dir/rule
+.PHONY : target_tracker
+
+# clean rule for target.
+src/TargetTracking/CMakeFiles/target_tracker.dir/clean:
+	$(MAKE) $(MAKESILENT) -f src/TargetTracking/CMakeFiles/target_tracker.dir/build.make src/TargetTracking/CMakeFiles/target_tracker.dir/clean
+.PHONY : src/TargetTracking/CMakeFiles/target_tracker.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

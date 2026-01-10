@@ -86,6 +86,10 @@
 					"path" : "/home/harekasa/Mygo/include/TargetSim"
 				},
 				{
+					"backtrace" : 2,
+					"path" : "/home/harekasa/Mygo/include/TargetTracking"
+				},
+				{
 					"backtrace" : 5,
 					"isSystem" : true,
 					"path" : "/usr/local/include/opencv4"
@@ -111,6 +115,10 @@
 		{
 			"backtrace" : 2,
 			"id" : "target_sim::@cfdc25a7abde0447e653"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "target_tracker::@905fc951916d22901a73"
 		}
 	],
 	"id" : "test_training::@57fecd540e8aa42f9f2f",
@@ -133,6 +141,11 @@
 			{
 				"backtrace" : 2,
 				"fragment" : "../../lib/libtarget_sim.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "../../lib/libtarget_tracker.a",
 				"role" : "libraries"
 			},
 			{

@@ -18,6 +18,7 @@ add_executable(test_training
 
 target_link_libraries(test_training
     target_sim
+    target_tracker
     ${OpenCV_LIBS}
 )
 

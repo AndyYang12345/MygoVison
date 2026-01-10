@@ -118,6 +118,9 @@
 		},
 		{
 			"path" : "src/TargetSim/CMakeLists.txt"
+		},
+		{
+			"path" : "src/TargetTracking/CMakeLists.txt"
 		}
 	],
 	"kind" : "cmakeFiles",

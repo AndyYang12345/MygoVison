@@ -9,7 +9,8 @@
 					"childIndexes" : 
 					[
 						1,
-						2
+						2,
+						3
 					],
 					"jsonFile" : "directory-.-Debug-f5ebdc15457944623624.json",
 					"minimumCMakeVersion" : 
@@ -31,8 +32,8 @@
 					"source" : "src/apps",
 					"targetIndexes" : 
 					[
-						1,
-						2
+						2,
+						3
 					]
 				},
 				{
@@ -49,6 +50,21 @@
 					[
 						0
 					]
+				},
+				{
+					"build" : "src/TargetTracking",
+					"jsonFile" : "directory-src.TargetTracking-Debug-84cf56f3f945fd4c65dc.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.15"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/TargetTracking",
+					"targetIndexes" : 
+					[
+						1
+					]
 				}
 			],
 			"name" : "Debug",
@@ -59,14 +75,16 @@
 					[
 						0,
 						1,
-						2
+						2,
+						3
 					],
 					"name" : "target_sim_project",
 					"targetIndexes" : 
 					[
 						0,
 						1,
-						2
+						2,
+						3
 					]
 				}
 			],
@@ -75,8 +93,15 @@
 				{
 					"directoryIndex" : 2,
 					"id" : "target_sim::@cfdc25a7abde0447e653",
-					"jsonFile" : "target-target_sim-Debug-4108096c9d6940fb8bca.json",
+					"jsonFile" : "target-target_sim-Debug-72e1ab5c8ca36e040eec.json",
 					"name" : "target_sim",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 3,
+					"id" : "target_tracker::@905fc951916d22901a73",
+					"jsonFile" : "target-target_tracker-Debug-d76a463cd11b46d8d229.json",
+					"name" : "target_tracker",
 					"projectIndex" : 0
 				},
 				{
@@ -89,7 +114,7 @@
 				{
 					"directoryIndex" : 1,
 					"id" : "test_training::@57fecd540e8aa42f9f2f",
-					"jsonFile" : "target-test_training-Debug-c05a28abf92467141b05.json",
+					"jsonFile" : "target-test_training-Debug-086123826bf5de3914cb.json",
 					"name" : "test_training",
 					"projectIndex" : 0
 				}
