@@ -48,13 +48,13 @@ target_info TargetTracker::process_frame(const cv::Mat& frame) {
         double area = cv::contourArea(all_contours[i]);
         
         if (area < config_.min_blob_area) {
-            // cout << "  Contour " << i << ": area=" << area 
-            //      << " -> REJECTED (too small)" << endl;
+            cout << "  Contour " << i << ": area=" << area 
+                 << " -> REJECTED (too small)" << endl;
             continue;
         }
         if (area > config_.max_blob_area) {
-            // cout << "  Contour " << i << ": area=" << area 
-            //      << " -> REJECTED (too large)" << endl;
+            cout << "  Contour " << i << ": area=" << area 
+                 << " -> REJECTED (too large)" << endl;
             continue;
         }
         
@@ -96,7 +96,7 @@ target_info TargetTracker::process_frame(const cv::Mat& frame) {
     // cout << "[5] Assigning color labels based on similarity..." << endl;
     
     // 使用颜色距离分配标签
-    assign_color_labels_by_distance(candidate_blobs, config_.color_similarity_threshold);
+    assign_color_labels_by_distance(candidate_blobs);
     
     // 显示标签分配结果
     // cout << "  Color label assignment results:" << endl;
@@ -130,7 +130,7 @@ target_info TargetTracker::process_frame(const cv::Mat& frame) {
         // cout << "  Checking blob " << idx << ": circularity=" << blob.circularity;
         
         if (blob.circularity < config_.circularity_threshold) {
-            cout << " -> REJECTED (circularity too low)" << endl;
+            // cout << " -> REJECTED (circularity too low)" << endl;
             continue;
         }
         
@@ -168,8 +168,8 @@ target_info TargetTracker::process_frame(const cv::Mat& frame) {
     }
     
     // cout << "  Selected center: blob " << best_center_index 
-    //      << " at (" << putative_center.x << ", " << putative_center.y 
-    //      << "), label=" << center_label << ", score=" << best_center_score << endl;
+        //  << " at (" << putative_center.x << ", " << putative_center.y 
+        //  << "), label=" << center_label << ", score=" << best_center_score << endl;
     
     // 步骤7: 寻找与中心同色的外围色块
     // cout << "[7] Finding matching outer square (color label=" << center_label << ")..." << endl;
@@ -190,7 +190,7 @@ target_info TargetTracker::process_frame(const cv::Mat& frame) {
         // 必须与中心颜色相同
         if (blob.color_label != center_label) {
             // cout << "  Blob " << idx << ": wrong color (label=" << blob.color_label 
-            //      << " != " << center_label << ") -> SKIP" << endl;
+                //  << " != " << center_label << ") -> SKIP" << endl;
             continue;
         }
         
@@ -272,31 +272,52 @@ target_info TargetTracker::process_frame(const cv::Mat& frame) {
     return result;
 }
 
-void TargetTracker::assign_color_labels_by_distance(std::vector<ColorBlob>& blobs, float similarity_threshold) {
-    int next_label = 0;
-    vector<int> labels(blobs.size(), -1); // -1表示未分配
+void TargetTracker::assign_color_labels_by_distance(std::vector<ColorBlob>& blobs) {
+    // 1. 首先找到中心（基于圆形度）
+    int center_idx = -1;
+    float max_circularity = 0.0f;
     
-    for (size_t i = 0; i < blobs.size(); i++) {
-        if (labels[i] != -1) continue; // 已分配标签
-        
-        // 为新颜色创建标签
-        labels[i] = next_label;
-        
-        // 寻找所有与当前色块颜色相似的色块
-        for (size_t j = i + 1; j < blobs.size(); j++) {
-            if (labels[j] == -1) {
-                float distance = calculate_color_distance(blobs[i].color_bgr, blobs[j].color_bgr);
-                if (distance < similarity_threshold) {
-                    labels[j] = next_label; // 分配到同一标签
-                }
-            }
+    for (int i = 0; i < (int)blobs.size(); i++) {
+        if (blobs[i].circularity > max_circularity) {
+            max_circularity = blobs[i].circularity;
+            center_idx = i;
         }
-        
-        next_label++;
     }
     
-    // 将标签分配回blobs
-    for (size_t i = 0; i < blobs.size(); i++) {
-        blobs[i].color_label = labels[i];
+    if (center_idx == -1) return;
+    
+    cv::Scalar center_color = blobs[center_idx].color_bgr;
+    blobs[center_idx].color_label = 0; // 中心标签0
+    
+    // 2. 计算所有外围方块与中心的颜色距离
+    std::vector<std::pair<float, int>> distances; // (距离, 索引)
+    
+    for (int i = 0; i < (int)blobs.size(); i++) {
+        if (i == center_idx) continue;
+        
+        float dist = calculate_color_distance(center_color, blobs[i].color_bgr);
+        distances.push_back({dist, i});
+    }
+    
+    // 3. 排序，找到最接近的一个
+    std::sort(distances.begin(), distances.end());
+    
+    // 4. 智能分配标签：
+    // - 最近的一个：与中心同色（标签0）
+    // - 其他：不同色（标签1,2,3...）
+    
+    // 最近的一个分配标签0
+    if (!distances.empty()) {
+        int closest_idx = distances[0].second;
+        blobs[closest_idx].color_label = 0; // 与中心同色
+        // std::cout << "  Closest color match: blob " << closest_idx 
+        //     << " (distance: " << distances[0].first << ")" << std::endl;
+    }
+    
+    // 其他的分配不同标签
+    int next_label = 1;
+    for (size_t i = 1; i < distances.size(); i++) {
+        int idx = distances[i].second;
+        blobs[idx].color_label = next_label++;
     }
 }

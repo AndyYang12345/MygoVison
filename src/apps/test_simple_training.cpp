@@ -38,7 +38,7 @@ int main() {
     // 1. 保存第一帧图像到文件
     // auto test_image = generator.get_next_frame();
     // auto_adjust_parameters(test_image.frame);
-    test_pic();
+    // test_pic();
 
     // 3. 手动检查图像内容
     // cv::Mat display = frame_data.frame.clone();
@@ -46,7 +46,7 @@ int main() {
     // cv::waitKey(0);
     // 运行测试
 
-    // test_pentagon_rotation(generator);
+    test_pentagon_rotation(generator);
     // test_circular_motion(generator);
     // test_spiral_motion(generator);
     // test_sine_wave_motion(generator);
@@ -112,6 +112,10 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
         // 获取训练帧
         auto frame_data = generator.get_next_frame();
         auto tracker_result = tracker.process_frame(frame_data.frame);
+        if(!tracker_result.found){
+            imwrite("error_frame.jpg", frame_data.frame);
+            return;
+        }
         std::cout << "Tracker found: " << (tracker_result.found ? "YES" : "NO") 
                   << ", Position: (" << tracker_result.target_center.x << ", " << tracker_result.target_center.y << ")"
                   << ", Distance: " << tracker_result.distance
@@ -248,7 +252,7 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
 }
 
 void test_pic() {
-    cv::Mat img = cv::imread("debug_frame_0.png");
+    cv::Mat img = cv::imread("error_frame.jpg");
     if(img.empty()) {
         std::cout << "ERROR: Cannot load image!" << std::endl;
         return;

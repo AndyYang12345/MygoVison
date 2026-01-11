@@ -13,18 +13,18 @@
 #define MIN_CONTOUR_POINTS 5          // 有效轮廓最少点数
 
 // 形状识别参数
-#define CIRCULARITY_THRESHOLD 0.65f   // 圆形度阈值（1.0为完美圆）
-#define MAX_ASPECT_RATIO 1.8f         // 正方形最大宽高比（容忍透视变形）
+#define CIRCULARITY_THRESHOLD 0.55f   // 圆形度阈值（1.0为完美圆）
+#define MAX_ASPECT_RATIO 3.0f         // 正方形最大宽高比（容忍透视变形）
 #define MIN_ASPECT_RATIO 0.8f         // 正方形最小宽高比
 
 // 空间关系参数
-#define MIN_DISTANCE_TO_CENTER 120.0f // 外围色块离中心的最小距离（像素）
-#define MAX_DISTANCE_TO_CENTER 260.0f // 外围色块离中心的最大距离（像素）
-#define EXPECTED_RADIUS 190.0f        // 期望的靶子半径（像素）
+#define MIN_DISTANCE_TO_CENTER 130.0f // 外围色块离中心的最小距离（像素）
+#define MAX_DISTANCE_TO_CENTER 190.0f // 外围色块离中心的最大距离（像素）
+#define EXPECTED_RADIUS 160.0f        // 期望的靶子半径（像素）
 #define DISTANCE_TOLERANCE 50.0f      // 距离容忍范围
 
 // 匹配阈值参数
-#define MATCH_THRESHOLD 0.4f          // 综合匹配阈值（0.0-1.0）
+#define MATCH_THRESHOLD 0.3f          // 综合匹配阈值（0.0-1.0）
 #define CENTER_SCORE_THRESHOLD 0.4f   // 中心识别最低分数
 #define DIRECTION_WEIGHT 0.4f         // 方向一致性权重
 #define DISTANCE_WEIGHT 0.4f          // 距离评分权重
@@ -33,7 +33,7 @@
 #define SURROUND_WEIGHT 0.4f          // 被围绕程度权重（中心识别）
 
 // 颜色匹配参数
-#define COLOR_SIMILARITY_THRESHOLD 60.0f // 颜色相似度阈值（BGR空间欧氏距离）
+#define COLOR_SIMILARITY_THRESHOLD 150.0f // 颜色相似度阈值（BGR空间欧氏距离）
 #define COLOR_CLUSTER_THRESHOLD 4.0f     // K-means聚类中心数量
 
 // ============ 数据结构定义 ============
@@ -95,7 +95,15 @@ struct TrackerConfig {
 
 class TargetTracker {
 public:
-    TargetTracker() = default;
+    TargetTracker(){
+        reset();
+    }
+
+    // 重置追踪器状态
+    void reset() {
+        total_frames_ = 0;
+        successful_detections_ = 0;
+    }
     
     /**
      * @brief 设置追踪器参数
@@ -123,6 +131,10 @@ public:
 private:
     // 配置参数
     TrackerConfig config_;
+
+    // 检测准确率统计
+    int total_frames_ = 0;
+    int successful_detections_ = 0;
     
     // 内部辅助函数
     float calculate_color_distance(const cv::Scalar& color1, const cv::Scalar& color2) {
@@ -131,8 +143,8 @@ private:
         float r_diff = color1[2] - color2[2];
         return sqrt(b_diff*b_diff + g_diff*g_diff + r_diff*r_diff);
     }
-    
-    void assign_color_labels_by_distance(std::vector<ColorBlob>& blobs, float similarity_threshold);
+
+    void assign_color_labels_by_distance(std::vector<ColorBlob>& blobs);
 };
 
 #endif // TARGET_TRACKER_HPP
