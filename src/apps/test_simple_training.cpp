@@ -31,7 +31,7 @@ int main() {
     std::cout << "===================================" << std::endl;
     
     // 创建 TrainingFrameGenerator
-    TrainingFrameGenerator generator(450, 450, 60.0f);
+    TrainingFrameGenerator generator(450, 450, 80.0f);
     std::cout << std::fixed << std::setprecision(2);
     std::cout << "Testing simulator..." << std::endl;
 
@@ -83,6 +83,15 @@ TrainingFrameGenerator::AngularVelocityFunction energy_mechanism_velocity_genera
         return a * std::sin(omega * t) + b;
     };
 }
+//计算检测到的目标位置和实际位置的误差，如果低于某个阈值则认为检测成功
+void calculate_position_error(const cv::Point2f& detected, const cv::Point2f& actual) {
+    if(cv::norm(detected - actual) < 10.0f) {
+        std::cout << "Target Match at an error of " << cv::norm(detected - actual) << std::endl;
+    } else {
+        std::cout << "Match failed" << std::endl;
+    }
+}
+
 /**
  * @brief 测试随机五角星旋转模式
  */
@@ -116,11 +125,12 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
             imwrite("error_frame.jpg", frame_data.frame);
             return;
         }
-        std::cout << "Tracker found: " << (tracker_result.found ? "YES" : "NO") 
-                  << ", Position: (" << tracker_result.target_center.x << ", " << tracker_result.target_center.y << ")"
-                  << ", Distance: " << tracker_result.distance
-                  << ", Angle: " << tracker_result.angle << " degrees"
-                  << std::endl;
+        // std::cout << "Tracker found: " << (tracker_result.found ? "YES" : "NO") 
+        //           << ", Position: (" << tracker_result.target_center.x << ", " << tracker_result.target_center.y << ")"
+        //           << ", Distance: " << tracker_result.distance
+        //           << ", Angle: " << tracker_result.angle << " degrees"
+        //           << std::endl;
+        calculate_position_error(tracker_result.target_center, frame_data.target_position);
         // 更新FPS
         float fps = perf_monitor.tick();
         total_frames++;
