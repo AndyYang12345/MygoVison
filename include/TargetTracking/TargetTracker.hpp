@@ -33,7 +33,7 @@
 #define SURROUND_WEIGHT 0.4f          // 被围绕程度权重（中心识别）
 
 // 颜色匹配参数
-#define COLOR_SIMILARITY_THRESHOLD 150.0f // 颜色相似度阈值（BGR空间欧氏距离）
+#define COLOR_SIMILARITY_THRESHOLD 100.0f // 颜色相似度阈值（BGR空间欧氏距离）
 #define COLOR_CLUSTER_THRESHOLD 4.0f     // K-means聚类中心数量
 
 // ============ 数据结构定义 ============
