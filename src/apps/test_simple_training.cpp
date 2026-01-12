@@ -36,8 +36,8 @@ int main() {
     std::cout << "Testing simulator..." << std::endl;
 
     // 1. 保存第一帧图像到文件
-    // auto test_image = generator.get_next_frame();
-    // auto_adjust_parameters(test_image.frame);
+    // auto test_image = cv::imread("error_frame.jpg");
+    // auto_adjust_parameters(test_image);
     // test_pic();
 
     // 3. 手动检查图像内容
@@ -92,6 +92,23 @@ bool calculate_position_error(const cv::Point2f& detected, const cv::Point2f& ac
    
     } else {
         std::cout << "Match failed" << std::endl;
+        // TrackerConfig config;
+        // config.color_similarity_threshold = 30.0f; // 放宽颜色阈值
+        // set_config(config);
+        return false;
+    }
+}
+
+bool calculate_position_error(const float& detected, float& actual) {
+    float error = cv::norm(detected - actual);
+    if(error < 10.0f) {
+        std::cout << "Target Match at an error of " << error << std::endl;
+        return true;
+    } else {
+        std::cout << "Match failed" << std::endl;
+        // TrackerConfig config;
+        // config.color_similarity_threshold = 30.0f; // 放宽颜色阈值
+        // set_config(config);
         return false;
     }
 }
@@ -114,6 +131,7 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
     // 使用简化的性能监视器
     PerformanceMonitor perf_monitor;
     int total_frames = 0;
+    int total_frames_shadow = total_frames;
     
     cv::namedWindow("Pentagon Rotation", cv::WINDOW_AUTOSIZE);
     
@@ -122,6 +140,8 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
     std::cout << "Press SPACE to pause/resume rotation." << std::endl;
     TargetTracker tracker;
     int success_count = 0;
+    int fatal_error_count = 0;
+    double total_success_rate = 0.0;
     while (true) {
         // 获取训练帧
         auto frame_data = generator.get_next_frame();
@@ -130,18 +150,21 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
             imwrite("error_frame.jpg", frame_data.frame);
             return;
         }
-        // std::cout << "Tracker found: " << (tracker_result.found ? "YES" : "NO") 
-        //           << ", Position: (" << tracker_result.target_center.x << ", " << tracker_result.target_center.y << ")"
-        //           << ", Distance: " << tracker_result.distance
-        //           << ", Angle: " << tracker_result.angle << " degrees"
-        //           << std::endl;
+        std::cout << "Tracker found: " << (tracker_result.found ? "YES" : "NO") 
+                  << ", Position: (" << tracker_result.target_center.x << ", " << tracker_result.target_center.y << ")"
+                  << ", Distance: " << tracker_result.distance
+                  << ", Angle: " << tracker_result.angle << " degrees"
+                  << std::endl;
         
         if(calculate_position_error(tracker_result.target_center, frame_data.target_position)){
             success_count++;
+        }else{
+            imwrite("error_frame.jpg", frame_data.frame);
         }
         // 更新FPS
         float fps = perf_monitor.tick();
         total_frames++;
+        total_frames_shadow = total_frames;
         
         // 创建显示图像
         cv::Mat display = frame_data.frame.clone();
@@ -237,9 +260,21 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
             std::cout << "Target markers: " << (show_markers ? "ON" : "OFF") << std::endl;
         } else if (key == 'r' || key == 'R') { // R键生成随机位置的新靶子
             generator.regenerate_pentagon(cv::Point2f(-1, -1)); // 随机位置
+            if(double(success_count) / double(total_frames_shadow) < 0.8){
+                total_success_rate += double(success_count) / double(total_frames_shadow);
+                fatal_error_count++;
+            }
+            success_count = 0;
+            total_frames_shadow = 0;
             std::cout << "Generated new pentagon at random position" << std::endl;
         } else if (key == 'c' || key == 'C') { // C键生成中心位置的新靶子
             generator.regenerate_pentagon(generator.get_target_sim_center());
+            if(double(success_count) / double(total_frames_shadow) < 0.8){
+                total_success_rate += double(success_count) / double(total_frames_shadow);
+                fatal_error_count++;
+            }
+            success_count = 0;
+            total_frames_shadow = 0;
             std::cout << "Generated new pentagon at center" << std::endl;
         } else if (key == '+') { // +键增加旋转速度
             angular_speed += 0.1f;
@@ -252,6 +287,12 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
         } else if (key == '0') { // 0键重置角度和时间
             generator.reset();
             perf_monitor.reset();
+            if(double(success_count) / double(total_frames_shadow) < 0.8){
+                total_success_rate += double(success_count) / double(total_frames_shadow);
+                fatal_error_count++;
+            }
+            success_count = 0;
+            total_frames_shadow = 0;
             std::cout << "Training reset (time = 0, angle = 0)" << std::endl;
         }
     }
@@ -265,8 +306,10 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
     std::cout << "Minimum FPS: " << perf_monitor.get_min_fps() << std::endl;
     std::cout << "Maximum FPS: " << perf_monitor.get_max_fps() << std::endl;
     std::cout << "===================" << std::endl;
-    std::cout << "Successful detections rate: " << 100.0 * success_count / total_frames << "%" << std::endl;
-    
+    // std::cout << "Successful detections rate: " << 100.0 * success_count / total_frames << "%" << std::endl;
+    std::cout << "Fatal errors (success rate < 80% on new pentagon): " << fatal_error_count << std::endl;
+    if(fatal_error_count)std::cout << "Overall average success rate of Fatal Error situation: " << 100.0 * total_success_rate / (fatal_error_count + 1) << "%" << std::endl;
+
     std::cout << "\nTest completed." << std::endl;
 }
 
@@ -291,135 +334,153 @@ void test_pic() {
 }
 
 void auto_adjust_parameters(cv::Mat& test_image) {
-    std::cout << "\n=== 改进的参数分析 ===" << std::endl;
+    // std::cout << "\n=== 改进的参数分析 ===" << std::endl;
     
-    // 1. 使用饱和度掩膜（已知有效的方法）
-    cv::Mat hsv, saturation_mask;
-    cv::cvtColor(test_image, hsv, cv::COLOR_BGR2HSV);
-    std::vector<cv::Mat> hsv_channels;
-    cv::split(hsv, hsv_channels);
+    // // 1. 使用饱和度掩膜（已知有效的方法）
+    // cv::Mat hsv, saturation_mask;
+    // cv::cvtColor(test_image, hsv, cv::COLOR_BGR2HSV);
+    // std::vector<cv::Mat> hsv_channels;
+    // cv::split(hsv, hsv_channels);
     
-    // 使用与追踪器相同的阈值
-    cv::threshold(hsv_channels[1], saturation_mask, SATURATION_THRESHOLD, 255, cv::THRESH_BINARY);
-    cv::imwrite("debug_for_analysis.png", saturation_mask);
+    // // 使用与追踪器相同的阈值
+    // cv::threshold(hsv_channels[1], saturation_mask, SATURATION_THRESHOLD, 255, cv::THRESH_BINARY);
+    // cv::imwrite("debug_for_analysis.png", saturation_mask);
     
-    // 2. 分析轮廓
-    std::vector<std::vector<cv::Point>> contours;
-    cv::findContours(saturation_mask.clone(), contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+    // // 2. 分析轮廓
+    // std::vector<std::vector<cv::Point>> contours;
+    // cv::findContours(saturation_mask.clone(), contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
     
-    std::cout << "使用饱和度掩膜找到 " << contours.size() << " 个轮廓" << std::endl;
+    // std::cout << "使用饱和度掩膜找到 " << contours.size() << " 个轮廓" << std::endl;
     
-    if(!contours.empty()) {
-        std::vector<double> areas;
-        std::vector<cv::Rect> bounding_boxes;
+    // if(!contours.empty()) {
+    //     std::vector<double> areas;
+    //     std::vector<cv::Rect> bounding_boxes;
         
-        for(size_t i = 0; i < contours.size(); i++) {
-            double area = cv::contourArea(contours[i]);
-            areas.push_back(area);
+    //     for(size_t i = 0; i < contours.size(); i++) {
+    //         double area = cv::contourArea(contours[i]);
+    //         areas.push_back(area);
             
-            cv::Rect rect = cv::boundingRect(contours[i]);
-            bounding_boxes.push_back(rect);
+    //         cv::Rect rect = cv::boundingRect(contours[i]);
+    //         bounding_boxes.push_back(rect);
             
-            std::cout << "轮廓 " << i << ": 面积=" << area 
-                     << " 像素, 边界框=" << rect.width << "x" << rect.height << std::endl;
-        }
+    //         std::cout << "轮廓 " << i << ": 面积=" << area 
+    //                  << " 像素, 边界框=" << rect.width << "x" << rect.height << std::endl;
+    //     }
         
-        // 排序并分析
-        std::sort(areas.begin(), areas.end());
+    //     // 排序并分析
+    //     std::sort(areas.begin(), areas.end());
         
-        std::cout << "\n面积统计:" << std::endl;
-        std::cout << "  最小值: " << areas.front() << " 像素" << std::endl;
-        std::cout << "  最大值: " << areas.back() << " 像素" << std::endl;
-        std::cout << "  中位数: " << areas[areas.size()/2] << " 像素" << std::endl;
+    //     std::cout << "\n面积统计:" << std::endl;
+    //     std::cout << "  最小值: " << areas.front() << " 像素" << std::endl;
+    //     std::cout << "  最大值: " << areas.back() << " 像素" << std::endl;
+    //     std::cout << "  中位数: " << areas[areas.size()/2] << " 像素" << std::endl;
         
-        // 推荐参数
-        std::cout << "\n推荐追踪器参数:" << std::endl;
-        int recommended_min = (int)(areas.front() * 0.3); // 比最小值小一些
-        int recommended_max = (int)(areas.back() * 1.5);  // 比最大值大一些
+    //     // 推荐参数
+    //     std::cout << "\n推荐追踪器参数:" << std::endl;
+    //     int recommended_min = (int)(areas.front() * 0.3); // 比最小值小一些
+    //     int recommended_max = (int)(areas.back() * 1.5);  // 比最大值大一些
         
-        std::cout << "  MIN_BLOB_AREA: " << recommended_min << std::endl;
-        std::cout << "  MAX_BLOB_AREA: " << recommended_max << std::endl;
+    //     std::cout << "  MIN_BLOB_AREA: " << recommended_min << std::endl;
+    //     std::cout << "  MAX_BLOB_AREA: " << recommended_max << std::endl;
         
-        // 如果之前参数是问题，直接在这里设置
-        if(recommended_min > 500 || recommended_max < 3000) {
-            std::cout << "\n⚠️  注意: 之前参数可能不正确!" << std::endl;
-            std::cout << "  之前: MIN=" << MIN_BLOB_AREA << ", MAX=" << MAX_BLOB_AREA << std::endl;
-            std::cout << "  建议立即修改为上述推荐值" << std::endl;
-        }
+    //     // 如果之前参数是问题，直接在这里设置
+    //     if(recommended_min > 500 || recommended_max < 3000) {
+    //         std::cout << "\n⚠️  注意: 之前参数可能不正确!" << std::endl;
+    //         std::cout << "  之前: MIN=" << MIN_BLOB_AREA << ", MAX=" << MAX_BLOB_AREA << std::endl;
+    //         std::cout << "  建议立即修改为上述推荐值" << std::endl;
+    //     }
         
-        // 计算期望半径（如果找到至少2个轮廓）
-        if(contours.size() >= 2 && bounding_boxes.size() >= 2) {
-            cv::Point center1(
-                bounding_boxes[0].x + bounding_boxes[0].width/2,
-                bounding_boxes[0].y + bounding_boxes[0].height/2
-            );
-            cv::Point center2(
-                bounding_boxes[1].x + bounding_boxes[1].width/2,
-                bounding_boxes[1].y + bounding_boxes[1].height/2
-            );
+    //     // 计算期望半径（如果找到至少2个轮廓）
+    //     if(contours.size() >= 2 && bounding_boxes.size() >= 2) {
+    //         cv::Point center1(
+    //             bounding_boxes[0].x + bounding_boxes[0].width/2,
+    //             bounding_boxes[0].y + bounding_boxes[0].height/2
+    //         );
+    //         cv::Point center2(
+    //             bounding_boxes[1].x + bounding_boxes[1].width/2,
+    //             bounding_boxes[1].y + bounding_boxes[1].height/2
+    //         );
             
-            float distance = cv::norm(center1 - center2);
-            std::cout << "  估算的靶子半径: " << distance << " 像素" << std::endl;
-            std::cout << "  建议 EXPECTED_RADIUS: " << (int)distance << std::endl;
-        }
+    //         float distance = cv::norm(center1 - center2);
+    //         std::cout << "  估算的靶子半径: " << distance << " 像素" << std::endl;
+    //         std::cout << "  建议 EXPECTED_RADIUS: " << (int)distance << std::endl;
+    //     }
         
-        // 可视化显示
-        cv::Mat visual = test_image.clone();
-        for(size_t i = 0; i < contours.size(); i++) {
-            cv::drawContours(visual, contours, i, cv::Scalar(0, 255, 0), 2);
+    //     // 可视化显示
+    //     cv::Mat visual = test_image.clone();
+    //     for(size_t i = 0; i < contours.size(); i++) {
+    //         cv::drawContours(visual, contours, i, cv::Scalar(0, 255, 0), 2);
             
-            // 显示面积
-            cv::Rect rect = bounding_boxes[i];
-            std::string label = std::to_string((int)areas[i]);
-            cv::putText(visual, label, 
-                       cv::Point(rect.x, rect.y - 5),
-                       cv::FONT_HERSHEY_SIMPLEX, 0.5, 
-                       cv::Scalar(255, 255, 255), 1);
+    //         // 显示面积
+    //         cv::Rect rect = bounding_boxes[i];
+    //         std::string label = std::to_string((int)areas[i]);
+    //         cv::putText(visual, label, 
+    //                    cv::Point(rect.x, rect.y - 5),
+    //                    cv::FONT_HERSHEY_SIMPLEX, 0.5, 
+    //                    cv::Scalar(255, 255, 255), 1);
+    //     }
+        
+    //     cv::imwrite("debug_contours_analysis.png", visual);
+    //     cv::imshow("轮廓分析结果", visual);
+    //     cv::waitKey(0);
+        
+    // } else {
+    //     std::cout << "错误: 没有找到轮廓!" << std::endl;
+    //     std::cout << "可能 SATURATION_THRESHOLD (" << SATURATION_THRESHOLD 
+    //               << ") 设置不当" << std::endl;
+        
+    //     // 显示饱和度通道直方图
+    //     cv::Mat sat_channel = hsv_channels[1];
+    //     cv::Mat histogram;
+    //     int histSize = 256;
+    //     float range[] = {0, 256};
+    //     const float* histRange = {range};
+        
+    //     cv::calcHist(&sat_channel, 1, 0, cv::Mat(), histogram, 1, &histSize, &histRange);
+        
+    //     // 绘制直方图
+    //     int hist_w = 512, hist_h = 400;
+    //     int bin_w = cvRound((double)hist_w / histSize);
+    //     cv::Mat histImage(hist_h, hist_w, CV_8UC3, cv::Scalar(50, 50, 50));
+        
+    //     cv::normalize(histogram, histogram, 0, histImage.rows, cv::NORM_MINMAX, -1, cv::Mat());
+        
+    //     for(int i = 1; i < histSize; i++) {
+    //         cv::line(histImage, 
+    //                  cv::Point(bin_w*(i-1), hist_h - cvRound(histogram.at<float>(i-1))),
+    //                  cv::Point(bin_w*(i), hist_h - cvRound(histogram.at<float>(i))),
+    //                  cv::Scalar(0, 255, 0), 2, 8, 0);
+    //     }
+        
+    //     // 标记当前阈值
+    //     int thresh_x = SATURATION_THRESHOLD * hist_w / 256;
+    //     cv::line(histImage, cv::Point(thresh_x, 0), cv::Point(thresh_x, hist_h),
+    //             cv::Scalar(0, 0, 255), 2);
+    //     cv::putText(histImage, "当前阈值", cv::Point(thresh_x + 5, 30),
+    //                cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 1);
+        
+    //     cv::imshow("饱和度直方图", histImage);
+    //     cv::waitKey(0);
+    // }
+    TargetTracker tracker;
+    auto result = tracker.process_frame(test_image);
+    TrackerConfig config;
+    while(result.found) {
+        float temp = -167.7f;
+        if(result.angle - temp < 5.0f && result.angle - temp > -5.0f) {
+            std::cout << "Tracker parameters seem OK." << std::endl;
+            break;
+        } else {
+            std::cout << "Tracker parameters may need adjustment." << std::endl;
+            config.color_similarity_threshold +=0.1f;
+            std::cout << "Adjusting COLOR_SIMILARITY_THRESHOLD to " << config.color_similarity_threshold << std::endl;
+            tracker.set_config(config);
+            result = tracker.process_frame(test_image);
         }
-        
-        cv::imwrite("debug_contours_analysis.png", visual);
-        cv::imshow("轮廓分析结果", visual);
-        cv::waitKey(0);
-        
-    } else {
-        std::cout << "错误: 没有找到轮廓!" << std::endl;
-        std::cout << "可能 SATURATION_THRESHOLD (" << SATURATION_THRESHOLD 
-                  << ") 设置不当" << std::endl;
-        
-        // 显示饱和度通道直方图
-        cv::Mat sat_channel = hsv_channels[1];
-        cv::Mat histogram;
-        int histSize = 256;
-        float range[] = {0, 256};
-        const float* histRange = {range};
-        
-        cv::calcHist(&sat_channel, 1, 0, cv::Mat(), histogram, 1, &histSize, &histRange);
-        
-        // 绘制直方图
-        int hist_w = 512, hist_h = 400;
-        int bin_w = cvRound((double)hist_w / histSize);
-        cv::Mat histImage(hist_h, hist_w, CV_8UC3, cv::Scalar(50, 50, 50));
-        
-        cv::normalize(histogram, histogram, 0, histImage.rows, cv::NORM_MINMAX, -1, cv::Mat());
-        
-        for(int i = 1; i < histSize; i++) {
-            cv::line(histImage, 
-                     cv::Point(bin_w*(i-1), hist_h - cvRound(histogram.at<float>(i-1))),
-                     cv::Point(bin_w*(i), hist_h - cvRound(histogram.at<float>(i))),
-                     cv::Scalar(0, 255, 0), 2, 8, 0);
-        }
-        
-        // 标记当前阈值
-        int thresh_x = SATURATION_THRESHOLD * hist_w / 256;
-        cv::line(histImage, cv::Point(thresh_x, 0), cv::Point(thresh_x, hist_h),
-                cv::Scalar(0, 0, 255), 2);
-        cv::putText(histImage, "当前阈值", cv::Point(thresh_x + 5, 30),
-                   cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 1);
-        
-        cv::imshow("饱和度直方图", histImage);
-        cv::waitKey(0);
     }
 }
+
+
 
 /**
  * @brief 测试圆周运动

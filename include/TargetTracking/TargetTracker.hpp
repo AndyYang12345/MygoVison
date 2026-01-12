@@ -24,7 +24,7 @@
 #define DISTANCE_TOLERANCE 50.0f      // 距离容忍范围
 
 // 匹配阈值参数
-#define MATCH_THRESHOLD 0.3f          // 综合匹配阈值（0.0-1.0）
+#define MATCH_THRESHOLD 0.4f          // 综合匹配阈值（0.0-1.0）
 #define CENTER_SCORE_THRESHOLD 0.4f   // 中心识别最低分数
 #define DIRECTION_WEIGHT 0.4f         // 方向一致性权重
 #define DISTANCE_WEIGHT 0.4f          // 距离评分权重
