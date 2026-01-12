@@ -84,11 +84,15 @@ TrainingFrameGenerator::AngularVelocityFunction energy_mechanism_velocity_genera
     };
 }
 //计算检测到的目标位置和实际位置的误差，如果低于某个阈值则认为检测成功
-void calculate_position_error(const cv::Point2f& detected, const cv::Point2f& actual) {
-    if(cv::norm(detected - actual) < 10.0f) {
-        std::cout << "Target Match at an error of " << cv::norm(detected - actual) << std::endl;
+bool calculate_position_error(const cv::Point2f& detected, const cv::Point2f& actual) {
+    float error = cv::norm(detected - actual);
+    if(error < 10.0f) {
+        std::cout << "Target Match at an error of " << error << std::endl;
+        return true;
+   
     } else {
         std::cout << "Match failed" << std::endl;
+        return false;
     }
 }
 
@@ -117,6 +121,7 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
     std::cout << "Target markers are ON (default). Press T to toggle." << std::endl;
     std::cout << "Press SPACE to pause/resume rotation." << std::endl;
     TargetTracker tracker;
+    int success_count = 0;
     while (true) {
         // 获取训练帧
         auto frame_data = generator.get_next_frame();
@@ -130,7 +135,10 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
         //           << ", Distance: " << tracker_result.distance
         //           << ", Angle: " << tracker_result.angle << " degrees"
         //           << std::endl;
-        calculate_position_error(tracker_result.target_center, frame_data.target_position);
+        
+        if(calculate_position_error(tracker_result.target_center, frame_data.target_position)){
+            success_count++;
+        }
         // 更新FPS
         float fps = perf_monitor.tick();
         total_frames++;
@@ -257,6 +265,7 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
     std::cout << "Minimum FPS: " << perf_monitor.get_min_fps() << std::endl;
     std::cout << "Maximum FPS: " << perf_monitor.get_max_fps() << std::endl;
     std::cout << "===================" << std::endl;
+    std::cout << "Successful detections rate: " << 100.0 * success_count / total_frames << "%" << std::endl;
     
     std::cout << "\nTest completed." << std::endl;
 }
