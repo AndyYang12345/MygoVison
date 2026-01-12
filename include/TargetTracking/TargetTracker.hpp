@@ -1,40 +1,41 @@
 #ifndef TARGET_TRACKER_HPP
 #define TARGET_TRACKER_HPP
+
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include <map>
-#include "TargetSim/TrainingFrameGenerator.hpp"
+#include <cmath>
+#include <algorithm>
+#include <numeric>
 
 // ============ 算法核心参数配置 ============
 // 色块筛选参数
 #define SATURATION_THRESHOLD 50       // HSV饱和度阈值，过滤灰暗区域
 #define MIN_BLOB_AREA 3000            // 最小色块面积（像素）
 #define MAX_BLOB_AREA 8000            // 最大色块面积（像素）
-#define MIN_CONTOUR_POINTS 5          // 有效轮廓最少点数
 
 // 形状识别参数
 #define CIRCULARITY_THRESHOLD 0.55f   // 圆形度阈值（1.0为完美圆）
 #define MAX_ASPECT_RATIO 3.0f         // 正方形最大宽高比（容忍透视变形）
-#define MIN_ASPECT_RATIO 0.8f         // 正方形最小宽高比
 
 // 空间关系参数
 #define MIN_DISTANCE_TO_CENTER 130.0f // 外围色块离中心的最小距离（像素）
 #define MAX_DISTANCE_TO_CENTER 190.0f // 外围色块离中心的最大距离（像素）
 #define EXPECTED_RADIUS 160.0f        // 期望的靶子半径（像素）
-#define DISTANCE_TOLERANCE 50.0f      // 距离容忍范围
 
 // 匹配阈值参数
 #define MATCH_THRESHOLD 0.4f          // 综合匹配阈值（0.0-1.0）
-#define CENTER_SCORE_THRESHOLD 0.4f   // 中心识别最低分数
 #define DIRECTION_WEIGHT 0.4f         // 方向一致性权重
 #define DISTANCE_WEIGHT 0.4f          // 距离评分权重
 #define ASPECT_RATIO_WEIGHT 0.2f      // 宽高比评分权重
 #define CIRCULARITY_WEIGHT 0.6f       // 圆形度权重（中心识别）
 #define SURROUND_WEIGHT 0.4f          // 被围绕程度权重（中心识别）
 
-// 颜色匹配参数
-#define COLOR_SIMILARITY_THRESHOLD 50.0f // 颜色相似度阈值（BGR空间欧氏距离）
-#define COLOR_CLUSTER_THRESHOLD 4.0f     // K-means聚类中心数量
+// HSV颜色相似性参数
+#define HUE_SIMILARITY_THRESHOLD 5.0f    // 色调相似度阈值（度）
+#define VALUE_MIN_THRESHOLD 15.0f         // 亮度最小值阈值（避免黑色干扰）
+#define BLACK_VALUE_THRESHOLD 30.0f       // 黑色亮度阈值
+#define BLACK_SATURATION_THRESHOLD 50.0f  // 黑色饱和度阈值
 
 // ============ 数据结构定义 ============
 // 色块数据结构
@@ -43,11 +44,13 @@ struct ColorBlob {
     cv::Rect bounding_rect;             // 外接矩形
     cv::Point2f center;                 // 中心点坐标
     cv::Scalar color_bgr;               // 平均BGR颜色值
+    cv::Scalar color_hsv;               // 平均HSV颜色值
     int color_label;                    // 聚类颜色标签
     float circularity;                  // 圆形度（0.0-1.0）
     float aspect_ratio;                 // 宽高比（宽度/高度）
+    bool is_black;                      // 是否为黑色
     
-    ColorBlob() : color_label(-1), circularity(0.0f), aspect_ratio(1.0f) {}
+    ColorBlob() : color_label(-1), circularity(0.0f), aspect_ratio(1.0f), is_black(false) {}
 };
 
 // 目标追踪结果结构
@@ -78,10 +81,6 @@ struct TrackerConfig {
     float max_distance_to_center = MAX_DISTANCE_TO_CENTER;
     float expected_radius = EXPECTED_RADIUS;
     
-    // 颜色匹配
-    float color_similarity_threshold = COLOR_SIMILARITY_THRESHOLD;
-    int color_cluster_threshold = COLOR_CLUSTER_THRESHOLD;
-    
     // 匹配阈值
     float match_threshold = MATCH_THRESHOLD;
     
@@ -91,11 +90,20 @@ struct TrackerConfig {
     float aspect_ratio_weight = ASPECT_RATIO_WEIGHT;
     float circularity_weight = CIRCULARITY_WEIGHT;
     float surround_weight = SURROUND_WEIGHT;
+    
+    // HSV颜色参数
+    float hue_similarity_threshold = HUE_SIMILARITY_THRESHOLD;
+    float value_min_threshold = VALUE_MIN_THRESHOLD;
+    float black_value_threshold = BLACK_VALUE_THRESHOLD;
+    float black_saturation_threshold = BLACK_SATURATION_THRESHOLD;
+    
+    // 保持向后兼容性（如果测试代码引用了旧的参数名）
+    float color_similarity_threshold = 50.0f; // 旧参数，保持兼容
 };
 
 class TargetTracker {
 public:
-    TargetTracker(){
+    TargetTracker() {
         reset();
     }
 
@@ -128,6 +136,15 @@ public:
      */
     target_info process_frame(const cv::Mat& frame);
 
+    /**
+     * @brief 获取检测统计信息
+     * @return 成功检测率
+     */
+    float get_success_rate() const {
+        if (total_frames_ == 0) return 0.0f;
+        return static_cast<float>(successful_detections_) / total_frames_;
+    }
+
 private:
     // 配置参数
     TrackerConfig config_;
@@ -137,14 +154,11 @@ private:
     int successful_detections_ = 0;
     
     // 内部辅助函数
-    float calculate_color_distance(const cv::Scalar& color1, const cv::Scalar& color2) {
-        float b_diff = color1[0] - color2[0];
-        float g_diff = color1[1] - color2[1];
-        float r_diff = color1[2] - color2[2];
-        return sqrt(b_diff*b_diff + g_diff*g_diff + r_diff*r_diff);
-    }
-
-    void assign_color_labels_by_distance(std::vector<ColorBlob>& blobs);
+    float calculate_color_distance_hsv(const cv::Scalar& hsv1, const cv::Scalar& hsv2);
+    bool is_black_color_hsv(const cv::Scalar& hsv_color);
+    cv::Scalar convert_bgr_to_hsv(const cv::Scalar& bgr_color);
+    void assign_color_labels_by_hsv(std::vector<ColorBlob>& blobs);
+    float calculate_surround_score(const std::vector<ColorBlob>& blobs, size_t center_idx);
 };
 
 #endif // TARGET_TRACKER_HPP

@@ -1,4 +1,5 @@
 #include "TargetTracking/TargetTracker.hpp"
+#include "TargetSim/TrainingFrameGenerator.hpp"
 #include <iostream>
 #include <chrono>
 #include <thread>
@@ -7,6 +8,8 @@
 #include <vector>
 #include <random>
 #include <cmath>
+#include <fstream>  // 添加这个头文件
+#include <sstream>  // 添加这个头文件
 
 // ==================== 测试函数声明 ====================
 void test_pentagon_rotation(TrainingFrameGenerator& generator);
@@ -17,6 +20,7 @@ void test_linear_movement_with_bounce(TrainingFrameGenerator& generator);
 void test_random_appearance(TrainingFrameGenerator& generator);
 void test_lissajous_motion(TrainingFrameGenerator& generator);
 void test_pic();
+void auto_tune_hsv_parameters(TrainingFrameGenerator& generator);
 void auto_adjust_parameters(cv::Mat& test_image);
 // ==================== 辅助函数 ====================
 void draw_trajectory(cv::Mat& image, const std::vector<cv::Point2f>& trajectory, 
@@ -35,24 +39,17 @@ int main() {
     std::cout << std::fixed << std::setprecision(2);
     std::cout << "Testing simulator..." << std::endl;
 
-    // 1. 保存第一帧图像到文件
-    // auto test_image = cv::imread("error_frame.jpg");
-    // auto_adjust_parameters(test_image);
-    // test_pic();
-
-    // 3. 手动检查图像内容
-    // cv::Mat display = frame_data.frame.clone();
-    // cv::imshow("Simulator Output", display);
-    // cv::waitKey(0);
-    // 运行测试
-
+    // 运行参数调优
+    auto_tune_hsv_parameters(generator);
+    
+    // 或者运行特定问题分析
+    // analyze_color_similarity_issue(generator);
+    
+    // 或者测试单个问题帧
+    // debug_specific_frame("error_frame.jpg");
+    
+    // 然后运行正常测试
     test_pentagon_rotation(generator);
-    // test_circular_motion(generator);
-    // test_spiral_motion(generator);
-    // test_sine_wave_motion(generator);
-    // test_linear_movement_with_bounce(generator);
-    // test_random_appearance(generator);
-    // test_lissajous_motion(generator);
     
     std::cout << "\n=== All tests completed! ===" << std::endl;
     
@@ -140,16 +137,14 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
     std::cout << "Press SPACE to pause/resume rotation." << std::endl;
     TargetTracker tracker;
     int success_count = 0;
+    int generated_count = 1;
     int fatal_error_count = 0;
     double total_success_rate = 0.0;
     while (true) {
         // 获取训练帧
         auto frame_data = generator.get_next_frame();
         auto tracker_result = tracker.process_frame(frame_data.frame);
-        if(!tracker_result.found){
-            imwrite("error_frame.jpg", frame_data.frame);
-            return;
-        }
+        
         std::cout << "Tracker found: " << (tracker_result.found ? "YES" : "NO") 
                   << ", Position: (" << tracker_result.target_center.x << ", " << tracker_result.target_center.y << ")"
                   << ", Distance: " << tracker_result.distance
@@ -263,18 +258,20 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
             if(double(success_count) / double(total_frames_shadow) < 0.8){
                 total_success_rate += double(success_count) / double(total_frames_shadow);
                 fatal_error_count++;
+                total_frames_shadow = total_frames - total_frames_shadow;
             }
+            generated_count++;
             success_count = 0;
-            total_frames_shadow = 0;
             std::cout << "Generated new pentagon at random position" << std::endl;
         } else if (key == 'c' || key == 'C') { // C键生成中心位置的新靶子
             generator.regenerate_pentagon(generator.get_target_sim_center());
             if(double(success_count) / double(total_frames_shadow) < 0.8){
                 total_success_rate += double(success_count) / double(total_frames_shadow);
                 fatal_error_count++;
+                total_frames_shadow = total_frames - total_frames_shadow;
             }
+            generated_count++;
             success_count = 0;
-            total_frames_shadow = 0;
             std::cout << "Generated new pentagon at center" << std::endl;
         } else if (key == '+') { // +键增加旋转速度
             angular_speed += 0.1f;
@@ -287,12 +284,13 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
         } else if (key == '0') { // 0键重置角度和时间
             generator.reset();
             perf_monitor.reset();
-            if(double(success_count) / double(total_frames_shadow) < 0.8){
-                total_success_rate += double(success_count) / double(total_frames_shadow);
+            if(double(success_count) / double(total_frames - total_frames_shadow) < 0.8){
+                total_success_rate += double(success_count) / double(total_frames - total_frames_shadow);
                 fatal_error_count++;
+                total_frames_shadow = total_frames - total_frames_shadow;
             }
+            generated_count++;
             success_count = 0;
-            total_frames_shadow = 0;
             std::cout << "Training reset (time = 0, angle = 0)" << std::endl;
         }
     }
@@ -307,7 +305,7 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
     std::cout << "Maximum FPS: " << perf_monitor.get_max_fps() << std::endl;
     std::cout << "===================" << std::endl;
     // std::cout << "Successful detections rate: " << 100.0 * success_count / total_frames << "%" << std::endl;
-    std::cout << "Fatal errors (success rate < 80% on new pentagon): " << fatal_error_count << std::endl;
+    std::cout << "Fatal errors (success rate < 80% on new pentagon): " << fatal_error_count <<"/"<< generated_count << std::endl;
     if(fatal_error_count)std::cout << "Overall average success rate of Fatal Error situation: " << 100.0 * total_success_rate / (fatal_error_count + 1) << "%" << std::endl;
 
     std::cout << "\nTest completed." << std::endl;
@@ -331,6 +329,202 @@ void test_pic() {
               << ", Distance: " << result.distance
               << ", Angle: " << result.angle << " degrees"
               << std::endl;
+}
+
+// ==================== 参数调优函数 ====================
+
+/**
+ * @brief 测试特定参数组合
+ */
+float test_parameter_config(TargetTracker& tracker, 
+                           TrainingFrameGenerator& generator,
+                           int test_frames = 360) {  // 测试一圈完整的旋转
+    int success_count = 0;
+    
+    for (int i = 0; i < test_frames; i++) {
+        auto frame_data = generator.get_next_frame();
+        auto tracker_result = tracker.process_frame(frame_data.frame);
+        
+        if (tracker_result.found) {
+            float error = cv::norm(tracker_result.target_center - frame_data.target_position);
+            if (error < 10.0f) {
+                success_count++;
+            }
+        }
+    }
+    
+    // 重置生成器
+    generator.reset();
+    
+    return static_cast<float>(success_count) / test_frames;
+}
+
+/**
+ * @brief 自动调优HSV阈值参数
+ */
+void auto_tune_hsv_parameters(TrainingFrameGenerator& generator) {
+    std::cout << "\n=== Auto-tuning HSV Parameters ===" << std::endl;
+    
+    // 设置旋转模式
+    // float angular_speed = 1.0f;
+    TrainingFrameGenerator::AngularVelocityFunction angular_velocity_func = 
+        energy_mechanism_velocity_generator();
+    generator.set_training_mode(TrainingFrameGenerator::MODE_PENTAGON_ROTATION, 
+                                1, 1, angular_velocity_func);
+    
+    // 测试不同参数组合
+    std::vector<float> hue_thresholds = {5.0f, 10.0f, 15.0f, 20.0f, 25.0f, 30.0f};
+    std::vector<float> value_thresholds = {15.0f, 25.0f, 35.0f, 45.0f, 55.0f};
+    std::vector<float> black_thresholds = {30.0f, 40.0f, 50.0f, 60.0f};
+    
+    float best_success_rate = 0.0f;
+    TrackerConfig best_config;
+    
+    std::cout << "Testing " << hue_thresholds.size() * value_thresholds.size() * black_thresholds.size() 
+              << " parameter combinations..." << std::endl;
+    
+    int test_count = 0;
+    for (float hue_thresh : hue_thresholds) {
+        for (float val_thresh : value_thresholds) {
+            for (float black_thresh : black_thresholds) {
+                test_count++;
+                std::cout << "\rTesting combination " << test_count << "..." << std::flush;
+                
+                TargetTracker tracker;
+                TrackerConfig config = tracker.get_config();
+                
+                // 设置测试参数
+                config.hue_similarity_threshold = hue_thresh;
+                config.value_min_threshold = val_thresh;
+                config.black_value_threshold = black_thresh;
+                tracker.set_config(config);
+                
+                // 测试该参数组合
+                float success_rate = test_parameter_config(tracker, generator, 180);
+                
+                if (success_rate > best_success_rate) {
+                    best_success_rate = success_rate;
+                    best_config = config;
+                    
+                    std::cout << "\nNew best! Success rate: " << (best_success_rate * 100.0f) << "%"
+                              << " (Hue: " << hue_thresh 
+                              << ", Value: " << val_thresh
+                              << ", Black: " << black_thresh << ")" << std::endl;
+                }
+            }
+        }
+    }
+    
+    std::cout << "\n\n=== Tuning Results ===" << std::endl;
+    std::cout << "Best success rate: " << (best_success_rate * 100.0f) << "%" << std::endl;
+    std::cout << "Best parameters:" << std::endl;
+    std::cout << "  hue_similarity_threshold: " << best_config.hue_similarity_threshold << std::endl;
+    std::cout << "  value_min_threshold: " << best_config.value_min_threshold << std::endl;
+    std::cout << "  black_value_threshold: " << best_config.black_value_threshold << std::endl;
+    std::cout << "  black_saturation_threshold: " << best_config.black_saturation_threshold << std::endl;
+    
+    // 保存最佳配置到文件
+    std::ofstream config_file("best_parameters.txt");
+    if (config_file.is_open()) {
+        config_file << "# Best parameters from auto-tuning\n";
+        config_file << "hue_similarity_threshold = " << best_config.hue_similarity_threshold << "\n";
+        config_file << "value_min_threshold = " << best_config.value_min_threshold << "\n";
+        config_file << "black_value_threshold = " << best_config.black_value_threshold << "\n";
+        config_file << "black_saturation_threshold = " << best_config.black_saturation_threshold << "\n";
+        config_file << "success_rate = " << (best_success_rate * 100.0f) << "%\n";
+        config_file.close();
+        std::cout << "Best parameters saved to 'best_parameters.txt'" << std::endl;
+    }
+}
+
+/**
+ * @brief 调试特定失败帧
+ */
+void debug_specific_frame(const std::string& image_path) {
+    std::cout << "\n=== Debugging specific frame ===" << std::endl;
+    
+    cv::Mat img = cv::imread(image_path);
+    if (img.empty()) {
+        std::cout << "ERROR: Cannot load image: " << image_path << std::endl;
+        return;
+    }
+    
+    // 使用不同参数测试同一帧
+    std::vector<float> test_thresholds = {5.0f, 10.0f, 15.0f, 20.0f, 25.0f, 30.0f};
+    
+    for (float threshold : test_thresholds) {
+        TargetTracker tracker;
+        TrackerConfig config = tracker.get_config();
+        config.hue_similarity_threshold = threshold;
+        tracker.set_config(config);
+        
+        auto result = tracker.process_frame(img);
+        std::cout << "Hue threshold " << threshold << ": ";
+        std::cout << (result.found ? "FOUND" : "NOT FOUND");
+        if (result.found) {
+            std::cout << " at (" << result.target_center.x << ", " << result.target_center.y << ")";
+        }
+        std::cout << std::endl;
+    }
+}
+
+/**
+ * @brief 分析颜色相似性问题
+ */
+void analyze_color_similarity_issue(TrainingFrameGenerator& generator) {
+    std::cout << "\n=== Analyzing Color Similarity Issue ===" << std::endl;
+    
+    // 收集一些关键帧进行分析
+    generator.set_training_mode(TrainingFrameGenerator::MODE_PENTAGON_ROTATION, 0.5f);
+    
+    // 在关键角度采样帧
+    std::vector<float> test_angles = {0.0f, 72.0f, 144.0f, 216.0f, 288.0f};
+    
+    for (float angle : test_angles) {
+        // 重置生成器到特定角度
+        generator.reset();
+        generator.set_training_mode(TrainingFrameGenerator::MODE_PENTAGON_ROTATION, angle * M_PI / 180.0f);
+        
+        auto frame_data = generator.get_next_frame();
+        
+        std::cout << "\nAngle " << angle << " degrees:" << std::endl;
+        
+        // 使用不同参数测试
+        TargetTracker tracker1, tracker2;
+        
+        // 宽松参数
+        TrackerConfig config1 = tracker1.get_config();
+        config1.hue_similarity_threshold = 30.0f;
+        tracker1.set_config(config1);
+        
+        // 严格参数
+        TrackerConfig config2 = tracker2.get_config();
+        config2.hue_similarity_threshold = 10.0f;
+        tracker2.set_config(config2);
+        
+        auto result1 = tracker1.process_frame(frame_data.frame);
+        auto result2 = tracker2.process_frame(frame_data.frame);
+        
+        std::cout << "  Loose (30°): " << (result1.found ? "FOUND" : "NOT FOUND");
+        if (result1.found) {
+            float error = cv::norm(result1.target_center - frame_data.target_position);
+            std::cout << " (error: " << error << ")";
+        }
+        
+        std::cout << "\n  Strict (10°): " << (result2.found ? "FOUND" : "NOT FOUND");
+        if (result2.found) {
+            float error = cv::norm(result2.target_center - frame_data.target_position);
+            std::cout << " (error: " << error << ")";
+        }
+        std::cout << std::endl;
+        
+        // 保存有问题的帧
+        if (result1.found != result2.found) {
+            std::string filename = "issue_angle_" + std::to_string((int)angle) + ".jpg";
+            cv::imwrite(filename, frame_data.frame);
+            std::cout << "  Frame saved to " << filename << std::endl;
+        }
+    }
 }
 
 void auto_adjust_parameters(cv::Mat& test_image) {
@@ -472,8 +666,8 @@ void auto_adjust_parameters(cv::Mat& test_image) {
             break;
         } else {
             std::cout << "Tracker parameters may need adjustment." << std::endl;
-            config.color_similarity_threshold +=0.1f;
-            std::cout << "Adjusting COLOR_SIMILARITY_THRESHOLD to " << config.color_similarity_threshold << std::endl;
+            config.hue_similarity_threshold +=0.1f;
+            std::cout << "Adjusting HUE_COLOR_SIMILARITY_THRESHOLD to " << config.hue_similarity_threshold << std::endl;
             tracker.set_config(config);
             result = tracker.process_frame(test_image);
         }

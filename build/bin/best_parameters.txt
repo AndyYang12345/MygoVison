@@ -1,0 +1,6 @@
+# Best parameters from auto-tuning
+hue_similarity_threshold = 5
+value_min_threshold = 15
+black_value_threshold = 30
+black_saturation_threshold = 50
+success_rate = 100%
