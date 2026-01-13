@@ -89,6 +89,19 @@ public:
      */
     void regenerate_colors() { _need_regenerate_colors = true; }
 
+    cv::Scalar get_center_color() const { return _center_color; }
+    
+    cv::Scalar get_target_color() const { 
+        if (_target_index >= 0 && _target_index < (int)_surround_colors.size()) {
+            return _surround_colors[_target_index];
+        }
+        return cv::Scalar(-1, -1, -1);
+    }
+    
+    int get_target_index() const { return _target_index; }
+    
+    std::vector<cv::Scalar> get_surround_colors() const { return _surround_colors; }
+
 private:
     int _width;// 图像宽度
     int _height;// 图像高度

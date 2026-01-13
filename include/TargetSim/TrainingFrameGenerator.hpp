@@ -176,6 +176,9 @@ public:
      */
     cv::Point2f get_current_pentagon_center() const { return _current_pentagon_center; }
 
+    TargetSim& get_target_sim() { return _target_sim; }
+    const TargetSim& get_target_sim() const { return _target_sim; }
+    
 private:
     TargetSim _target_sim;
     float _fps;

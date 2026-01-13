@@ -20,14 +20,37 @@ void test_linear_movement_with_bounce(TrainingFrameGenerator& generator);
 void test_random_appearance(TrainingFrameGenerator& generator);
 void test_lissajous_motion(TrainingFrameGenerator& generator);
 void test_pic();
-void auto_tune_hsv_parameters(TrainingFrameGenerator& generator);
 void auto_adjust_parameters(cv::Mat& test_image);
-// ==================== 辅助函数 ====================
-void draw_trajectory(cv::Mat& image, const std::vector<cv::Point2f>& trajectory, 
-                     const cv::Scalar& color);
 void display_info(cv::Mat& image, const std::string& title, 
                   const cv::Point2f& position, const cv::Point2f& velocity,
-                  float timestamp);
+                  float timestamp) ;
+void draw_trajectory(cv::Mat& image, const std::vector<cv::Point2f>& trajectory, 
+                     const cv::Scalar& color) ;
+// 先声明辅助函数，避免需要TargetColorInfo的定义
+void record_failure_info_with_colors(TargetSim& target_sim, int target_id, float timestamp,
+                                   float accuracy, float test_time, int total_frames, int success_frames,
+                                   std::ofstream& failure_log, std::ofstream& color_log,
+                                   std::ofstream& detailed_log);
+
+void generate_color_analysis_report(const std::vector<struct TargetColorInfo>& problematic_infos);
+
+
+struct TargetColorInfo {
+    int target_id;
+    std::string timestamp;
+    float accuracy;
+    int test_frames;
+    std::string error_frame_file;
+    
+    // 添加缺少的成员变量
+    cv::Scalar center_color_bgr;
+    cv::Scalar target_color_bgr;
+    std::vector<cv::Scalar> surround_colors_bgr;
+    int target_index;  // 注意：这里要和结构体中其他成员区分开
+    
+    TargetColorInfo() : target_id(0), accuracy(0.0f), test_frames(0), target_index(-1) {}
+};
+
 
 // ==================== 主函数 ====================
 int main() {
@@ -39,16 +62,7 @@ int main() {
     std::cout << std::fixed << std::setprecision(2);
     std::cout << "Testing simulator..." << std::endl;
 
-    // 运行参数调优
-    // auto_tune_hsv_parameters(generator);
-    
-    // 或者运行特定问题分析
-    // analyze_color_similarity_issue(generator);
-    
-    // 或者测试单个问题帧
-    // debug_specific_frame("error_frame.jpg");
-    
-    // 然后运行正常测试
+    // 运行测试
     test_pentagon_rotation(generator);
     
     std::cout << "\n=== All tests completed! ===" << std::endl;
@@ -56,7 +70,284 @@ int main() {
     return 0;
 }
 
+
 // ==================== 测试函数实现 ====================
+/**
+ * @brief 带颜色信息的故障记录函数
+ */
+void record_failure_info_with_colors(TargetSim& target_sim, int target_id, float timestamp,
+                                   float accuracy, float test_time, int total_frames, int success_frames,
+                                   std::ofstream& failure_log, std::ofstream& color_log,
+                                   std::ofstream& detailed_log) {
+    
+    // 获取颜色信息
+    cv::Scalar center_color = target_sim.get_center_color();
+    cv::Scalar target_color = target_sim.get_target_color();
+    int target_index = target_sim.get_target_index();
+    std::vector<cv::Scalar> surround_colors = target_sim.get_surround_colors();
+    
+    // 获取当前时间
+    time_t now = time(nullptr);
+    std::string time_str = std::ctime(&now);
+    time_str = time_str.substr(0, time_str.length() - 1);
+    
+    // 1. 记录到failure_log.txt
+    failure_log << "\n=== 故障记录 (带颜色信息) ===" << std::endl;
+    failure_log << "记录时间: " << time_str << std::endl;
+    failure_log << "靶子ID: " << target_id << std::endl;
+    failure_log << "时间戳: " << timestamp << "s" << std::endl;
+    failure_log << "准确率: " << accuracy << "%" << std::endl;
+    failure_log << "测试时间: " << test_time << "s" << std::endl;
+    failure_log << "总帧数: " << total_frames << std::endl;
+    failure_log << "成功帧数: " << success_frames << std::endl;
+    failure_log << "目标索引: " << target_index << std::endl;
+    
+    // 2. 详细颜色信息记录到color_log.txt
+    color_log << "\n=== 靶子ID: " << target_id << " ===" << std::endl;
+    color_log << "时间戳: " << timestamp << std::endl;
+    color_log << "准确率: " << accuracy << "%" << std::endl;
+    color_log << "测试时间: " << test_time << "秒" << std::endl;
+    color_log << "总帧数/成功帧数: " << total_frames << "/" << success_frames << std::endl;
+    color_log << "目标索引: " << target_index << std::endl;
+    
+    // BGR颜色信息
+    color_log << "\n=== BGR颜色信息 ===" << std::endl;
+    color_log << "中心颜色 (BGR): [" << (int)center_color[0] << ", " 
+              << (int)center_color[1] << ", " << (int)center_color[2] << "]" << std::endl;
+    color_log << "目标颜色 (BGR): [" << (int)target_color[0] << ", " 
+              << (int)target_color[1] << ", " << (int)target_color[2] << "]" << std::endl;
+    
+    color_log << "外围颜色列表:" << std::endl;
+    for (size_t i = 0; i < surround_colors.size(); i++) {
+        const auto& color = surround_colors[i];
+        std::string is_target = (i == (size_t)target_index) ? " [TARGET]" : "";
+        color_log << "  颜色" << i << " (BGR): [" << (int)color[0] << ", " 
+                  << (int)color[1] << ", " << (int)color[2] << "]" << is_target << std::endl;
+    }
+    
+    // HSV颜色信息
+    color_log << "\n=== HSV颜色空间 ===" << std::endl;
+    cv::Mat center_bgr(1, 1, CV_8UC3, center_color);
+    cv::Mat center_hsv;
+    cv::cvtColor(center_bgr, center_hsv, cv::COLOR_BGR2HSV);
+    cv::Vec3b center_hsv_val = center_hsv.at<cv::Vec3b>(0, 0);
+    color_log << "中心颜色 (HSV): H=" << (int)center_hsv_val[0] << "° S=" 
+              << (int)center_hsv_val[1] << "% V=" << (int)center_hsv_val[2] << "%" << std::endl;
+    
+    // 颜色对比度分析
+    color_log << "\n=== 颜色对比度分析 ===" << std::endl;
+    for (size_t i = 0; i < surround_colors.size(); i++) {
+        const auto& color = surround_colors[i];
+        // 计算BGR空间的距离
+        float bgr_distance = cv::norm(center_color - color);
+        
+        // 计算HSV空间的色调差异
+        cv::Mat color_bgr(1, 1, CV_8UC3, color);
+        cv::Mat color_hsv;
+        cv::cvtColor(color_bgr, color_hsv, cv::COLOR_BGR2HSV);
+        cv::Vec3b color_hsv_val = color_hsv.at<cv::Vec3b>(0, 0);
+        
+        float hue_diff = std::abs((int)center_hsv_val[0] - (int)color_hsv_val[0]);
+        if (hue_diff > 90) hue_diff = 180 - hue_diff; // HSV圆形特性
+        
+        float saturation_diff = std::abs((int)center_hsv_val[1] - (int)color_hsv_val[1]);
+        float value_diff = std::abs((int)center_hsv_val[2] - (int)color_hsv_val[2]);
+        
+        std::string is_target = (i == (size_t)target_index) ? " [TARGET]" : "";
+        std::string similarity = "";
+        
+        // 判断相似度
+        if (hue_diff < 15 && bgr_distance < 100) {
+            similarity = " (非常相似)";
+        } else if (hue_diff < 30 && bgr_distance < 150) {
+            similarity = " (比较相似)";
+        }
+        
+        color_log << "  颜色" << i << ": BGR距离=" << bgr_distance 
+                  << ", 色调差异=" << hue_diff << "°"
+                  << ", 饱和度差异=" << saturation_diff << "%"
+                  << ", 亮度差异=" << value_diff << "%"
+                  << is_target << similarity << std::endl;
+    }
+    
+    color_log << "错误帧文件: error_target_" << target_id << "_t" << static_cast<int>(timestamp) << ".jpg" << std::endl;
+    
+    // 3. 记录到CSV文件（包含完整颜色信息）
+    detailed_log << target_id << ","
+                 << timestamp << ","
+                 << (accuracy < 90.0f ? "FAILURE" : "SUCCESS") << ","
+                 << accuracy << ","
+                 << test_time << ","
+                 << (int)center_color[0] << "," << (int)center_color[1] << "," << (int)center_color[2] << ","
+                 << (int)target_color[0] << "," << (int)target_color[1] << "," << (int)target_color[2] << ","
+                 << target_index << ",";
+    
+    // 记录所有外围颜色
+    for (size_t i = 0; i < 5; i++) {
+        if (i < surround_colors.size()) {
+            const auto& color = surround_colors[i];
+            detailed_log << (int)color[0] << "," << (int)color[1] << "," << (int)color[2] << ",";
+        } else {
+            detailed_log << "-1,-1,-1,"; // 占位符
+        }
+    }
+    
+    detailed_log << total_frames << ","
+                 << success_frames << ","
+                 << "error_target_" << target_id << "_t" << static_cast<int>(timestamp) << ".jpg"
+                 << std::endl;
+    
+    // 刷新缓冲区
+    failure_log.flush();
+    color_log.flush();
+    detailed_log.flush();
+}
+
+/**
+ * @brief 生成颜色分析报告（增强版）
+ */
+void generate_color_analysis_report(const std::vector<TargetColorInfo>& problematic_infos) {
+    std::ofstream report("color_analysis_report.txt");
+    
+    if (!report.is_open()) {
+        std::cerr << "无法创建颜色分析报告文件" << std::endl;
+        return;
+    }
+    
+    time_t now = time(nullptr);
+    std::string time_str = std::ctime(&now);
+    time_str = time_str.substr(0, time_str.length() - 1);
+    
+    report << "=== 故障颜色组合分析报告 ===" << std::endl;
+    report << "生成时间: " << time_str << std::endl;
+    report << "故障靶子总数: " << problematic_infos.size() << std::endl;
+    report << "=====================================" << std::endl;
+    
+    if (problematic_infos.empty()) {
+        report << "没有发现故障靶子" << std::endl;
+        return;
+    }
+    
+    // 按准确率排序
+    auto sorted_infos = problematic_infos;
+    std::sort(sorted_infos.begin(), sorted_infos.end(), 
+              [](const TargetColorInfo& a, const TargetColorInfo& b) {
+                  return a.accuracy < b.accuracy;
+              });
+    
+    // 输出最差的几个靶子
+    report << "\n=== 最差的5个靶子 ===" << std::endl;
+    int count = std::min(5, (int)sorted_infos.size());
+    for (int i = 0; i < count; i++) {
+        const auto& info = sorted_infos[i];
+        report << i+1 << ". 靶子ID: " << info.target_id 
+               << ", 准确率: " << info.accuracy << "%"
+               << ", 目标索引: " << info.target_index  // 修改这里：使用 target_index
+               << ", 测试帧数: " << info.test_frames 
+               << ", 错误帧: " << info.error_frame_file << std::endl;
+        
+        // 输出颜色信息
+        report << "   中心颜色 (BGR): [" << (int)info.center_color_bgr[0] << ", "
+               << (int)info.center_color_bgr[1] << ", " << (int)info.center_color_bgr[2] << "]" << std::endl;
+        report << "   目标颜色 (BGR): [" << (int)info.target_color_bgr[0] << ", "
+               << (int)info.target_color_bgr[1] << ", " << (int)info.target_color_bgr[2] << "]" << std::endl;
+    }
+    
+    // 分析准确率分布
+    report << "\n=== 准确率分布 ===" << std::endl;
+    std::vector<int> accuracy_ranges = {0, 20, 40, 60, 80};
+    std::vector<int> counts(accuracy_ranges.size(), 0);
+    
+    for (const auto& info : sorted_infos) {
+        for (size_t i = 0; i < accuracy_ranges.size(); i++) {
+            if (info.accuracy < accuracy_ranges[i] + 20) {
+                counts[i]++;
+                break;
+            }
+        }
+    }
+    
+    for (size_t i = 0; i < accuracy_ranges.size(); i++) {
+        report << accuracy_ranges[i] << "-" << (accuracy_ranges[i] + 20) << "%: " 
+               << counts[i] << " 个 (" 
+               << (100.0f * counts[i] / sorted_infos.size()) << "%)" << std::endl;
+    }
+    
+    // 分析目标索引分布
+    report << "\n=== 目标索引分布 ===" << std::endl;
+    std::map<int, int> index_counts;
+    for (const auto& info : sorted_infos) {
+        if (info.target_index >= 0) {
+            index_counts[info.target_index]++;
+        }
+    }
+    
+    for (const auto& pair : index_counts) {
+        report << "索引 " << pair.first << ": " << pair.second << " 个 ("
+               << (100.0f * pair.second / sorted_infos.size()) << "%)" << std::endl;
+    }
+    
+    // 分析颜色相似性问题
+    report << "\n=== 颜色相似性分析 ===" << std::endl;
+    int similar_colors_count = 0;
+    int black_colors_count = 0;
+    
+    for (const auto& info : sorted_infos) {
+        // 检查中心颜色与目标颜色是否相似
+        float bgr_distance = cv::norm(info.center_color_bgr - info.target_color_bgr);
+        if (bgr_distance < 50.0f) {
+            similar_colors_count++;
+            report << "靶子ID " << info.target_id << ": 中心与目标颜色非常相似 (BGR距离=" 
+                   << bgr_distance << ")" << std::endl;
+        }
+        
+        // 检查是否有黑色或低亮度颜色
+        cv::Mat center_bgr(1, 1, CV_8UC3, info.center_color_bgr);
+        cv::Mat center_hsv;
+        cv::cvtColor(center_bgr, center_hsv, cv::COLOR_BGR2HSV);
+        cv::Vec3b center_hsv_val = center_hsv.at<cv::Vec3b>(0, 0);
+        
+        if (center_hsv_val[2] < 50) {  // 亮度低于50
+            black_colors_count++;
+            report << "靶子ID " << info.target_id << ": 中心颜色亮度低 (V=" 
+                   << (int)center_hsv_val[2] << "%)" << std::endl;
+        }
+    }
+    
+    report << "\n统计摘要:" << std::endl;
+    report << "- 中心与目标颜色相似的靶子: " << similar_colors_count << " 个" << std::endl;
+    report << "- 中心颜色亮度低的靶子: " << black_colors_count << " 个" << std::endl;
+    
+    // 输出所有故障靶子的ID
+    report << "\n=== 所有故障靶子ID ===" << std::endl;
+    for (size_t i = 0; i < sorted_infos.size(); i++) {
+        report << sorted_infos[i].target_id;
+        if ((i + 1) % 10 == 0) report << std::endl;
+        else if (i < sorted_infos.size() - 1) report << ", ";
+    }
+    report << std::endl;
+    
+    // 建议检查项
+    report << "\n=== 改进建议 ===" << std::endl;
+    report << "基于分析结果，建议：" << std::endl;
+    report << "1. 检查颜色相似性问题：" << std::endl;
+    report << "   - 中心颜色与目标颜色过于相似可能导致识别困难" << std::endl;
+    report << "   - 考虑增加颜色对比度阈值" << std::endl;
+    report << "2. 亮度问题：" << std::endl;
+    report << "   - 低亮度颜色在HSV空间中可能难以区分" << std::endl;
+    report << "   - 考虑过滤亮度过低的颜色" << std::endl;
+    report << "3. 目标索引分布：" << std::endl;
+    report << "   - 某些位置的目标可能更容易识别错误" << std::endl;
+    report << "   - 检查特定位置的颜色配置" << std::endl;
+    report << "4. 算法优化：" << std::endl;
+    report << "   - 在HSV空间中增加色调权重" << std::endl;
+    report << "   - 添加颜色对比度检查" << std::endl;
+    report << "   - 考虑使用更高级的颜色匹配算法" << std::endl;
+    
+    report.close();
+}
+
+
 TrainingFrameGenerator::AngularVelocityFunction energy_mechanism_velocity_generator() {
     // 随机数生成器
     static std::random_device rd;
@@ -111,7 +402,7 @@ bool calculate_position_error(const float& detected, float& actual) {
 }
 
 /**
- * @brief 测试随机五角星旋转模式
+ * @brief 测试随机五角星旋转模式（带完整颜色信息记录）
  */
 void test_pentagon_rotation(TrainingFrameGenerator& generator) {
     std::cout << "\n=== Pentagon Rotation Test ===" << std::endl;
@@ -130,9 +421,33 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
     
     cv::namedWindow("Pentagon Rotation", cv::WINDOW_AUTOSIZE);
     
+    // 创建故障记录文件
+    std::ofstream failure_log("failure_log.txt", std::ios::app);
+    std::ofstream color_log("color_combinations.txt", std::ios::app);
+    
+    // 创建CSV格式的详细日志
+    std::ofstream detailed_log("detailed_failure_log.csv", std::ios::app);
+    
+    // 如果是新文件，写入CSV表头
+    if (detailed_log.tellp() == 0) {
+        detailed_log << "target_id,timestamp,failure_type,accuracy,test_time,"
+                     << "center_color_b,center_color_g,center_color_r,"
+                     << "target_color_b,target_color_g,target_color_r,"
+                     << "target_index,"
+                     << "surround_color1_b,surround_color1_g,surround_color1_r,"
+                     << "surround_color2_b,surround_color2_g,surround_color2_r,"
+                     << "surround_color3_b,surround_color3_g,surround_color3_r,"
+                     << "surround_color4_b,surround_color4_g,surround_color4_r,"
+                     << "surround_color5_b,surround_color5_g,surround_color5_r,"
+                     << "total_frames,success_frames,error_frame_file\n";
+    }
+    
     std::cout << "\nTest started. Pentagon is auto-rotating at center." << std::endl;
     std::cout << "Target markers are ON (default). Press T to toggle." << std::endl;
     std::cout << "Press SPACE to pause/resume rotation." << std::endl;
+    std::cout << "Press D to手动记录当前靶子信息" << std::endl;
+    std::cout << "Press S to显示统计摘要" << std::endl;
+    std::cout << "故障记录将保存到: failure_log.txt, color_combinations.txt, detailed_failure_log.csv" << std::endl;
     
     TargetTracker tracker;
     
@@ -142,19 +457,20 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
     int current_session_success = 0;          // 当前靶子成功帧数
     int total_targets_generated = 1;          // 总共生成的靶子数量（从1开始）
     int problematic_targets = 0;              // 出现故障的靶子数量（准确率<90%）
-    // double total_testing_time = 0.0;          // 总测试时间
     
     // 定时切换相关变量
-    // float last_switch_time = 0.0f;            // 上次切换时间
     float current_session_start_time = 0.0f;  // 当前靶子开始时间
-    bool auto_switch_enabled = false;         // 自动切换开关
+    bool auto_switch_enabled = true;          // 自动切换开关（默认开启）
     float success_duration_needed = 3.0f;     // 成功需要持续的时间（秒）
     float fail_duration_limit = 5.0f;         // 失败最多测试时间（秒）
+    
+    // 颜色信息记录
+    std::vector<TargetColorInfo> problematic_color_infos;
+    int next_target_id = 1;
     
     // 获取第一帧以初始化时间
     auto first_frame_data = generator.get_next_frame();
     current_session_start_time = first_frame_data.timestamp;
-    // last_switch_time = first_frame_data.timestamp;
     
     // 处理第一帧
     auto tracker_result = tracker.process_frame(first_frame_data.frame);
@@ -181,10 +497,27 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
         current_session_frames++;
         
         // 检查识别结果
-        if(calculate_position_error(tracker_result.target_center, frame_data.target_position)){
-            current_session_success++;
+        // bool is_correct = false;
+        if (tracker_result.found) {
+            float error = cv::norm(tracker_result.target_center - frame_data.target_position);
+            if (error < 10.0f) {
+                current_session_success++;
+                // is_correct = true;
+            } else {
+                // 保存错误帧
+                std::string error_filename = "error_target_" + std::to_string(next_target_id) + 
+                                            "_t" + std::to_string(static_cast<int>(frame_data.timestamp)) + 
+                                            ".jpg";
+                imwrite(error_filename, frame_data.frame);
+                
+                std::cout << "❌ 识别错误！已保存帧到: " << error_filename << std::endl;
+                std::cout << "   期望位置: (" << frame_data.target_position.x << ", " 
+                          << frame_data.target_position.y << ")" << std::endl;
+                std::cout << "   检测位置: (" << tracker_result.target_center.x << ", " 
+                          << tracker_result.target_center.y << ")" << std::endl;
+            }
         } else {
-            imwrite("error_frame.jpg", frame_data.frame);
+            std::cout << "❌ 未检测到目标！" << std::endl;
         }
         
         // 更新FPS
@@ -196,8 +529,9 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
             (100.0f * current_session_success / current_session_frames) : 0.0f;
         
         // 检查是否需要自动切换
-        if (current_session_time > 0.5f) { // 至少运行0.5秒才开始检查
+        if (auto_switch_enabled && current_session_time > 0.5f) { // 至少运行0.5秒才开始检查
             bool should_switch = false;
+            // bool is_failure = false;
             
             if (current_accuracy >= 90.0f && current_session_time >= success_duration_needed) {
                 // 准确率≥90%且已运行3秒，成功切换
@@ -210,22 +544,51 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
                           << current_session_time << "秒，强制切换..." << std::endl;
                 problematic_targets++;
                 should_switch = true;
+                // is_failure = true;
+                
+                // 获取当前靶子的颜色信息并记录故障
+                TargetSim& target_sim = generator.get_target_sim();
+                record_failure_info_with_colors(target_sim, next_target_id, frame_data.timestamp, 
+                                              current_accuracy, current_session_time, 
+                                              current_session_frames, current_session_success,
+                                              failure_log, color_log, detailed_log);
+                
+                // 保存到向量用于分析
+                TargetColorInfo info;
+                info.target_id = next_target_id;
+                info.timestamp = std::to_string(frame_data.timestamp);
+                info.accuracy = current_accuracy;
+                info.test_frames = current_session_frames;
+                info.error_frame_file = "error_target_" + std::to_string(next_target_id) + 
+                                       "_t" + std::to_string(static_cast<int>(frame_data.timestamp)) + 
+                                       ".jpg";
+                
+                // 保存颜色信息
+                info.center_color_bgr = target_sim.get_center_color();
+                info.target_index = target_sim.get_target_index();
+                if (info.target_index >= 0 && info.target_index < (int)target_sim.get_surround_colors().size()) {
+                    info.target_color_bgr = target_sim.get_surround_colors()[info.target_index];
+                }
+                info.surround_colors_bgr = target_sim.get_surround_colors();
+                
+                problematic_color_infos.push_back(info);
             }
             
             if (should_switch) {
+                next_target_id++;
+                
                 // 执行切换
                 total_targets_generated++;
-                generator.regenerate_pentagon(generator.get_target_sim_center());
+                generator.regenerate_pentagon(generator.get_target_sim_center()); // 随机位置
                 
                 std::cout << "\n=== 自动切换 ===" << std::endl;
-                std::cout << "已生成第 " << total_targets_generated << " 个靶子" << std::endl;
+                std::cout << "已生成第 " << total_targets_generated << " 个靶子 (ID: " << next_target_id << ")" << std::endl;
                 std::cout << "当前故障率: " << (100.0f * problematic_targets / (total_targets_generated - 1)) << "%" << std::endl;
                 
                 // 重置当前会话统计
                 current_session_frames = 0;
                 current_session_success = 0;
                 current_session_start_time = frame_data.timestamp;
-                // last_switch_time = frame_data.timestamp;
                 
                 continue; // 跳过本次循环的显示，直接处理下一帧
             }
@@ -301,9 +664,18 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
         // 全局统计
         std::string global_text = "Targets: " + std::to_string(total_targets_generated) + 
                                  " | Problematic: " + std::to_string(problematic_targets);
+        cv::Scalar global_color = (problematic_targets == 0) ? cv::Scalar(0, 255, 0) : 
+                                 (problematic_targets * 1.0 / total_targets_generated < 0.05) ? 
+                                 cv::Scalar(0, 165, 255) : cv::Scalar(0, 0, 255);
+        
         cv::putText(display, global_text, 
                    cv::Point(10, 130), cv::FONT_HERSHEY_SIMPLEX, 0.5, 
-                   (problematic_targets == 0) ? cv::Scalar(0, 255, 0) : cv::Scalar(0, 165, 255), 1);
+                   global_color, 1);
+        
+        // 靶子ID
+        cv::putText(display, "Target ID: " + std::to_string(next_target_id), 
+                   cv::Point(10, 155), cv::FONT_HERSHEY_SIMPLEX, 0.5, 
+                   cv::Scalar(200, 200, 0), 1);
         
         // 状态
         std::string status_text = "Status: ";
@@ -311,7 +683,7 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
         status_text += auto_switch_enabled ? " | AUTO" : " | MANUAL";
         cv::Scalar status_color = generator.is_paused() ? cv::Scalar(0, 0, 255) : cv::Scalar(0, 255, 0);
         cv::putText(display, status_text, 
-                   cv::Point(10, 155), cv::FONT_HERSHEY_SIMPLEX, 0.5, 
+                   cv::Point(10, 180), cv::FONT_HERSHEY_SIMPLEX, 0.5, 
                    status_color, 1);
         
         // 显示
@@ -335,29 +707,65 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
         } else if (key == 'a' || key == 'A') { // A键切换自动/手动模式
             auto_switch_enabled = !auto_switch_enabled;
             std::cout << "Auto-switch: " << (auto_switch_enabled ? "ENABLED" : "DISABLED") << std::endl;
+        } else if (key == 'd' || key == 'D') { // D键手动记录当前靶子信息
+            std::cout << "\n=== 手动记录当前靶子信息 ===" << std::endl;
+            TargetSim& target_sim = generator.get_target_sim();
+            record_failure_info_with_colors(target_sim, next_target_id, frame_data.timestamp, 
+                                          current_accuracy, current_session_time, 
+                                          current_session_frames, current_session_success,
+                                          failure_log, color_log, detailed_log);
+            std::cout << "已记录当前靶子信息 (ID: " << next_target_id << ")" << std::endl;
         } else if (key == 'r' || key == 'R' || key == 'c' || key == 'C' || key == '0') { 
             // R/C/0键：手动生成新靶子
             
             // 1. 首先统计当前靶子
             if (current_session_frames > 0) {
-                float accuracy_rate = static_cast<float>(current_session_success) / current_session_frames;
+                float accuracy_rate = current_accuracy / 100.0f;
                 
                 std::cout << "\n=== 当前靶子统计 ===" << std::endl;
                 std::cout << "测试帧数: " << current_session_frames << std::endl;
                 std::cout << "成功帧数: " << current_session_success << std::endl;
                 std::cout << "运行时间: " << current_session_time << "秒" << std::endl;
-                std::cout << "识别准确率: " << (accuracy_rate * 100.0f) << "%" << std::endl;
+                std::cout << "识别准确率: " << current_accuracy << "%" << std::endl;
                 
-                // 如果准确率低于90%，计入故障统计
+                // 如果准确率低于90%，计入故障统计并记录信息
                 if (accuracy_rate < 0.9f) {
                     problematic_targets++;
                     std::cout << "⚠️  本次追踪失败，已计入故障统计" << std::endl;
+                    
+                    // 获取颜色信息并记录
+                    TargetSim& target_sim = generator.get_target_sim();
+                    record_failure_info_with_colors(target_sim, next_target_id, frame_data.timestamp, 
+                                                  current_accuracy, current_session_time, 
+                                                  current_session_frames, current_session_success,
+                                                  failure_log, color_log, detailed_log);
+                    
+                    // 保存到向量用于分析
+                    TargetColorInfo info;
+                    info.target_id = next_target_id;
+                    info.timestamp = std::to_string(frame_data.timestamp);
+                    info.accuracy = current_accuracy;
+                    info.test_frames = current_session_frames;
+                    info.error_frame_file = "error_target_" + std::to_string(next_target_id) + 
+                                           "_t" + std::to_string(static_cast<int>(frame_data.timestamp)) + 
+                                           ".jpg";
+                    
+                    // 保存颜色信息
+                    info.center_color_bgr = target_sim.get_center_color();
+                    info.target_index = target_sim.get_target_index();
+                    if (info.target_index >= 0 && info.target_index < (int)target_sim.get_surround_colors().size()) {
+                        info.target_color_bgr = target_sim.get_surround_colors()[info.target_index];
+                    }
+                    info.surround_colors_bgr = target_sim.get_surround_colors();
+                    
+                    problematic_color_infos.push_back(info);
                 } else {
                     std::cout << "✅  本次追踪成功" << std::endl;
                 }
             }
             
             // 2. 生成新靶子
+            next_target_id++;
             total_targets_generated++;
             
             if (key == 'r' || key == 'R') { // R键生成随机位置的新靶子
@@ -372,7 +780,7 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
                 std::cout << "Training reset (time = 0, angle = 0)" << std::endl;
             }
             
-            std::cout << "已生成第 " << total_targets_generated << " 个靶子" << std::endl;
+            std::cout << "已生成第 " << total_targets_generated << " 个靶子 (ID: " << next_target_id << ")" << std::endl;
             
             // 3. 重置当前会话统计
             current_session_frames = 0;
@@ -389,8 +797,20 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
             angular_speed = std::max(0.1f, angular_speed - 0.1f);
             generator.set_training_mode(TrainingFrameGenerator::MODE_PENTAGON_ROTATION, angular_speed);
             std::cout << "Rotation speed decreased to: " << angular_speed << " rad/s" << std::endl;
+        } else if (key == 's' || key == 'S') { // S键显示统计摘要
+            std::cout << "\n=== 当前统计摘要 ===" << std::endl;
+            std::cout << "总靶子数: " << total_targets_generated << std::endl;
+            std::cout << "故障靶子数: " << problematic_targets << std::endl;
+            std::cout << "故障率: " << (100.0f * problematic_targets / total_targets_generated) << "%" << std::endl;
+            std::cout << "当前靶子ID: " << next_target_id << std::endl;
+            std::cout << "已记录故障信息数量: " << problematic_color_infos.size() << std::endl;
         }
     }
+    
+    // 关闭日志文件
+    failure_log.close();
+    color_log.close();
+    detailed_log.close();
     
     cv::destroyAllWindows();
     
@@ -411,50 +831,25 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
         std::cout << "出现故障的靶子数量: " << problematic_targets << std::endl;
         std::cout << "故障概率: " << failure_probability << "%" << std::endl;
         
-        // 计算置信区间（简化版）
-        if (total_targets_generated >= 10) {
-            float p = static_cast<float>(problematic_targets) / total_targets_generated;
-            float std_error = sqrt(p * (1 - p) / total_targets_generated);
-            float confidence_95 = 1.96 * std_error * 100.0f;
-            
-            std::cout << "\n=== 统计推断 ===" << std::endl;
-            std::cout << "95%置信区间: " << (failure_probability - confidence_95) << "% ~ " 
-                      << (failure_probability + confidence_95) << "%" << std::endl;
-            
-            // 故障率评估
-            if (failure_probability < 5.0f) {
-                std::cout << "✅ 系统非常可靠，故障率极低" << std::endl;
-            } else if (failure_probability < 20.0f) {
-                std::cout << "⚠️  系统基本可用，但有一定故障率" << std::endl;
-            } else if (failure_probability < 50.0f) {
-                std::cout << "❌  系统可靠性不足，需要改进" << std::endl;
-            } else {
-                std::cout << "🔥  系统故障率过高，需要重大改进" << std::endl;
-            }
+        // 生成故障颜色组合分析报告
+        if (!problematic_color_infos.empty()) {
+            generate_color_analysis_report(problematic_color_infos);
         }
     }
     
-    // 输出当前靶子的统计（如果程序结束时还在测试一个靶子）
-    if (current_session_frames > 0) {
-        float final_accuracy = 100.0f * current_session_success / current_session_frames;
-        float final_time = generator.get_current_time() - current_session_start_time;
-        
-        std::cout << "\n=== 最后测试的靶子 ===" << std::endl;
-        std::cout << "测试帧数: " << current_session_frames << std::endl;
-        std::cout << "成功帧数: " << current_session_success << std::endl;
-        std::cout << "运行时间: " << final_time << "秒" << std::endl;
-        std::cout << "识别率: " << final_accuracy << "%" << std::endl;
-        
-        // 如果程序结束时靶子准确率<90%且运行时间>2秒，建议计入故障
-        if (final_accuracy < 90.0f && final_time > 2.0f) {
-            std::cout << "⚠️  建议：可将此靶子计入故障统计" << std::endl;
-            std::cout << "      修正后故障率: " 
-                      << (100.0f * (problematic_targets + 1) / (total_targets_generated + 1)) << "%" << std::endl;
-        }
+    std::cout << "\n故障信息已保存到:" << std::endl;
+    std::cout << "- failure_log.txt: 故障摘要" << std::endl;
+    std::cout << "- color_combinations.txt: 颜色组合信息" << std::endl;
+    std::cout << "- detailed_failure_log.csv: 详细CSV日志" << std::endl;
+    
+    if (!problematic_color_infos.empty()) {
+        std::cout << "\n检测到 " << problematic_color_infos.size() << " 个有问题的颜色组合" << std::endl;
+        std::cout << "已生成颜色分析报告: color_analysis_report.txt" << std::endl;
     }
     
     std::cout << "\nTest completed." << std::endl;
 }
+
 
 void test_pic() {
     cv::Mat img = cv::imread("error_frame.jpg");
