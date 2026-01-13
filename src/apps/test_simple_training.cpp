@@ -73,7 +73,7 @@ int main() {
 
 // ==================== 测试函数实现 ====================
 /**
- * @brief 带颜色信息的故障记录函数
+ * @brief 带颜色信息的故障记录函数（增强版，记录所有色块信息）
  */
 void record_failure_info_with_colors(TargetSim& target_sim, int target_id, float timestamp,
                                    float accuracy, float test_time, int total_frames, int success_frames,
@@ -104,29 +104,39 @@ void record_failure_info_with_colors(TargetSim& target_sim, int target_id, float
     
     // 2. 详细颜色信息记录到color_log.txt
     color_log << "\n=== 靶子ID: " << target_id << " ===" << std::endl;
-    color_log << "时间戳: " << timestamp << std::endl;
+    color_log << "时间戳: " << timestamp << "s" << std::endl;
     color_log << "准确率: " << accuracy << "%" << std::endl;
     color_log << "测试时间: " << test_time << "秒" << std::endl;
     color_log << "总帧数/成功帧数: " << total_frames << "/" << success_frames << std::endl;
     color_log << "目标索引: " << target_index << std::endl;
     
     // BGR颜色信息
-    color_log << "\n=== BGR颜色信息 ===" << std::endl;
+    color_log << "\n=== 完整色块颜色信息 ===" << std::endl;
     color_log << "中心颜色 (BGR): [" << (int)center_color[0] << ", " 
               << (int)center_color[1] << ", " << (int)center_color[2] << "]" << std::endl;
-    color_log << "目标颜色 (BGR): [" << (int)target_color[0] << ", " 
-              << (int)target_color[1] << ", " << (int)target_color[2] << "]" << std::endl;
     
-    color_log << "外围颜色列表:" << std::endl;
+    // 记录所有外围颜色（包括目标色块）
+    color_log << "外围颜色列表 (共" << surround_colors.size() << "个):" << std::endl;
     for (size_t i = 0; i < surround_colors.size(); i++) {
         const auto& color = surround_colors[i];
         std::string is_target = (i == (size_t)target_index) ? " [TARGET]" : "";
-        color_log << "  颜色" << i << " (BGR): [" << (int)color[0] << ", " 
+        color_log << "  色块" << i << " (BGR): [" << (int)color[0] << ", " 
                   << (int)color[1] << ", " << (int)color[2] << "]" << is_target << std::endl;
     }
     
+    // 目标色块信息
+    if (target_index >= 0 && target_index < (int)surround_colors.size()) {
+        cv::Scalar actual_target_color = surround_colors[target_index];
+        color_log << "\n目标色块详细信息:" << std::endl;
+        color_log << "  目标索引: " << target_index << std::endl;
+        color_log << "  目标颜色 (BGR): [" << (int)actual_target_color[0] << ", " 
+                  << (int)actual_target_color[1] << ", " << (int)actual_target_color[2] << "]" << std::endl;
+    }
+    
     // HSV颜色信息
-    color_log << "\n=== HSV颜色空间 ===" << std::endl;
+    color_log << "\n=== HSV颜色空间分析 ===" << std::endl;
+    
+    // 中心颜色的HSV
     cv::Mat center_bgr(1, 1, CV_8UC3, center_color);
     cv::Mat center_hsv;
     cv::cvtColor(center_bgr, center_hsv, cv::COLOR_BGR2HSV);
@@ -134,14 +144,32 @@ void record_failure_info_with_colors(TargetSim& target_sim, int target_id, float
     color_log << "中心颜色 (HSV): H=" << (int)center_hsv_val[0] << "° S=" 
               << (int)center_hsv_val[1] << "% V=" << (int)center_hsv_val[2] << "%" << std::endl;
     
-    // 颜色对比度分析
-    color_log << "\n=== 颜色对比度分析 ===" << std::endl;
+    // 所有外围色块的HSV
+    color_log << "外围色块HSV:" << std::endl;
     for (size_t i = 0; i < surround_colors.size(); i++) {
         const auto& color = surround_colors[i];
+        cv::Mat color_bgr(1, 1, CV_8UC3, color);
+        cv::Mat color_hsv;
+        cv::cvtColor(color_bgr, color_hsv, cv::COLOR_BGR2HSV);
+        cv::Vec3b color_hsv_val = color_hsv.at<cv::Vec3b>(0, 0);
+        
+        std::string is_target = (i == (size_t)target_index) ? " [TARGET]" : "";
+        color_log << "  色块" << i << " (HSV): H=" << (int)color_hsv_val[0] << "° S=" 
+                  << (int)color_hsv_val[1] << "% V=" << (int)color_hsv_val[2] << "%" << is_target << std::endl;
+    }
+    
+    // 颜色对比度分析（增强版）
+    color_log << "\n=== 颜色对比度详细分析 ===" << std::endl;
+    
+    // 1. 中心颜色与所有外围颜色的对比
+    color_log << "中心颜色与外围颜色对比:" << std::endl;
+    for (size_t i = 0; i < surround_colors.size(); i++) {
+        const auto& color = surround_colors[i];
+        
         // 计算BGR空间的距离
         float bgr_distance = cv::norm(center_color - color);
         
-        // 计算HSV空间的色调差异
+        // 计算HSV空间的差异
         cv::Mat color_bgr(1, 1, CV_8UC3, color);
         cv::Mat color_hsv;
         cv::cvtColor(color_bgr, color_hsv, cv::COLOR_BGR2HSV);
@@ -154,20 +182,156 @@ void record_failure_info_with_colors(TargetSim& target_sim, int target_id, float
         float value_diff = std::abs((int)center_hsv_val[2] - (int)color_hsv_val[2]);
         
         std::string is_target = (i == (size_t)target_index) ? " [TARGET]" : "";
-        std::string similarity = "";
+        std::string similarity_note = "";
         
         // 判断相似度
-        if (hue_diff < 15 && bgr_distance < 100) {
-            similarity = " (非常相似)";
-        } else if (hue_diff < 30 && bgr_distance < 150) {
-            similarity = " (比较相似)";
+        if (bgr_distance < 5.0f) {
+            similarity_note = " (颜色几乎相同)";
+        } else if (hue_diff < 5 && bgr_distance < 30) {
+            similarity_note = " (非常相似)";
+        } else if (hue_diff < 10 && bgr_distance < 50) {
+            similarity_note = " (相似)";
+        } else if (hue_diff > 60) {
+            similarity_note = " (色调差异大)";
         }
         
-        color_log << "  颜色" << i << ": BGR距离=" << bgr_distance 
+        color_log << "  色块" << i << ": BGR距离=" << bgr_distance 
                   << ", 色调差异=" << hue_diff << "°"
                   << ", 饱和度差异=" << saturation_diff << "%"
                   << ", 亮度差异=" << value_diff << "%"
-                  << is_target << similarity << std::endl;
+                  << is_target << similarity_note << std::endl;
+    }
+    
+    // 2. 外围色块之间的对比
+    color_log << "\n外围色块之间的对比:" << std::endl;
+    for (size_t i = 0; i < surround_colors.size(); i++) {
+        for (size_t j = i + 1; j < surround_colors.size(); j++) {
+            const auto& color1 = surround_colors[i];
+            const auto& color2 = surround_colors[j];
+            
+            float bgr_distance = cv::norm(color1 - color2);
+            
+            cv::Mat bgr1(1, 1, CV_8UC3, color1);
+            cv::Mat bgr2(1, 1, CV_8UC3, color2);
+            cv::Mat hsv1, hsv2;
+            cv::cvtColor(bgr1, hsv1, cv::COLOR_BGR2HSV);
+            cv::cvtColor(bgr2, hsv2, cv::COLOR_BGR2HSV);
+            cv::Vec3b hsv_val1 = hsv1.at<cv::Vec3b>(0, 0);
+            cv::Vec3b hsv_val2 = hsv2.at<cv::Vec3b>(0, 0);
+            
+            float hue_diff = std::abs((int)hsv_val1[0] - (int)hsv_val2[0]);
+            if (hue_diff > 90) hue_diff = 180 - hue_diff;
+            
+            // 如果两个色块颜色接近，特别标记
+            if (bgr_distance < 20.0f) {
+                std::string note1 = (i == (size_t)target_index) ? "[目标]" : "";
+                std::string note2 = (j == (size_t)target_index) ? "[目标]" : "";
+                color_log << "  色块" << i << note1 << " 与 色块" << j << note2 
+                          << " 非常相似 (BGR距离=" << bgr_distance 
+                          << ", 色调差异=" << hue_diff << "°)" << std::endl;
+            }
+        }
+    }
+    
+    // 3. 目标色块与其他色块的特别比较
+    if (target_index >= 0 && target_index < (int)surround_colors.size()) {
+        cv::Scalar target_color = surround_colors[target_index];
+        color_log << "\n目标色块与其他色块的特别比较:" << std::endl;
+        
+        // 目标色块与中心色块的相似度
+        float target_center_bgr_dist = cv::norm(target_color - center_color);
+        color_log << "  目标色块-中心色块 BGR距离: " << target_center_bgr_dist 
+                  << (target_center_bgr_dist < 10 ? " (非常接近)" : "") << std::endl;
+        
+        // 目标色块与每个非目标外围色块的相似度
+        for (size_t i = 0; i < surround_colors.size(); i++) {
+            if (i == (size_t)target_index) continue;
+            
+            const auto& color = surround_colors[i];
+            float bgr_dist = cv::norm(target_color - color);
+            
+            if (bgr_dist < 30.0f) {
+                color_log << "  目标色块与色块" << i << " 非常相似 (BGR距离=" 
+                          << bgr_dist << ")" << std::endl;
+            }
+        }
+    }
+    
+    // 4. 颜色分布特征统计
+    color_log << "\n=== 颜色分布特征统计 ===" << std::endl;
+    
+    // 计算平均亮度和饱和度
+    float avg_value = center_hsv_val[2];
+    float avg_saturation = center_hsv_val[1];
+    int low_value_count = (center_hsv_val[2] < 50) ? 1 : 0;
+    int low_saturation_count = (center_hsv_val[1] < 50) ? 1 : 0;
+    
+    for (size_t i = 0; i < surround_colors.size(); i++) {
+        const auto& color = surround_colors[i];
+        cv::Mat color_bgr(1, 1, CV_8UC3, color);
+        cv::Mat color_hsv;
+        cv::cvtColor(color_bgr, color_hsv, cv::COLOR_BGR2HSV);
+        cv::Vec3b hsv_val = color_hsv.at<cv::Vec3b>(0, 0);
+        
+        avg_value += hsv_val[2];
+        avg_saturation += hsv_val[1];
+        
+        if (hsv_val[2] < 50) low_value_count++;
+        if (hsv_val[1] < 50) low_saturation_count++;
+    }
+    
+    avg_value /= (surround_colors.size() + 1);
+    avg_saturation /= (surround_colors.size() + 1);
+    
+    color_log << "平均亮度: " << avg_value << "%" << std::endl;
+    color_log << "平均饱和度: " << avg_saturation << "%" << std::endl;
+    color_log << "低亮度色块(<50%): " << low_value_count << "/" << (surround_colors.size() + 1) << std::endl;
+    color_log << "低饱和度色块(<50%): " << low_saturation_count << "/" << (surround_colors.size() + 1) << std::endl;
+    
+    // 5. 潜在问题分析
+    color_log << "\n=== 潜在问题分析 ===" << std::endl;
+    
+    bool has_potential_issues = false;
+    
+    // 检查是否有多个色块与目标色块颜色相似
+    if (target_index >= 0 && target_index < (int)surround_colors.size()) {
+        cv::Scalar target_color = surround_colors[target_index];
+        int similar_count = 0;
+        
+        for (size_t i = 0; i < surround_colors.size(); i++) {
+            if (i == (size_t)target_index) continue;
+            
+            const auto& color = surround_colors[i];
+            float bgr_dist = cv::norm(target_color - color);
+            
+            if (bgr_dist < 30.0f) {
+                similar_count++;
+                color_log << "⚠️  色块" << i << " 与目标色块颜色相似 (BGR距离=" 
+                          << bgr_dist << ")" << std::endl;
+            }
+        }
+        
+        if (similar_count > 0) {
+            has_potential_issues = true;
+            color_log << "警告: 有 " << similar_count << " 个非目标色块与目标色块颜色相似" << std::endl;
+        }
+    }
+    
+    // 检查中心与目标是否太相似
+    float center_target_dist = cv::norm(center_color - target_color);
+    if (center_target_dist < 10.0f) {
+        has_potential_issues = true;
+        color_log << "⚠️  中心颜色与目标颜色过于相似 (BGR距离=" << center_target_dist << ")" << std::endl;
+    }
+    
+    // 检查低亮度问题
+    if (static_cast<size_t>(low_value_count) > (surround_colors.size() + 1) / 2) {
+        has_potential_issues = true;
+        color_log << "⚠️  超过一半的色块亮度低于50%" << std::endl;
+    }
+    
+    if (!has_potential_issues) {
+        color_log << "未发现明显的颜色配置问题" << std::endl;
     }
     
     color_log << "错误帧文件: error_target_" << target_id << "_t" << static_cast<int>(timestamp) << ".jpg" << std::endl;
@@ -197,10 +361,61 @@ void record_failure_info_with_colors(TargetSim& target_sim, int target_id, float
                  << "error_target_" << target_id << "_t" << static_cast<int>(timestamp) << ".jpg"
                  << std::endl;
     
+    // 额外保存一个详细的JSON格式日志，便于分析
+    std::ofstream json_log("detailed_color_analysis_" + std::to_string(target_id) + ".json", std::ios::app);
+    if (json_log.is_open()) {
+        json_log << "{\n";
+        json_log << "  \"target_id\": " << target_id << ",\n";
+        json_log << "  \"timestamp\": " << timestamp << ",\n";
+        json_log << "  \"accuracy\": " << accuracy << ",\n";
+        json_log << "  \"target_index\": " << target_index << ",\n";
+        
+        // 中心颜色
+        json_log << "  \"center_color\": {\"b\": " << (int)center_color[0] 
+                 << ", \"g\": " << (int)center_color[1] 
+                 << ", \"r\": " << (int)center_color[2] 
+                 << ", \"h\": " << (int)center_hsv_val[0]
+                 << ", \"s\": " << (int)center_hsv_val[1]
+                 << ", \"v\": " << (int)center_hsv_val[2] << "},\n";
+        
+        // 所有外围颜色
+        json_log << "  \"surround_colors\": [\n";
+        for (size_t i = 0; i < surround_colors.size(); i++) {
+            const auto& color = surround_colors[i];
+            cv::Mat color_bgr(1, 1, CV_8UC3, color);
+            cv::Mat color_hsv;
+            cv::cvtColor(color_bgr, color_hsv, cv::COLOR_BGR2HSV);
+            cv::Vec3b hsv_val = color_hsv.at<cv::Vec3b>(0, 0);
+            
+            json_log << "    {\"index\": " << i 
+                     << ", \"is_target\": " << (i == (size_t)target_index ? "true" : "false")
+                     << ", \"bgr\": [" << (int)color[0] << ", " << (int)color[1] << ", " << (int)color[2] << "]"
+                     << ", \"hsv\": [" << (int)hsv_val[0] << ", " << (int)hsv_val[1] << ", " << (int)hsv_val[2] << "]"
+                     << ", \"distance_to_center\": " << cv::norm(center_color - color);
+            
+            if (i == (size_t)target_index) {
+                json_log << ", \"distance_to_target\": 0";
+            } else if (target_index >= 0 && target_index < (int)surround_colors.size()) {
+                cv::Scalar target_color = surround_colors[target_index];
+                json_log << ", \"distance_to_target\": " << cv::norm(color - target_color);
+            }
+            
+            json_log << "}";
+            if (i < surround_colors.size() - 1) json_log << ",";
+            json_log << "\n";
+        }
+        json_log << "  ]\n";
+        json_log << "}\n";
+        json_log.close();
+    }
+    
     // 刷新缓冲区
     failure_log.flush();
     color_log.flush();
     detailed_log.flush();
+    
+    std::cout << "✅ 已记录故障靶子 " << target_id << " 的完整颜色信息" << std::endl;
+    std::cout << "   - 详细分析已保存到 JSON 文件: detailed_color_analysis_" << target_id << ".json" << std::endl;
 }
 
 /**
