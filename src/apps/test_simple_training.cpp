@@ -136,12 +136,34 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
     
     TargetTracker tracker;
     
-    // 统计变量重新设计
-    int total_frames = 0;           // 总帧数（整个程序运行期间）
-    int current_session_frames = 0; // 当前靶子测试帧数
-    int current_session_success = 0; // 当前靶子成功帧数
-    int fatal_sessions = 0;         // 失败追踪次数（准确率<90%）
-    double total_failure_rate = 0.0; // 总失败率（用于计算平均）
+    // 统计变量
+    int total_frames = 0;                     // 总帧数
+    int current_session_frames = 0;           // 当前靶子测试帧数
+    int current_session_success = 0;          // 当前靶子成功帧数
+    int total_targets_generated = 1;          // 总共生成的靶子数量（从1开始）
+    int problematic_targets = 0;              // 出现故障的靶子数量（准确率<90%）
+    // double total_testing_time = 0.0;          // 总测试时间
+    
+    // 定时切换相关变量
+    // float last_switch_time = 0.0f;            // 上次切换时间
+    float current_session_start_time = 0.0f;  // 当前靶子开始时间
+    bool auto_switch_enabled = false;         // 自动切换开关
+    float success_duration_needed = 3.0f;     // 成功需要持续的时间（秒）
+    float fail_duration_limit = 5.0f;         // 失败最多测试时间（秒）
+    
+    // 获取第一帧以初始化时间
+    auto first_frame_data = generator.get_next_frame();
+    current_session_start_time = first_frame_data.timestamp;
+    // last_switch_time = first_frame_data.timestamp;
+    
+    // 处理第一帧
+    auto tracker_result = tracker.process_frame(first_frame_data.frame);
+    total_frames++;
+    current_session_frames++;
+    
+    if(calculate_position_error(tracker_result.target_center, first_frame_data.target_position)){
+        current_session_success++;
+    }
     
     while (true) {
         // 获取训练帧
@@ -167,6 +189,47 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
         
         // 更新FPS
         float fps = perf_monitor.tick();
+        
+        // 计算当前靶子运行时间和准确率
+        float current_session_time = frame_data.timestamp - current_session_start_time;
+        float current_accuracy = (current_session_frames > 0) ? 
+            (100.0f * current_session_success / current_session_frames) : 0.0f;
+        
+        // 检查是否需要自动切换
+        if (current_session_time > 0.5f) { // 至少运行0.5秒才开始检查
+            bool should_switch = false;
+            
+            if (current_accuracy >= 90.0f && current_session_time >= success_duration_needed) {
+                // 准确率≥90%且已运行3秒，成功切换
+                std::cout << "✅ 当前靶子准确率" << current_accuracy << "%，已稳定运行" 
+                          << current_session_time << "秒，准备切换..." << std::endl;
+                should_switch = true;
+            } else if (current_session_time >= fail_duration_limit) {
+                // 已运行5秒但准确率<90%，失败切换
+                std::cout << "⚠️  当前靶子准确率" << current_accuracy << "%，已测试" 
+                          << current_session_time << "秒，强制切换..." << std::endl;
+                problematic_targets++;
+                should_switch = true;
+            }
+            
+            if (should_switch) {
+                // 执行切换
+                total_targets_generated++;
+                generator.regenerate_pentagon(generator.get_target_sim_center());
+                
+                std::cout << "\n=== 自动切换 ===" << std::endl;
+                std::cout << "已生成第 " << total_targets_generated << " 个靶子" << std::endl;
+                std::cout << "当前故障率: " << (100.0f * problematic_targets / (total_targets_generated - 1)) << "%" << std::endl;
+                
+                // 重置当前会话统计
+                current_session_frames = 0;
+                current_session_success = 0;
+                current_session_start_time = frame_data.timestamp;
+                // last_switch_time = frame_data.timestamp;
+                
+                continue; // 跳过本次循环的显示，直接处理下一帧
+            }
+        }
         
         // 创建显示图像
         cv::Mat display = frame_data.frame.clone();
@@ -197,16 +260,6 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
             cv::putText(display, "CENTER", 
                        cv::Point(center.x + 15, center.y),
                        cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 0, 0), 1);
-            
-            // 6. 在连线中间显示角度信息
-            cv::Point2f mid_point(
-                (center.x + frame_data.target_position.x) / 2,
-                (center.y + frame_data.target_position.y) / 2
-            );
-            std::string angle_text = std::to_string((int)(generator.get_current_time() * angular_speed * 180 / M_PI)) + "degrees";
-            cv::putText(display, angle_text, 
-                       cv::Point(mid_point.x - 10, mid_point.y - 10),
-                       cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
         }
         
         // === 显示性能信息 ===
@@ -225,9 +278,6 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
                    fps_color, 1);
         
         // 当前靶子统计信息
-        float current_accuracy = (current_session_frames > 0) ? 
-            (100.0f * current_session_success / current_session_frames) : 0.0f;
-        
         std::string accuracy_text = "Current Acc: " + std::to_string(current_accuracy).substr(0, 5) + "%";
         cv::Scalar accuracy_color = (current_accuracy >= 90.0f) ? cv::Scalar(0, 255, 0) : 
                                    (current_accuracy >= 70.0f) ? cv::Scalar(0, 165, 255) : 
@@ -237,29 +287,32 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
                    cv::Point(10, 55), cv::FONT_HERSHEY_SIMPLEX, 0.5, 
                    accuracy_color, 1);
         
-        // 帧数
-        cv::putText(display, "Frame: " + std::to_string(total_frames), 
+        // 当前靶子运行时间
+        std::string time_text = "Time: " + std::to_string(current_session_time).substr(0, 4) + "s";
+        cv::putText(display, time_text, 
                    cv::Point(10, 80), cv::FONT_HERSHEY_SIMPLEX, 0.5, 
                    cv::Scalar(255, 255, 0), 1);
         
-        // 时间
-        cv::putText(display, "Time: " + std::to_string(frame_data.timestamp).substr(0,4) + "s", 
+        // 帧数
+        cv::putText(display, "Frame: " + std::to_string(total_frames), 
                    cv::Point(10, 105), cv::FONT_HERSHEY_SIMPLEX, 0.5, 
                    cv::Scalar(255, 255, 0), 1);
+        
+        // 全局统计
+        std::string global_text = "Targets: " + std::to_string(total_targets_generated) + 
+                                 " | Problematic: " + std::to_string(problematic_targets);
+        cv::putText(display, global_text, 
+                   cv::Point(10, 130), cv::FONT_HERSHEY_SIMPLEX, 0.5, 
+                   (problematic_targets == 0) ? cv::Scalar(0, 255, 0) : cv::Scalar(0, 165, 255), 1);
         
         // 状态
         std::string status_text = "Status: ";
         status_text += generator.is_paused() ? "PAUSED" : "RUNNING";
+        status_text += auto_switch_enabled ? " | AUTO" : " | MANUAL";
         cv::Scalar status_color = generator.is_paused() ? cv::Scalar(0, 0, 255) : cv::Scalar(0, 255, 0);
         cv::putText(display, status_text, 
-                   cv::Point(10, 130), cv::FONT_HERSHEY_SIMPLEX, 0.5, 
-                   status_color, 1);
-        
-        // 失败会话统计
-        std::string failure_text = "Failed sessions: " + std::to_string(fatal_sessions);
-        cv::putText(display, failure_text, 
                    cv::Point(10, 155), cv::FONT_HERSHEY_SIMPLEX, 0.5, 
-                   (fatal_sessions > 0) ? cv::Scalar(0, 0, 255) : cv::Scalar(0, 255, 0), 1);
+                   status_color, 1);
         
         // 显示
         cv::imshow("Pentagon Rotation", display);
@@ -279,29 +332,34 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
         } else if (key == 't' || key == 'T') { // T键切换标记显示
             show_markers = !show_markers;
             std::cout << "Target markers: " << (show_markers ? "ON" : "OFF") << std::endl;
+        } else if (key == 'a' || key == 'A') { // A键切换自动/手动模式
+            auto_switch_enabled = !auto_switch_enabled;
+            std::cout << "Auto-switch: " << (auto_switch_enabled ? "ENABLED" : "DISABLED") << std::endl;
         } else if (key == 'r' || key == 'R' || key == 'c' || key == 'C' || key == '0') { 
-            // R/C/0键：生成新靶子或重置
+            // R/C/0键：手动生成新靶子
             
-            // 1. 首先检查当前靶子的识别准确率
+            // 1. 首先统计当前靶子
             if (current_session_frames > 0) {
                 float accuracy_rate = static_cast<float>(current_session_success) / current_session_frames;
                 
                 std::cout << "\n=== 当前靶子统计 ===" << std::endl;
                 std::cout << "测试帧数: " << current_session_frames << std::endl;
                 std::cout << "成功帧数: " << current_session_success << std::endl;
+                std::cout << "运行时间: " << current_session_time << "秒" << std::endl;
                 std::cout << "识别准确率: " << (accuracy_rate * 100.0f) << "%" << std::endl;
                 
-                // 如果准确率低于90%，计入失败统计
+                // 如果准确率低于90%，计入故障统计
                 if (accuracy_rate < 0.9f) {
-                    fatal_sessions++;
-                    total_failure_rate += accuracy_rate;
-                    std::cout << "⚠️  本次追踪失败，已计入失败统计 (失败次数: " << fatal_sessions << ")" << std::endl;
+                    problematic_targets++;
+                    std::cout << "⚠️  本次追踪失败，已计入故障统计" << std::endl;
                 } else {
-                    std::cout << "✅  本次追踪成功，忽略统计" << std::endl;
+                    std::cout << "✅  本次追踪成功" << std::endl;
                 }
             }
             
-            // 2. 根据按键执行相应操作
+            // 2. 生成新靶子
+            total_targets_generated++;
+            
             if (key == 'r' || key == 'R') { // R键生成随机位置的新靶子
                 generator.regenerate_pentagon(cv::Point2f(-1, -1)); // 随机位置
                 std::cout << "Generated new pentagon at random position" << std::endl;
@@ -314,9 +372,12 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
                 std::cout << "Training reset (time = 0, angle = 0)" << std::endl;
             }
             
+            std::cout << "已生成第 " << total_targets_generated << " 个靶子" << std::endl;
+            
             // 3. 重置当前会话统计
             current_session_frames = 0;
             current_session_success = 0;
+            current_session_start_time = frame_data.timestamp;
             
             std::cout << "已重置统计计数器" << std::endl;
             
@@ -335,43 +396,60 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
     
     // ====== 测试结束时的性能总结 ======
     std::cout << "\n========== Test Summary ==========" << std::endl;
-    std::cout << "Total frames processed: " << total_frames << std::endl;
+    std::cout << "总测试帧数: " << total_frames << std::endl;
     std::cout << "Average FPS: " << perf_monitor.get_average_fps() << std::endl;
     std::cout << "Minimum FPS: " << perf_monitor.get_min_fps() << std::endl;
     std::cout << "Maximum FPS: " << perf_monitor.get_max_fps() << std::endl;
     std::cout << "===================================" << std::endl;
     
-    // 如果有失败会话，计算平均失败率
-    if (fatal_sessions > 0) {
-        double average_failure_rate = total_failure_rate / fatal_sessions;
-        double average_success_rate_in_failures = average_failure_rate * 100.0;
+    // 故障率统计
+    if (total_targets_generated > 0) {
+        float failure_probability = 100.0f * problematic_targets / total_targets_generated;
         
-        std::cout << "\n=== 失败追踪统计 ===" << std::endl;
-        std::cout << "失败追踪次数 (准确率 < 90%): " << fatal_sessions << std::endl;
-        std::cout << "失败追踪的平均准确率: " << average_success_rate_in_failures << "%" << std::endl;
+        std::cout << "\n=== 故障概率统计 ===" << std::endl;
+        std::cout << "总共生成靶子数量: " << total_targets_generated << std::endl;
+        std::cout << "出现故障的靶子数量: " << problematic_targets << std::endl;
+        std::cout << "故障概率: " << failure_probability << "%" << std::endl;
         
-        // 根据平均准确率给出建议
-        if (average_success_rate_in_failures > 80.0) {
-            std::cout << "✅ 性能良好，失败时的准确率仍然较高" << std::endl;
-        } else if (average_success_rate_in_failures > 60.0) {
-            std::cout << "⚠️  性能一般，建议检查阈值参数" << std::endl;
-        } else {
-            std::cout << "❌ 性能较差，需要调整算法参数" << std::endl;
+        // 计算置信区间（简化版）
+        if (total_targets_generated >= 10) {
+            float p = static_cast<float>(problematic_targets) / total_targets_generated;
+            float std_error = sqrt(p * (1 - p) / total_targets_generated);
+            float confidence_95 = 1.96 * std_error * 100.0f;
+            
+            std::cout << "\n=== 统计推断 ===" << std::endl;
+            std::cout << "95%置信区间: " << (failure_probability - confidence_95) << "% ~ " 
+                      << (failure_probability + confidence_95) << "%" << std::endl;
+            
+            // 故障率评估
+            if (failure_probability < 5.0f) {
+                std::cout << "✅ 系统非常可靠，故障率极低" << std::endl;
+            } else if (failure_probability < 20.0f) {
+                std::cout << "⚠️  系统基本可用，但有一定故障率" << std::endl;
+            } else if (failure_probability < 50.0f) {
+                std::cout << "❌  系统可靠性不足，需要改进" << std::endl;
+            } else {
+                std::cout << "🔥  系统故障率过高，需要重大改进" << std::endl;
+            }
         }
-    } else {
-        std::cout << "\n✅ 完美！所有测试靶子识别准确率都超过90%" << std::endl;
     }
     
     // 输出当前靶子的统计（如果程序结束时还在测试一个靶子）
     if (current_session_frames > 0) {
         float final_accuracy = 100.0f * current_session_success / current_session_frames;
+        float final_time = generator.get_current_time() - current_session_start_time;
+        
         std::cout << "\n=== 最后测试的靶子 ===" << std::endl;
-        std::cout << "帧数: " << current_session_frames << std::endl;
-        std::cout << "成功数: " << current_session_success << std::endl;
+        std::cout << "测试帧数: " << current_session_frames << std::endl;
+        std::cout << "成功帧数: " << current_session_success << std::endl;
+        std::cout << "运行时间: " << final_time << "秒" << std::endl;
         std::cout << "识别率: " << final_accuracy << "%" << std::endl;
         
-        if (final_accuracy < 90.0f) {
-            std::cout << "⚠️  最后一个靶子识别失败，但未计入统计" << std::endl;
+        // 如果程序结束时靶子准确率<90%且运行时间>2秒，建议计入故障
+        if (final_accuracy < 90.0f && final_time > 2.0f) {
+            std::cout << "⚠️  建议：可将此靶子计入故障统计" << std::endl;
+            std::cout << "      修正后故障率: " 
+                      << (100.0f * (problematic_targets + 1) / (total_targets_generated + 1)) << "%" << std::endl;
         }
     }
     
