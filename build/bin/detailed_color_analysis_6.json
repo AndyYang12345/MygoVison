@@ -12,3 +12,17 @@
     {"index": 4, "is_target": false, "bgr": [216, 199, 167], "hsv": [100, 58, 216], "distance_to_center": 310.485, "distance_to_target": 310.485}
   ]
 }
+{
+  "target_id": 6,
+  "timestamp": 24.0503,
+  "accuracy": 76.25,
+  "target_index": 0,
+  "center_color": {"b": 57, "g": 244, "r": 231, "h": 32, "s": 195, "v": 244},
+  "surround_colors": [
+    {"index": 0, "is_target": true, "bgr": [57, 244, 231], "hsv": [32, 195, 244], "distance_to_center": 0, "distance_to_target": 0},
+    {"index": 1, "is_target": false, "bgr": [221, 66, 76], "hsv": [122, 179, 221], "distance_to_center": 287.411, "distance_to_target": 287.411},
+    {"index": 2, "is_target": false, "bgr": [23, 3, 23], "hsv": [150, 222, 23], "distance_to_center": 320.158, "distance_to_target": 320.158},
+    {"index": 3, "is_target": false, "bgr": [241, 132, 251], "hsv": [153, 121, 251], "distance_to_center": 216.333, "distance_to_target": 216.333},
+    {"index": 4, "is_target": false, "bgr": [23, 51, 215], "hsv": [4, 228, 215], "distance_to_center": 196.624, "distance_to_target": 196.624}
+  ]
+}

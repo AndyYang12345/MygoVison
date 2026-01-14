@@ -66,6 +66,10 @@ float TargetTracker::calculate_surround_score(const std::vector<ColorBlob>& blob
     return surrounding_count / 5.0f; // 归一化到0-1
 }
 
+/**
+ * @brief 还原为原来的颜色标签分配算法
+ * 将所有与中心颜色相似的外围色块标记为标签0
+ */
 void TargetTracker::assign_color_labels_by_hsv(std::vector<ColorBlob>& blobs) {
     if (blobs.empty()) return;
     
@@ -96,7 +100,7 @@ void TargetTracker::assign_color_labels_by_hsv(std::vector<ColorBlob>& blobs) {
         }
     }
     
-    // 如果找不到合适的中心，使用原来的策略
+    // 如果找不到合适的中心，使用圆形度最高的
     if (best_center_score < 0) {
         for (size_t i = 0; i < blobs.size(); i++) {
             float score = blobs[i].circularity;
@@ -111,7 +115,7 @@ void TargetTracker::assign_color_labels_by_hsv(std::vector<ColorBlob>& blobs) {
     blobs[center_idx].color_label = 0; // 中心标签0
     
     // 3. 计算与中心的HSV距离并分类
-    vector<pair<float, size_t>> hsv_distances; // (距离, 索引)
+    std::vector<std::pair<float, size_t>> hsv_distances; // (距离, 索引)
     
     for (size_t i = 0; i < blobs.size(); i++) {
         if (i == center_idx) continue;
@@ -121,17 +125,17 @@ void TargetTracker::assign_color_labels_by_hsv(std::vector<ColorBlob>& blobs) {
     }
     
     // 按HSV距离排序
-    sort(hsv_distances.begin(), hsv_distances.end());
+    std::sort(hsv_distances.begin(), hsv_distances.end());
     
     // 4. 智能分配标签（考虑黑色干扰）
     // 策略：与中心色调相近的标记为相同颜色（标签0），其他标记为不同颜色
     
     // 收集可能的同色块（考虑色调相似性）
-    vector<size_t> same_color_indices;
+    std::vector<size_t> same_color_indices;
     
     for (const auto& dist_pair : hsv_distances) {
         size_t idx = dist_pair.second;
-        float hue_diff = abs(center_hsv[0] - blobs[idx].color_hsv[0]);
+        float hue_diff = std::abs(center_hsv[0] - blobs[idx].color_hsv[0]);
         if (hue_diff > 90) hue_diff = 180 - hue_diff; // 处理循环
         
         // 如果色调相近，并且不是黑色
@@ -177,6 +181,19 @@ void TargetTracker::assign_color_labels_by_hsv(std::vector<ColorBlob>& blobs) {
             blobs[i].color_label = next_label++;
         }
     }
+}
+
+float TargetTracker::normalize_angle(float angle) {
+    // 将角度标准化到[0, 360)范围
+    while (angle < 0) angle += 360.0f;
+    while (angle >= 360.0f) angle -= 360.0f;
+    return angle;
+}
+
+float TargetTracker::angle_difference(float a, float b) {
+    // 计算两个角度之间的最小差异（考虑循环特性）
+    float diff = std::abs(normalize_angle(a) - normalize_angle(b));
+    return std::min(diff, 360.0f - diff);
 }
 
 target_info TargetTracker::process_frame(const cv::Mat& frame) {
@@ -299,6 +316,25 @@ target_info TargetTracker::process_frame(const cv::Mat& frame) {
     // 步骤7: 寻找与中心同色的外围色块
     cv::Point2f target_square_center;
     float best_square_score = -1.0f;
+    size_t best_candidate_idx = candidate_blobs.size();
+    
+    // 计算每个候选色块的角度
+    std::vector<float> candidate_angles;
+    for (size_t idx = 0; idx < candidate_blobs.size(); idx++) {
+        const auto& blob = candidate_blobs[idx];
+        
+        // 排除中心自身
+        float dist_to_center = cv::norm(blob.center - putative_center);
+        if (dist_to_center < 10) {
+            candidate_angles.push_back(0.0f);
+            continue;
+        }
+        
+        // 计算相对于中心的角度
+        cv::Point2f relative = blob.center - putative_center;
+        float angle = std::atan2(relative.y, relative.x) * 180.0f / CV_PI;
+        candidate_angles.push_back(angle);
+    }
     
     for (size_t idx = 0; idx < candidate_blobs.size(); idx++) {
         const auto& blob = candidate_blobs[idx];
@@ -324,6 +360,27 @@ target_info TargetTracker::process_frame(const cv::Mat& frame) {
             continue;
         }
         
+        // === 新增：角度约束检查 ===
+        float candidate_angle = candidate_angles[idx];
+        
+        if (last_angle_valid_) {
+            // 计算角度差异
+            float angle_diff = angle_difference(candidate_angle, last_target_angle_);
+            
+            // 如果角度差异太大，跳过这个候选（硬约束）
+            if (angle_diff > angle_prediction_threshold_) {
+                if (debug_mode_) {
+                    std::cout << "[角度约束] 跳过候选" << idx 
+                              << ": 角度=" << candidate_angle 
+                              << ", 预期=" << last_target_angle_
+                              << ", 差异=" << angle_diff 
+                              << " > 阈值=" << angle_prediction_threshold_ << std::endl;
+                }
+                continue;
+            }
+        }
+        
+        // === 原有评分计算 ===
         // 计算指向中心的方向一致性
         cv::Vec2f to_center(putative_center.x - blob.center.x,
                            putative_center.y - blob.center.y);
@@ -343,14 +400,25 @@ target_info TargetTracker::process_frame(const cv::Mat& frame) {
         // 宽高比评分（更接近正方形的得分更高）
         float aspect_score = 1.0f / blob.aspect_ratio;
         
-        // 综合评分
-        float score = direction_score * config_.direction_weight + 
-                     distance_score * config_.distance_weight + 
-                     aspect_score * config_.aspect_ratio_weight;
+        // 角度一致性评分（如果先验角度有效）
+        float angle_consistency_score = 1.0f;
+        if (last_angle_valid_) {
+            float angle_diff = angle_difference(candidate_angle, last_target_angle_);
+            angle_consistency_score = 1.0f - (angle_diff / angle_prediction_threshold_);
+            angle_consistency_score = std::max(0.1f, angle_consistency_score); // 最低0.1分
+        }
+        
+        // 综合评分（角度一致性权重较高）
+        float angle_weight = last_angle_valid_ ? 0.4f : 0.0f;
+        float score = direction_score * config_.direction_weight * (1.0f - angle_weight) + 
+                     distance_score * config_.distance_weight * (1.0f - angle_weight) + 
+                     aspect_score * config_.aspect_ratio_weight * (1.0f - angle_weight) + 
+                     angle_consistency_score * angle_weight;
         
         if (score > best_square_score) {
             best_square_score = score;
             target_square_center = blob.center;
+            best_candidate_idx = idx;
         }
     }
     
@@ -366,7 +434,50 @@ target_info TargetTracker::process_frame(const cv::Mat& frame) {
         result.angle = std::atan2(relative.y, relative.x) * 180 / CV_PI;
         result.center_color_label = center_label;
         
+        // 更新先验信息
+        if (best_candidate_idx < candidate_blobs.size()) {
+            last_target_angle_ = candidate_angles[best_candidate_idx];
+            last_angle_valid_ = true;
+            consecutive_success_++;
+            consecutive_failures_ = 0;
+            
+            // 记录历史用于分析
+            angle_history_.push_back(last_target_angle_);
+            time_history_.push_back(static_cast<float>(total_frames_));
+            
+            // 保持历史记录长度
+            if (angle_history_.size() > 10) {
+                angle_history_.pop_front();
+                time_history_.pop_front();
+            }
+        }
+        
         successful_detections_++;
+        
+        if (debug_mode_) {
+            std::cout << "[角度约束] 成功识别: 角度=" << result.angle 
+                      << ", 先验角度=" << last_target_angle_
+                      << ", 连续成功=" << consecutive_success_ << std::endl;
+        }
+    } else {
+        // 识别失败
+        consecutive_failures_++;
+        consecutive_success_ = 0;
+        
+        // 如果连续失败太多，重置先验信息
+        if (consecutive_failures_ > 5) {
+            if (debug_mode_) {
+                std::cout << "[角度约束] 连续失败" << consecutive_failures_ 
+                          << "次，重置先验信息" << std::endl;
+            }
+            last_angle_valid_ = false;
+            consecutive_failures_ = 0;
+        }
+        
+        if (debug_mode_) {
+            std::cout << "[角度约束] 识别失败: 连续失败=" << consecutive_failures_ 
+                      << ", 先验有效=" << (last_angle_valid_ ? "是" : "否") << std::endl;
+        }
     }
     
     return result;

@@ -1,0 +1,14 @@
+{
+  "target_id": 11,
+  "timestamp": 45.0516,
+  "accuracy": 66,
+  "target_index": 1,
+  "center_color": {"b": 57, "g": 244, "r": 231, "h": 32, "s": 195, "v": 244},
+  "surround_colors": [
+    {"index": 0, "is_target": false, "bgr": [116, 5, 202], "hsv": [163, 249, 202], "distance_to_center": 247.877, "distance_to_target": 247.877},
+    {"index": 1, "is_target": true, "bgr": [57, 244, 231], "hsv": [32, 195, 244], "distance_to_center": 0, "distance_to_target": 0},
+    {"index": 2, "is_target": false, "bgr": [85, 152, 55], "hsv": [69, 163, 152], "distance_to_center": 200.559, "distance_to_target": 200.559},
+    {"index": 3, "is_target": false, "bgr": [17, 168, 214], "hsv": [23, 235, 214], "distance_to_center": 87.55, "distance_to_target": 87.55},
+    {"index": 4, "is_target": false, "bgr": [221, 66, 76], "hsv": [122, 179, 221], "distance_to_center": 287.411, "distance_to_target": 287.411}
+  ]
+}

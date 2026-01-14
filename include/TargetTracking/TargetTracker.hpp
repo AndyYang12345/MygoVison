@@ -105,7 +105,21 @@ class TargetTracker {
 public:
     TargetTracker() {
         reset();
+        last_target_angle_ = 0.0f;
+        last_angle_valid_ = false;
+        consecutive_success_ = 0;
+        consecutive_failures_ = 0;
+        angle_prediction_threshold_ = 3.0f; // 默认3度
+        
+        // 调试模式
+        debug_mode_ = false;
     }
+
+    // 设置调试模式
+    void set_debug_mode(bool enabled) {
+        debug_mode_ = enabled;
+    }
+
 
     // 重置追踪器状态
     void reset() {
@@ -145,13 +159,44 @@ public:
         return static_cast<float>(successful_detections_) / total_frames_;
     }
 
+    // 添加设置先验参数的方法
+    void set_angle_prediction_threshold(float threshold) {
+        angle_prediction_threshold_ = threshold;
+    }
+    
+    float get_angle_prediction_threshold() const {
+        return angle_prediction_threshold_;
+    }
+    
+    void reset_prior_info() {
+        last_angle_valid_ = false;
+        consecutive_success_ = 0;
+        consecutive_failures_ = 0;
+        angle_history_.clear();
+        time_history_.clear();
+    }
+
 private:
     // 配置参数
     TrackerConfig config_;
+    bool debug_mode_;
 
     // 检测准确率统计
     int total_frames_ = 0;
     int successful_detections_ = 0;
+
+    // 先验角度相关
+    float last_target_angle_;          // 上一次成功识别的目标角度
+    bool last_angle_valid_;            // 先验角度是否有效
+    int consecutive_success_;          // 连续成功次数
+    int consecutive_failures_;         // 连续失败次数
+    float angle_prediction_threshold_; // 角度预测阈值（度）
+    // 历史记录
+    std::deque<float> angle_history_;  // 角度历史记录
+    std::deque<float> time_history_;   // 时间历史记录
+    // 辅助函数
+    float normalize_angle(float angle); // 将角度标准化到[0, 360)
+    float angle_difference(float a, float b); // 计算两个角度之间的最小差异
     
     // 内部辅助函数
     float calculate_color_distance_hsv(const cv::Scalar& hsv1, const cv::Scalar& hsv2);
