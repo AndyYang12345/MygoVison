@@ -665,6 +665,15 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
     std::cout << "故障记录将保存到: failure_log.txt, color_combinations.txt, detailed_failure_log.csv" << std::endl;
     
     TargetTracker tracker;
+     // 配置BGR暗色检测阈值
+    tracker.set_dark_brightness_threshold(60); // 默认50，可以调整
+    
+    // 启用调试模式
+    tracker.set_debug_mode(true);
+    
+    // 启用角度约束
+    tracker.enable_angle_constraint(true);
+    tracker.set_angle_prediction_threshold(5.0f);
     
     // 统计变量
     int total_frames = 0;                     // 总帧数
@@ -677,7 +686,7 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
     float current_session_start_time = 0.0f;  // 当前靶子开始时间
     bool auto_switch_enabled = true;          // 自动切换开关（默认开启）
     float success_duration_needed = 3.0f;     // 成功需要持续的时间（秒）
-    float fail_duration_limit = 5.0f;         // 失败最多测试时间（秒）
+    float fail_duration_limit = 3.0f;         // 失败最多测试时间（秒）
     
     // 颜色信息记录
     std::vector<TargetColorInfo> problematic_color_infos;
@@ -701,11 +710,11 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
         auto frame_data = generator.get_next_frame();
         auto tracker_result = tracker.process_frame(frame_data.frame);
         
-        std::cout << "Tracker found: " << (tracker_result.found ? "YES" : "NO") 
-                  << ", Position: (" << tracker_result.target_center.x << ", " << tracker_result.target_center.y << ")"
-                  << ", Distance: " << tracker_result.distance
-                  << ", Angle: " << tracker_result.angle << " degrees"
-                  << std::endl;
+        // std::cout << "Tracker found: " << (tracker_result.found ? "YES" : "NO") 
+        //           << ", Position: (" << tracker_result.target_center.x << ", " << tracker_result.target_center.y << ")"
+        //           << ", Distance: " << tracker_result.distance
+        //           << ", Angle: " << tracker_result.angle << " degrees"
+        //           << std::endl;
         
         // 更新帧数计数
         total_frames++;
@@ -725,14 +734,14 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
                                             ".jpg";
                 imwrite(error_filename, frame_data.frame);
                 
-                std::cout << "❌ 识别错误！已保存帧到: " << error_filename << std::endl;
-                std::cout << "   期望位置: (" << frame_data.target_position.x << ", " 
-                          << frame_data.target_position.y << ")" << std::endl;
-                std::cout << "   检测位置: (" << tracker_result.target_center.x << ", " 
-                          << tracker_result.target_center.y << ")" << std::endl;
+                // std::cout << "❌ 识别错误！已保存帧到: " << error_filename << std::endl;
+                // std::cout << "   期望位置: (" << frame_data.target_position.x << ", " 
+                //           << frame_data.target_position.y << ")" << std::endl;
+                // std::cout << "   检测位置: (" << tracker_result.target_center.x << ", " 
+                //           << tracker_result.target_center.y << ")" << std::endl;
             }
         } else {
-            std::cout << "❌ 未检测到目标！" << std::endl;
+            // std::cout << "❌ 未检测到目标！" << std::endl;
         }
         
         // 更新FPS
@@ -1078,12 +1087,12 @@ void test_pic() {
     std::cout << "Type: " << img.type() << " (CV_8UC3=" << CV_8UC3 << ")" << std::endl;
     
     TargetTracker tracker;
-    auto result = tracker.process_frame(img);
-    std::cout << "Tracker found: " << (result.found ? "YES" : "NO") 
-              << ", Position: (" << result.target_center.x << ", " << result.target_center.y << ")"
-              << ", Distance: " << result.distance
-              << ", Angle: " << result.angle << " degrees"
-              << std::endl;
+    // auto result = tracker.process_frame(img);
+    // std::cout << "Tracker found: " << (result.found ? "YES" : "NO") 
+    //           << ", Position: (" << result.target_center.x << ", " << result.target_center.y << ")"
+    //           << ", Distance: " << result.distance
+    //           << ", Angle: " << result.angle << " degrees"
+    //           << std::endl;
 }
 
 // ==================== 参数调优函数 ====================

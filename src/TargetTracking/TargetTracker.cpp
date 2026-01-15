@@ -24,9 +24,13 @@ float TargetTracker::calculate_color_distance_hsv(const cv::Scalar& hsv1, const 
 }
 
 bool TargetTracker::is_black_color_hsv(const cv::Scalar& hsv_color) {
-    // HSV判断黑色：低亮度且低饱和度
-    return hsv_color[2] < config_.black_value_threshold && 
-           hsv_color[1] < config_.black_saturation_threshold;
+    if (hsv_color[2] < 40) {  // 方案1：V < 40
+        return true;
+    }
+    if (hsv_color[2] < 60 && hsv_color[1] < 70) {  // 方案2：V < 60 && S < 70
+        return true;
+    }
+    return false;
 }
 
 cv::Scalar TargetTracker::convert_bgr_to_hsv(const cv::Scalar& bgr_color) {
@@ -111,36 +115,85 @@ void TargetTracker::assign_color_labels_by_hsv(std::vector<ColorBlob>& blobs) {
         }
     }
     
-    cv::Scalar center_hsv = blobs[center_idx].color_hsv;
+    cv::Scalar center_color_bgr = blobs[center_idx].color_bgr;
+    cv::Scalar center_color_hsv = blobs[center_idx].color_hsv;
     blobs[center_idx].color_label = 0; // 中心标签0
     
-    // 3. 计算与中心的HSV距离并分类
-    std::vector<std::pair<float, size_t>> hsv_distances; // (距离, 索引)
+    // === 新增：判断是否使用BGR空间 ===
+    bool use_bgr_space = false;
+    float color_similarity_threshold = config_.hue_similarity_threshold;
+    
+    // 检查中心颜色是否为暗色
+    if (is_dark_color_bgr(center_color_bgr)) {
+        use_bgr_space = true;
+        color_similarity_threshold = 30.0f;  // 这里BGR阈值固定为30
+    } else {
+        if (debug_mode_) {
+            std::cout << "[颜色空间] 中心颜色亮度正常，使用HSV空间进行相似性判断" << std::endl;
+        }
+    }
+    
+    // 3. 计算与中心的颜色距离并分类
+    std::vector<std::pair<float, size_t>> color_distances; // (距离, 索引)
     
     for (size_t i = 0; i < blobs.size(); i++) {
         if (i == center_idx) continue;
         
-        float dist = calculate_color_distance_hsv(center_hsv, blobs[i].color_hsv);
-        hsv_distances.push_back({dist, i});
+        // 跳过黑色或太暗的色块（额外检查）
+        if (blobs[i].is_black || blobs[i].color_hsv[2] < config_.value_min_threshold) {
+            blobs[i].color_label = 99; // 特殊标签表示黑色/暗色
+            continue;
+        }
+        
+        // === 修改：根据颜色空间选择距离计算方法 ===
+        float distance;
+        if (use_bgr_space) {
+            // 使用BGR空间计算距离
+            distance = calculate_color_distance_bgr(center_color_bgr, blobs[i].color_bgr);
+        } else {
+            // 使用HSV空间计算距离
+            distance = calculate_color_distance_hsv(center_color_hsv, blobs[i].color_hsv);
+        }
+        
+        color_distances.push_back({distance, i});
     }
     
-    // 按HSV距离排序
-    std::sort(hsv_distances.begin(), hsv_distances.end());
+    // 按颜色距离排序
+    std::sort(color_distances.begin(), color_distances.end());
     
     // 4. 智能分配标签（考虑黑色干扰）
-    // 策略：与中心色调相近的标记为相同颜色（标签0），其他标记为不同颜色
+    // 策略：与中心颜色相近的标记为相同颜色（标签0），其他标记为不同颜色
     
-    // 收集可能的同色块（考虑色调相似性）
+    // 收集可能的同色块
     std::vector<size_t> same_color_indices;
     
-    for (const auto& dist_pair : hsv_distances) {
+    for (const auto& dist_pair : color_distances) {
         size_t idx = dist_pair.second;
-        float hue_diff = std::abs(center_hsv[0] - blobs[idx].color_hsv[0]);
-        if (hue_diff > 90) hue_diff = 180 - hue_diff; // 处理循环
         
-        // 如果色调相近，并且不是黑色
-        if (hue_diff < config_.hue_similarity_threshold && !blobs[idx].is_black) {
-            same_color_indices.push_back(idx);
+        if (use_bgr_space) {
+            // BGR空间：直接使用距离判断
+            float bgr_distance = dist_pair.first;
+            if (bgr_distance < color_similarity_threshold && !blobs[idx].is_black) {
+                same_color_indices.push_back(idx);
+                
+                if (debug_mode_) {
+                    std::cout << "  BGR空间: 色块" << idx << " 与中心相似 (距离=" << bgr_distance 
+                              << " < 阈值=" << color_similarity_threshold << ")" << std::endl;
+                }
+            }
+        } else {
+            // HSV空间：使用色调差异判断
+            float hue_diff = std::abs(center_color_hsv[0] - blobs[idx].color_hsv[0]);
+            if (hue_diff > 90) hue_diff = 180 - hue_diff; // 处理循环
+            
+            if (hue_diff < color_similarity_threshold && !blobs[idx].is_black) {
+                same_color_indices.push_back(idx);
+                
+                if (debug_mode_) {
+                    std::cout << "  HSV空间: 色块" << idx << " 与中心相似 (色调差异=" << hue_diff 
+                              << "° < 阈值=" << color_similarity_threshold << "°)" << std::endl;
+                }
+            }
         }
     }
     
@@ -155,6 +208,12 @@ void TargetTracker::assign_color_labels_by_hsv(std::vector<ColorBlob>& blobs) {
     // 首先，所有同色块（包括可能的目标色块）都标记为0
     for (size_t idx : same_color_indices) {
         blobs[idx].color_label = 0;
+        
+        if (debug_mode_) {
+            cv::Scalar color = blobs[idx].color_bgr;
+            std::cout << "  标记色块" << idx << " 为同色 (BGR: [" << (int)color[0] 
+                      << ", " << (int)color[1] << ", " << (int)color[2] << "])" << std::endl;
+        }
     }
     
     // 其他块分配不同标签
@@ -179,6 +238,30 @@ void TargetTracker::assign_color_labels_by_hsv(std::vector<ColorBlob>& blobs) {
             blobs[i].color_label = 99; // 特殊标签表示黑色
         } else {
             blobs[i].color_label = next_label++;
+            
+            if (debug_mode_) {
+                cv::Scalar color = blobs[i].color_bgr;
+                std::cout << "  标记色块" << i << " 为不同颜色 (标签=" << blobs[i].color_label 
+                          << ", BGR: [" << (int)color[0] << ", " << (int)color[1] 
+                          << ", " << (int)color[2] << "])" << std::endl;
+            }
+        }
+    }
+    
+    // 调试信息：显示分配结果
+    if (debug_mode_) {
+        std::cout << "[颜色标签分配完成] 共" << blobs.size() << "个色块" << std::endl;
+        std::cout << "  中心色块: 索引=" << center_idx << ", 标签=0" << std::endl;
+        std::cout << "  同色外围色块数量: " << same_color_indices.size() << std::endl;
+        
+        for (size_t idx : same_color_indices) {
+            float distance = 0.0f;
+            if (use_bgr_space) {
+                distance = calculate_color_distance_bgr(center_color_bgr, blobs[idx].color_bgr);
+            } else {
+                distance = calculate_color_distance_hsv(center_color_hsv, blobs[idx].color_hsv);
+            }
+            std::cout << "    色块" << idx << ": 颜色距离=" << distance << std::endl;
         }
     }
 }
@@ -194,6 +277,48 @@ float TargetTracker::angle_difference(float a, float b) {
     // 计算两个角度之间的最小差异（考虑循环特性）
     float diff = std::abs(normalize_angle(a) - normalize_angle(b));
     return std::min(diff, 360.0f - diff);
+}
+
+/**
+ * @brief 判断是否为暗色（基于BGR空间）
+ */
+bool TargetTracker::is_dark_color_bgr(const cv::Scalar& bgr_color) {
+    // 计算亮度：BGR转灰度公式 (0.299*R + 0.587*G + 0.114*B)
+    float brightness = 0.299f * bgr_color[2] + 0.587f * bgr_color[1] + 0.114f * bgr_color[0];
+    return brightness < dark_brightness_threshold_;
+}
+
+/**
+ * @brief 检查BGR空间颜色相似性
+ */
+bool TargetTracker::check_color_similarity_bgr(const cv::Scalar& bgr1, const cv::Scalar& bgr2, float threshold) {
+    float distance = calculate_color_distance_bgr(bgr1, bgr2);
+    return distance < threshold;
+}
+
+/**
+ * @brief 混合颜色空间距离计算
+ * @param use_bgr_space true:使用BGR空间 false:使用HSV空间
+ */
+float TargetTracker::calculate_color_distance_mixed(const cv::Scalar& color1, const cv::Scalar& color2, 
+                                                   bool use_bgr_space) {
+    if (use_bgr_space) {
+        return calculate_color_distance_bgr(color1, color2);
+    } else {
+        return calculate_color_distance_hsv(color1, color2);
+    }
+}
+
+/**
+ * @brief 计算BGR颜色空间的距离
+ */
+float TargetTracker::calculate_color_distance_bgr(const cv::Scalar& bgr1, const cv::Scalar& bgr2) {
+    // BGR空间的距离计算（欧几里得距离）
+    float diff_b = bgr1[0] - bgr2[0];
+    float diff_g = bgr1[1] - bgr2[1];
+    float diff_r = bgr1[2] - bgr2[2];
+    
+    return sqrt(diff_b * diff_b + diff_g * diff_g + diff_r * diff_r);
 }
 
 target_info TargetTracker::process_frame(const cv::Mat& frame) {
@@ -306,6 +431,18 @@ target_info TargetTracker::process_frame(const cv::Mat& frame) {
             best_center_score = score;
             putative_center = blob.center;
             center_label = blob.color_label;
+            
+            // 检查中心是否为暗色
+            cv::Scalar center_bgr = blob.color_bgr;
+            bool center_is_dark = is_dark_color_bgr(center_bgr);
+            
+            if (debug_mode_ && center_is_dark) {
+                cv::Scalar center_hsv = blob.color_hsv;
+                std::cout << "[警告] 中心色块是暗色: BGR=[" 
+                          << (int)center_bgr[0] << "," << (int)center_bgr[1] << "," << (int)center_bgr[2] 
+                          << "], HSV=[H=" << (int)center_hsv[0] << "°,S=" << (int)center_hsv[1] 
+                          << "%,V=" << (int)center_hsv[2] << "%]" << std::endl;
+            }
         }
     }
     

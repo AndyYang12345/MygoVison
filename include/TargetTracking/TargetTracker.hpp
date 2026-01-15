@@ -103,16 +103,19 @@ struct TrackerConfig {
 
 class TargetTracker {
 public:
-    TargetTracker() {
-        reset();
-        last_target_angle_ = 0.0f;
-        last_angle_valid_ = false;
-        consecutive_success_ = 0;
-        consecutive_failures_ = 0;
-        angle_prediction_threshold_ = 3.0f; // 默认3度
-        
-        // 调试模式
-        debug_mode_ = false;
+    TargetTracker() : 
+        total_frames_(0),
+        successful_detections_(0),
+        last_target_angle_(0.0f),
+        last_angle_valid_(false),
+        consecutive_success_(0),
+        consecutive_failures_(0),
+        angle_prediction_threshold_(3.0f),
+        use_angle_constraint_(true),        // 默认启用角度约束
+        dark_brightness_threshold_(50),     // 默认BGR亮度阈值50
+        debug_mode_(false)                  // 默认关闭调试模式
+    {
+        config_ = get_config();
     }
 
     // 设置调试模式
@@ -120,13 +123,6 @@ public:
         debug_mode_ = enabled;
     }
 
-
-    // 重置追踪器状态
-    void reset() {
-        total_frames_ = 0;
-        successful_detections_ = 0;
-    }
-    
     /**
      * @brief 设置追踪器参数
      * @param config 新的参数配置
@@ -176,21 +172,41 @@ public:
         time_history_.clear();
     }
 
+    // 添加设置方法
+    void set_dark_brightness_threshold(int threshold) { 
+        dark_brightness_threshold_ = threshold; 
+    }
+    
+    int get_dark_brightness_threshold() const { 
+        return dark_brightness_threshold_; 
+    }
+
+    void enable_angle_constraint(bool enable) {
+        use_angle_constraint_ = enable;
+    }
+
 private:
-    // 配置参数
+    // 统计信息
+    int total_frames_;
+    int successful_detections_;
+    
+    // 配置
     TrackerConfig config_;
-    bool debug_mode_;
-
-    // 检测准确率统计
-    int total_frames_ = 0;
-    int successful_detections_ = 0;
-
-    // 先验角度相关
+    
+    // 先验角度信息
     float last_target_angle_;          // 上一次成功识别的目标角度
     bool last_angle_valid_;            // 先验角度是否有效
     int consecutive_success_;          // 连续成功次数
     int consecutive_failures_;         // 连续失败次数
     float angle_prediction_threshold_; // 角度预测阈值（度）
+    bool use_angle_constraint_;        // 是否启用角度约束
+    
+    // 暗色检测阈值
+    int dark_brightness_threshold_;    // BGR亮度阈值
+    
+    // 调试模式
+    bool debug_mode_;                  // 调试模式标志
+    
     // 历史记录
     std::deque<float> angle_history_;  // 角度历史记录
     std::deque<float> time_history_;   // 时间历史记录
@@ -204,6 +220,17 @@ private:
     cv::Scalar convert_bgr_to_hsv(const cv::Scalar& bgr_color);
     void assign_color_labels_by_hsv(std::vector<ColorBlob>& blobs);
     float calculate_surround_score(const std::vector<ColorBlob>& blobs, size_t center_idx);
+    float calculate_color_distance_bgr(const cv::Scalar& bgr1, const cv::Scalar& bgr2);
+    
+    // 添加判断是否为暗色函数
+    bool is_dark_color_bgr(const cv::Scalar& bgr_color);
+    
+    // 添加使用BGR空间的颜色相似性检查
+    bool check_color_similarity_bgr(const cv::Scalar& bgr1, const cv::Scalar& bgr2, float threshold);
+    
+    // 添加混合颜色空间的距离计算
+    float calculate_color_distance_mixed(const cv::Scalar& color1, const cv::Scalar& color2, 
+                                        bool use_bgr_space);
 };
 
 #endif // TARGET_TRACKER_HPP
