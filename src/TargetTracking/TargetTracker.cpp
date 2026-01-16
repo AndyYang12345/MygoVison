@@ -373,7 +373,7 @@ ColorBlob* TargetTracker::find_matching_target(const vector<ColorBlob>& blobs,
     }
     
     // 收集所有候选色块的相似度
-    vector<float> similarities;
+    vector<double> similarities;
     vector<const ColorBlob*> candidates;
     
     for (const auto& blob : blobs) {
@@ -390,8 +390,28 @@ ColorBlob* TargetTracker::find_matching_target(const vector<ColorBlob>& blobs,
         candidates.push_back(&blob);
         
         if (config_.print_debug_info) {
-            cout << "  Candidate at (" << blob.center.x << "," << blob.center.y 
-                 << "): raw_sim = " << similarity << endl;
+        cout << "Raw similarities with multi-space analysis:" << endl;
+        for (size_t i = 0; i < similarities.size(); ++i) {
+            // 计算多空间相似度详情
+            ColorSimilarity sim_detail = calculate_multi_space_similarity(
+                center_blob.mean_color_bgr, 
+                candidates[i]->mean_color_bgr,
+                center_is_dark
+            );
+            
+            cout << "  Candidate " << i << " at (" << candidates[i]->center.x 
+                 << "," << candidates[i]->center.y << "):" << endl;
+            cout << "    BGR=" << std::setprecision(3) << sim_detail.bgr_sim
+                 << ", HSV=" << sim_detail.hsv_sim
+                 << ", Lab=" << sim_detail.lab_sim
+                 << ", Combined=" << similarities[i] << endl;
+            
+            // 显示颜色类型
+            cv::Scalar hsv = bgr_to_hsv(candidates[i]->mean_color_bgr);
+            int color_type = classify_color_type(hsv);
+            cout << "    Color type: " << color_type 
+                 << " (H=" << hsv[0] << ", S=" << hsv[1] << ", V=" << hsv[2] << ")" << endl;
+        }
         }
     }
     
@@ -403,7 +423,7 @@ ColorBlob* TargetTracker::find_matching_target(const vector<ColorBlob>& blobs,
     }
     
     // 归一化相似度（最大-最小归一化）
-    vector<float> normalized = normalize_similarities(similarities);
+    vector<double> normalized = normalize_similarities(similarities);
     
     // 找到归一化后相似度最大的色块
     int best_idx = 0;
@@ -430,67 +450,146 @@ ColorBlob* TargetTracker::find_matching_target(const vector<ColorBlob>& blobs,
 }
 // ============ 颜色匹配函数 ============
 
-float TargetTracker::calculate_color_similarity(const Scalar& color1, const Scalar& color2, bool center_is_dark) {
-    // 将BGR转换为HSV进行比较
-    Scalar hsv1 = bgr_to_hsv(color1);
-    Scalar hsv2 = bgr_to_hsv(color2);
+double TargetTracker::calculate_color_similarity(const cv::Scalar& color1, const cv::Scalar& color2, bool center_is_dark) {
+    // 使用多颜色空间融合方法
+    ColorSimilarity sim = calculate_multi_space_similarity(color1, color2, center_is_dark);
+    return sim.combined_sim;
+}
+// 在TargetTracker.cpp中实现
+
+// 颜色类型分类
+int TargetTracker::classify_color_type(const cv::Scalar& hsv) {
+    float hue = hsv[0];      // 0-180
+    float saturation = hsv[1]; // 0-255
+    float value = hsv[2];      // 0-255
     
-    if (center_is_dark) {
-        // 对于暗色，主要使用BGR距离
-        float dist = color_distance_bgr(color1, color2);
-        float similarity = 1.0f - min(dist / config_.bgr_distance_threshold, 1.0f);
-        return similarity;
-    } else {
-        // 对于亮色，主要使用HSV色调距离
-        float hue_diff = abs(hsv1[0] - hsv2[0]);
-        hue_diff = min(hue_diff, 180.0f - hue_diff);  // 色调是环形的
-        
-        // 同时考虑饱和度和明度
-        float sat_diff = abs(hsv1[1] - hsv2[1]);
-        float val_diff = abs(hsv1[2] - hsv2[2]);
-        
-        // 加权计算总差异
-        float total_diff = hue_diff * 2.0f + sat_diff * 0.5f + val_diff * 0.3f;
-        float similarity = 1.0f - min(total_diff / 200.0f, 1.0f);
-        return similarity;
+    // 根据HSV值分类颜色类型
+    if (value < 50) return 0;  // 黑色/非常暗
+    
+    if (saturation < 50) {
+        if (value > 200) return 1;  // 白色/非常亮
+        return 2;  // 灰色/中性色
     }
+    
+    // 彩色分类
+    if (hue >= 0 && hue < 15) return 3;    // 红色
+    else if (hue >= 15 && hue < 45) return 4;   // 橙色
+    else if (hue >= 45 && hue < 75) return 5;   // 黄色
+    else if (hue >= 75 && hue < 105) return 6;  // 黄绿色
+    else if (hue >= 105 && hue < 135) return 7; // 绿色
+    else if (hue >= 135 && hue < 165) return 8; // 青色
+    else if (hue >= 165 && hue < 195) return 9; // 蓝色
+    else if (hue >= 195 && hue < 225) return 10; // 紫色
+    else if (hue >= 225 && hue < 255) return 11; // 粉色
+    else return 12; // 红色（环状）
+}
+
+TargetTracker::ColorSimilarity TargetTracker::calculate_multi_space_similarity(const cv::Scalar& color1, const cv::Scalar& color2, bool center_is_dark) {
+    ColorSimilarity result;
+    
+    // 转换为各种颜色空间
+    cv::Scalar hsv1 = bgr_to_hsv(color1);
+    cv::Scalar hsv2 = bgr_to_hsv(color2);
+    cv::Scalar lab1 = bgr_to_lab(color1);
+    cv::Scalar lab2 = bgr_to_lab(color2);
+    
+    // 1. BGR相似度（适合所有颜色）
+    double bgr_db = color1[0] - color2[0];
+    double bgr_dg = color1[1] - color2[1];
+    double bgr_dr = color1[2] - color2[2];
+    double bgr_dist = sqrt(bgr_db*bgr_db + bgr_dg*bgr_dg + bgr_dr*bgr_dr);
+    result.bgr_sim = exp(-bgr_dist / 100.0);
+    
+    // 2. HSV相似度（特别适合区分色调）
+    double hue_diff = abs(hsv1[0] - hsv2[0]);
+    hue_diff = min(hue_diff, 180.0 - hue_diff);  // 环形处理
+    
+    double sat_diff = abs(hsv1[1] - hsv2[1]);
+    double val_diff = abs(hsv1[2] - hsv2[2]);
+    
+    // 加权HSV相似度
+    double hsv_dist = hue_diff * 2.0 + sat_diff * 0.3 + val_diff * 0.2;
+    result.hsv_sim = exp(-hsv_dist / 100.0);
+    
+    // 3. Lab相似度（考虑人眼感知）
+    double lab_L_diff = lab1[0] - lab2[0];
+    double lab_a_diff = lab1[1] - lab2[1];
+    double lab_b_diff = lab1[2] - lab2[2];
+    double lab_dist = sqrt(lab_L_diff*lab_L_diff + lab_a_diff*lab_a_diff + lab_b_diff*lab_b_diff);
+    result.lab_sim = 1.0 - min(lab_dist / 150.0, 1.0);  // Lab距离通常0-100+
+    
+    // 4. 颜色类型感知的加权组合
+    int color_type1 = classify_color_type(hsv1);
+    int color_type2 = classify_color_type(hsv2);
+    
+    // 根据颜色类型调整权重
+    double w_bgr = 0.3, w_hsv = 0.4, w_lab = 0.3;  // 默认权重
+    
+    // 特定颜色类型的权重调整
+    if (color_type1 >= 9 && color_type1 <= 11) {  // 蓝色、紫色、粉色
+        // 对这些颜色，增加HSV权重（色调区分重要）
+        w_hsv = 0.6;
+        w_bgr = 0.2;
+        w_lab = 0.2;
+    } else if (center_is_dark) {
+        // 暗色：增加BGR权重
+        w_bgr = 0.5;
+        w_hsv = 0.3;
+        w_lab = 0.2;
+    } else if (hsv1[1] < 100) {  // 低饱和度
+        // 低饱和度颜色：增加Lab权重
+        w_lab = 0.5;
+        w_bgr = 0.3;
+        w_hsv = 0.2;
+    }
+    
+    result.combined_sim = w_bgr * result.bgr_sim + 
+                          w_hsv * result.hsv_sim + 
+                          w_lab * result.lab_sim;
+    
+    return result;
 }
 
 // ============ 辅助函数 ============
 
 // 在TargetTracker.cpp中实现
-vector<float> TargetTracker::normalize_similarities(const vector<float>& similarities) {
-    vector<float> result;
-    result.reserve(similarities.size());
+std::vector<double> TargetTracker::normalize_similarities(const std::vector<double>& similarities) {
+    std::vector<double> normalized;
     
     if (similarities.empty()) {
-        return result;
+        return normalized;
     }
     
-    // 找到最大值和最小值
-    float min_val = similarities[0];
-    float max_val = similarities[0];
+    // 找到最小值和最大值
+    double min_val = std::numeric_limits<double>::max();
+    double max_val = std::numeric_limits<double>::lowest();
     
-    for (float val : similarities) {
+    for (double val : similarities) {
         if (val < min_val) min_val = val;
         if (val > max_val) max_val = val;
     }
     
-    // 最大最小归一化：映射到0-1范围
-    float range = max_val - min_val;
-    
-    if (range > 0) {
-        for (float val : similarities) {
-            result.push_back((val - min_val) / range);
-        }
+    // 容差判断
+    const double EPSILON = 1e-6;
+    if (max_val - min_val < EPSILON) {
+        // 所有值几乎相等，返回均匀分布
+        normalized.assign(similarities.size(), 1.0 / similarities.size());
     } else {
-        // 如果所有值相等，都给0.5（中立值）
-        for (size_t i = 0; i < similarities.size(); ++i) {
-            result.push_back(0.5f);
+        // 正常归一化，添加一点平滑
+        double range = max_val - min_val;
+        // 添加一个小偏移，避免边界问题
+        double offset = range * 0.01;  // 1%的偏移
+        
+        for (double val : similarities) {
+            double norm_val = (val - min_val + offset) / (range + 2 * offset);
+            // 数值稳定性处理
+            if (norm_val < 0.0) norm_val = 0.0;
+            if (norm_val > 1.0) norm_val = 1.0;
+            normalized.push_back(norm_val);
         }
     }
     
-    return result;
+    return normalized;
 }
 
 double TargetTracker::calculate_circularity(const vector<Point>& contour) {
@@ -522,6 +621,24 @@ Scalar TargetTracker::bgr_to_hsv(const Scalar& bgr) {
     cvtColor(bgr_mat, hsv_mat, COLOR_BGR2HSV);
     Vec3b hsv = hsv_mat.at<Vec3b>(0, 0);
     return Scalar(hsv[0], hsv[1], hsv[2]);
+}
+Scalar TargetTracker::bgr_to_lab(const Scalar& bgr) {
+    // 创建一个1x1的BGR图像
+    Mat bgr_mat(1, 1, CV_8UC3, Scalar(bgr[0], bgr[1], bgr[2]));
+    Mat lab_mat;
+    
+    // 将BGR转换为Lab颜色空间
+    cvtColor(bgr_mat, lab_mat, COLOR_BGR2Lab);
+    
+    // 提取Lab值
+    Vec3b lab_values = lab_mat.at<Vec3b>(0, 0);
+
+    // 在Lab颜色空间中：
+    // L: 0-100 (亮度) -> 映射到0-255
+    // a: -127 to 128 (绿到红) -> 映射到0-255
+    // b: -127 to 128 (蓝到黄) -> 映射到0-255
+    
+    return Scalar(lab_values[0], lab_values[1], lab_values[2]);
 }
 
 float TargetTracker::color_distance_bgr(const Scalar& c1, const Scalar& c2) {

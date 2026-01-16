@@ -84,15 +84,16 @@ private:
     ColorBlob* find_matching_target(const std::vector<ColorBlob>& blobs, const ColorBlob& center_blob);
     
     // 颜色匹配函数
-    float calculate_color_similarity(const cv::Scalar& color1, const cv::Scalar& color2, bool center_is_dark);
+    double calculate_color_similarity(const cv::Scalar& color1, const cv::Scalar& color2, bool center_is_dark);
     
     // 辅助函数
     double calculate_circularity(const std::vector<cv::Point>& contour);
     bool is_valid_surrounding_blob(const ColorBlob& blob, const ColorBlob& center);
     cv::Scalar bgr_to_hsv(const cv::Scalar& bgr);
+    cv::Scalar bgr_to_lab(const cv::Scalar& bgr);
     float color_distance_bgr(const cv::Scalar& c1, const cv::Scalar& c2);
     bool is_dark_color(const cv::Scalar& bgr, int threshold);
-    std::vector<float> normalize_similarities(const std::vector<float>& similarities);
+    std::vector<double> normalize_similarities(const std::vector<double>& similarities);
     // 调试功能
     void draw_debug_info(cv::Mat& frame, 
                         const std::vector<ColorBlob>& blobs,
@@ -108,6 +109,14 @@ private:
     cv::Point2f last_target_position_;
     cv::Point2f last_board_position_;
     bool debug_enabled_;
+    struct ColorSimilarity {
+        double bgr_sim;
+        double hsv_sim;
+        double lab_sim;
+        double combined_sim;
+    };
+    ColorSimilarity calculate_multi_space_similarity(const cv::Scalar& color1, const cv::Scalar& color2, bool center_is_dark);
+    int classify_color_type(const cv::Scalar& hsv);
 };
 
 #endif // TARGET_TRACKER_HPP
