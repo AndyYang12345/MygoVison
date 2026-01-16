@@ -92,20 +92,10 @@ test_training_EXTERNAL_OBJECTS =
 
 bin/test_training: src/apps/CMakeFiles/test_training.dir/test_simple_training.cpp.o
 bin/test_training: src/apps/CMakeFiles/test_training.dir/build.make
-bin/test_training: lib/libtarget_sim.a
-bin/test_training: lib/libtarget_tracker.a
-bin/test_training: /usr/local/lib/libopencv_gapi.so.4.7.0
+bin/test_training: src/TargetTracking/libtarget_tracker.a
+bin/test_training: src/TargetSim/libtarget_sim.a
 bin/test_training: /usr/local/lib/libopencv_highgui.so.4.7.0
-bin/test_training: /usr/local/lib/libopencv_ml.so.4.7.0
-bin/test_training: /usr/local/lib/libopencv_objdetect.so.4.7.0
-bin/test_training: /usr/local/lib/libopencv_photo.so.4.7.0
-bin/test_training: /usr/local/lib/libopencv_stitching.so.4.7.0
-bin/test_training: /usr/local/lib/libopencv_video.so.4.7.0
 bin/test_training: /usr/local/lib/libopencv_videoio.so.4.7.0
-bin/test_training: /usr/local/lib/libopencv_calib3d.so.4.7.0
-bin/test_training: /usr/local/lib/libopencv_dnn.so.4.7.0
-bin/test_training: /usr/local/lib/libopencv_features2d.so.4.7.0
-bin/test_training: /usr/local/lib/libopencv_flann.so.4.7.0
 bin/test_training: /usr/local/lib/libopencv_imgcodecs.so.4.7.0
 bin/test_training: /usr/local/lib/libopencv_imgproc.so.4.7.0
 bin/test_training: /usr/local/lib/libopencv_core.so.4.7.0

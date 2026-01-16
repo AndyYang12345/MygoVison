@@ -1,621 +1,605 @@
-#include "TargetTracker.hpp"
+#include "TargetTracking/TargetTracker.hpp"
 #include <iostream>
+#include <fstream>
+#include <cmath>
 #include <algorithm>
+#include <limits>
 
 using namespace cv;
 using namespace std;
 
-// HSV辅助函数实现
-float TargetTracker::calculate_color_distance_hsv(const cv::Scalar& hsv1, const cv::Scalar& hsv2) {
-    // HSV空间的距离计算
-    // Hue分量在0-180之间，需要处理循环特性
-    float hue_diff = std::abs(hsv1[0] - hsv2[0]);
-    if (hue_diff > 90) {
-        hue_diff = 180 - hue_diff; // HSV色调是圆形的
-    }
-    
-    float saturation_diff = std::abs(hsv1[1] - hsv2[1]);
-    float value_diff = std::abs(hsv1[2] - hsv2[2]);
-    
-    // 加权计算，色调权重最高
-    return sqrt(2.0f * hue_diff * hue_diff + 
-                saturation_diff * saturation_diff + 
-                value_diff * value_diff);
+// ============ 构造函数和配置管理 ============
+
+TargetTracker::TargetTracker() 
+    : frames_processed_(0), 
+      successful_tracks_(0),
+      has_previous_target_(false),
+      debug_enabled_(true),
+      frame_size_(cv::Size(640, 480)) {
+    // 默认配置
+    config_ = TrackerConfig();
 }
 
-bool TargetTracker::is_black_color_hsv(const cv::Scalar& hsv_color) {
-    if (hsv_color[2] < 40) {  // 方案1：V < 40
-        return true;
-    }
-    if (hsv_color[2] < 60 && hsv_color[1] < 70) {  // 方案2：V < 60 && S < 70
-        return true;
-    }
-    return false;
+void TargetTracker::set_config(const TrackerConfig& config) {
+    config_ = config;
 }
 
-cv::Scalar TargetTracker::convert_bgr_to_hsv(const cv::Scalar& bgr_color) {
-    // 将BGR颜色转换为HSV
-    cv::Mat bgr_mat(1, 1, CV_8UC3);
-    bgr_mat.at<cv::Vec3b>(0, 0) = cv::Vec3b(
-        static_cast<uchar>(bgr_color[0]),
-        static_cast<uchar>(bgr_color[1]),
-        static_cast<uchar>(bgr_color[2])
-    );
-    
-    cv::Mat hsv_mat;
-    cv::cvtColor(bgr_mat, hsv_mat, cv::COLOR_BGR2HSV);
-    
-    cv::Vec3b hsv = hsv_mat.at<cv::Vec3b>(0, 0);
-    return cv::Scalar(hsv[0], hsv[1], hsv[2]);
+TrackerConfig TargetTracker::get_config() const {
+    return config_;
 }
 
-float TargetTracker::calculate_surround_score(const std::vector<ColorBlob>& blobs, size_t center_idx) {
-    if (center_idx >= blobs.size()) return 0.0f;
-    
-    const auto& center_blob = blobs[center_idx];
-    int surrounding_count = 0;
-    
-    for (size_t i = 0; i < blobs.size(); i++) {
-        if (i == center_idx) continue;
-        
-        const auto& blob = blobs[i];
-        float distance = cv::norm(blob.center - center_blob.center);
-        
-        if (distance < config_.max_distance_to_center && 
-            distance > config_.min_distance_to_center) {
-            surrounding_count++;
-        }
-    }
-    
-    return surrounding_count / 5.0f; // 归一化到0-1
-}
+// ============ 主处理流程 ============
 
-/**
- * @brief 还原为原来的颜色标签分配算法
- * 将所有与中心颜色相似的外围色块标记为标签0
- */
-void TargetTracker::assign_color_labels_by_hsv(std::vector<ColorBlob>& blobs) {
-    if (blobs.empty()) return;
-    
-    // 1. 为每个色块计算HSV颜色
-    for (auto& blob : blobs) {
-        blob.color_hsv = convert_bgr_to_hsv(blob.color_bgr);
-        blob.is_black = is_black_color_hsv(blob.color_hsv);
-    }
-    
-    // 2. 找到中心色块（基于圆形度和被围绕程度）
-    size_t center_idx = 0;
-    float best_center_score = -1.0f;
-    
-    for (size_t i = 0; i < blobs.size(); i++) {
-        // 跳过太暗的色块（可能是黑色）
-        if (blobs[i].color_hsv[2] < config_.value_min_threshold) {
-            continue;
-        }
-        
-        float circularity_score = std::min(1.0f, blobs[i].circularity / 0.8f);
-        float surround_score = calculate_surround_score(blobs, i);
-        
-        float score = circularity_score * 0.7f + surround_score * 0.3f;
-        
-        if (score > best_center_score) {
-            best_center_score = score;
-            center_idx = i;
-        }
-    }
-    
-    // 如果找不到合适的中心，使用圆形度最高的
-    if (best_center_score < 0) {
-        for (size_t i = 0; i < blobs.size(); i++) {
-            float score = blobs[i].circularity;
-            if (score > best_center_score) {
-                best_center_score = score;
-                center_idx = i;
-            }
-        }
-    }
-    
-    cv::Scalar center_color_bgr = blobs[center_idx].color_bgr;
-    cv::Scalar center_color_hsv = blobs[center_idx].color_hsv;
-    blobs[center_idx].color_label = 0; // 中心标签0
-    
-    // === 新增：判断是否使用BGR空间 ===
-    bool use_bgr_space = false;
-    float color_similarity_threshold = config_.hue_similarity_threshold;
-    
-    // 检查中心颜色是否为暗色
-    if (is_dark_color_bgr(center_color_bgr)) {
-        use_bgr_space = true;
-        color_similarity_threshold = 30.0f;  // 这里BGR阈值固定为30
-    } else {
-        if (debug_mode_) {
-            std::cout << "[颜色空间] 中心颜色亮度正常，使用HSV空间进行相似性判断" << std::endl;
-        }
-    }
-    
-    // 3. 计算与中心的颜色距离并分类
-    std::vector<std::pair<float, size_t>> color_distances; // (距离, 索引)
-    
-    for (size_t i = 0; i < blobs.size(); i++) {
-        if (i == center_idx) continue;
-        
-        // 跳过黑色或太暗的色块（额外检查）
-        if (blobs[i].is_black || blobs[i].color_hsv[2] < config_.value_min_threshold) {
-            blobs[i].color_label = 99; // 特殊标签表示黑色/暗色
-            continue;
-        }
-        
-        // === 修改：根据颜色空间选择距离计算方法 ===
-        float distance;
-        if (use_bgr_space) {
-            // 使用BGR空间计算距离
-            distance = calculate_color_distance_bgr(center_color_bgr, blobs[i].color_bgr);
-        } else {
-            // 使用HSV空间计算距离
-            distance = calculate_color_distance_hsv(center_color_hsv, blobs[i].color_hsv);
-        }
-        
-        color_distances.push_back({distance, i});
-    }
-    
-    // 按颜色距离排序
-    std::sort(color_distances.begin(), color_distances.end());
-    
-    // 4. 智能分配标签（考虑黑色干扰）
-    // 策略：与中心颜色相近的标记为相同颜色（标签0），其他标记为不同颜色
-    
-    // 收集可能的同色块
-    std::vector<size_t> same_color_indices;
-    
-    for (const auto& dist_pair : color_distances) {
-        size_t idx = dist_pair.second;
-        
-        if (use_bgr_space) {
-            // BGR空间：直接使用距离判断
-            float bgr_distance = dist_pair.first;
-            if (bgr_distance < color_similarity_threshold && !blobs[idx].is_black) {
-                same_color_indices.push_back(idx);
-                
-                if (debug_mode_) {
-                    std::cout << "  BGR空间: 色块" << idx << " 与中心相似 (距离=" << bgr_distance 
-                              << " < 阈值=" << color_similarity_threshold << ")" << std::endl;
-                }
-            }
-        } else {
-            // HSV空间：使用色调差异判断
-            float hue_diff = std::abs(center_color_hsv[0] - blobs[idx].color_hsv[0]);
-            if (hue_diff > 90) hue_diff = 180 - hue_diff; // 处理循环
-            
-            if (hue_diff < color_similarity_threshold && !blobs[idx].is_black) {
-                same_color_indices.push_back(idx);
-                
-                if (debug_mode_) {
-                    std::cout << "  HSV空间: 色块" << idx << " 与中心相似 (色调差异=" << hue_diff 
-                              << "° < 阈值=" << color_similarity_threshold << "°)" << std::endl;
-                }
-            }
-        }
-    }
-    
-    // 分配标签：
-    // - 中心：标签0
-    // - 与中心同色的外围块：标签0
-    // - 其他：标签1,2,3...
-    // - 黑色块：特殊标签（或者排除）
-    
-    int next_label = 1;
-    
-    // 首先，所有同色块（包括可能的目标色块）都标记为0
-    for (size_t idx : same_color_indices) {
-        blobs[idx].color_label = 0;
-        
-        if (debug_mode_) {
-            cv::Scalar color = blobs[idx].color_bgr;
-            std::cout << "  标记色块" << idx << " 为同色 (BGR: [" << (int)color[0] 
-                      << ", " << (int)color[1] << ", " << (int)color[2] << "])" << std::endl;
-        }
-    }
-    
-    // 其他块分配不同标签
-    for (size_t i = 0; i < blobs.size(); i++) {
-        if (i == center_idx) continue;
-        
-        // 检查是否已经在同色列表中
-        bool is_same_color = false;
-        for (size_t same_idx : same_color_indices) {
-            if (i == same_idx) {
-                is_same_color = true;
-                break;
-            }
-        }
-        
-        if (is_same_color) {
-            continue; // 已经分配为0
-        }
-        
-        // 如果是黑色，可以特殊处理（比如分配特殊标签或排除）
-        if (blobs[i].is_black) {
-            blobs[i].color_label = 99; // 特殊标签表示黑色
-        } else {
-            blobs[i].color_label = next_label++;
-            
-            if (debug_mode_) {
-                cv::Scalar color = blobs[i].color_bgr;
-                std::cout << "  标记色块" << i << " 为不同颜色 (标签=" << blobs[i].color_label 
-                          << ", BGR: [" << (int)color[0] << ", " << (int)color[1] 
-                          << ", " << (int)color[2] << "])" << std::endl;
-            }
-        }
-    }
-    
-    // 调试信息：显示分配结果
-    if (debug_mode_) {
-        std::cout << "[颜色标签分配完成] 共" << blobs.size() << "个色块" << std::endl;
-        std::cout << "  中心色块: 索引=" << center_idx << ", 标签=0" << std::endl;
-        std::cout << "  同色外围色块数量: " << same_color_indices.size() << std::endl;
-        
-        for (size_t idx : same_color_indices) {
-            float distance = 0.0f;
-            if (use_bgr_space) {
-                distance = calculate_color_distance_bgr(center_color_bgr, blobs[idx].color_bgr);
-            } else {
-                distance = calculate_color_distance_hsv(center_color_hsv, blobs[idx].color_hsv);
-            }
-            std::cout << "    色块" << idx << ": 颜色距离=" << distance << std::endl;
-        }
-    }
-}
-
-float TargetTracker::normalize_angle(float angle) {
-    // 将角度标准化到[0, 360)范围
-    while (angle < 0) angle += 360.0f;
-    while (angle >= 360.0f) angle -= 360.0f;
-    return angle;
-}
-
-float TargetTracker::angle_difference(float a, float b) {
-    // 计算两个角度之间的最小差异（考虑循环特性）
-    float diff = std::abs(normalize_angle(a) - normalize_angle(b));
-    return std::min(diff, 360.0f - diff);
-}
-
-/**
- * @brief 判断是否为暗色（基于BGR空间）
- */
-bool TargetTracker::is_dark_color_bgr(const cv::Scalar& bgr_color) {
-    // 计算亮度：BGR转灰度公式 (0.299*R + 0.587*G + 0.114*B)
-    float brightness = 0.299f * bgr_color[2] + 0.587f * bgr_color[1] + 0.114f * bgr_color[0];
-    return brightness < dark_brightness_threshold_;
-}
-
-/**
- * @brief 检查BGR空间颜色相似性
- */
-bool TargetTracker::check_color_similarity_bgr(const cv::Scalar& bgr1, const cv::Scalar& bgr2, float threshold) {
-    float distance = calculate_color_distance_bgr(bgr1, bgr2);
-    return distance < threshold;
-}
-
-/**
- * @brief 混合颜色空间距离计算
- * @param use_bgr_space true:使用BGR空间 false:使用HSV空间
- */
-float TargetTracker::calculate_color_distance_mixed(const cv::Scalar& color1, const cv::Scalar& color2, 
-                                                   bool use_bgr_space) {
-    if (use_bgr_space) {
-        return calculate_color_distance_bgr(color1, color2);
-    } else {
-        return calculate_color_distance_hsv(color1, color2);
-    }
-}
-
-/**
- * @brief 计算BGR颜色空间的距离
- */
-float TargetTracker::calculate_color_distance_bgr(const cv::Scalar& bgr1, const cv::Scalar& bgr2) {
-    // BGR空间的距离计算（欧几里得距离）
-    float diff_b = bgr1[0] - bgr2[0];
-    float diff_g = bgr1[1] - bgr2[1];
-    float diff_r = bgr1[2] - bgr2[2];
-    
-    return sqrt(diff_b * diff_b + diff_g * diff_g + diff_r * diff_r);
-}
-
-target_info TargetTracker::process_frame(const cv::Mat& frame) {
-    target_info result;
+TargetInfo TargetTracker::process_frame(const Mat& frame) {
+    TargetInfo result;
     result.found = false;
+    frames_processed_++;
     
-    total_frames_++;
+    // 更新帧大小
+    frame_size_ = frame.size();
     
-    // 步骤1: 图像预处理
-    cv::Mat processed;
-    cv::GaussianBlur(frame, processed, cv::Size(3, 3), 0);
+    if (frame.empty()) {
+        if (config_.print_debug_info) {
+            cerr << "[ERROR] Empty frame received!" << endl;
+        }
+        return result;
+    }
     
-    // 步骤2: HSV转换和饱和度筛选
-    cv::Mat hsv;
-    cv::cvtColor(processed, hsv, cv::COLOR_BGR2HSV);
+    if (config_.print_debug_info) {
+        cout << "\n=== Processing Frame #" << frames_processed_ << " ===" << endl;
+        cout << "Frame size: " << frame.cols << "x" << frame.rows << endl;
+    }
     
-    std::vector<cv::Mat> hsv_channels;
-    cv::split(hsv, hsv_channels);
-    cv::Mat saturation_mask;
+    // Step 1: 提取所有色块（不进行颜色匹配过滤！）
+    Mat debug_mask;
+    vector<ColorBlob> blobs = extract_color_blobs(frame, debug_mask);
     
-    cv::threshold(hsv_channels[1], saturation_mask, 
-                 config_.saturation_threshold, 255, cv::THRESH_BINARY);
+    if (config_.print_debug_info) {
+        cout << "Found " << blobs.size() << " color blobs" << endl;
+    }
     
-    // 步骤3: 查找所有轮廓
-    std::vector<std::vector<cv::Point>> all_contours;
-    cv::findContours(saturation_mask.clone(), all_contours, 
-                    cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+    if (blobs.size() < 6) {  // 至少需要6个色块（1个中心 + 5个周围）
+        if (config_.print_debug_info) {
+            cout << "Insufficient blobs (" << blobs.size() << "), need at least 6" << endl;
+        }
+        return result;
+    }
     
-    // 步骤4: 筛选并分析候选色块
-    std::vector<ColorBlob> candidate_blobs;
+    // Step 2: 找到中心色块
+    ColorBlob* center_blob = find_center_blob(blobs);
+    if (center_blob == nullptr) {
+        if (config_.print_debug_info) {
+            cout << "No valid center blob found!" << endl;
+        }
+        return result;
+    }
     
-    for (size_t i = 0; i < all_contours.size(); i++) {
-        double area = cv::contourArea(all_contours[i]);
+    if (config_.print_debug_info) {
+        cout << "Center blob found at (" << center_blob->center.x 
+             << ", " << center_blob->center.y << ")" << endl;
+        cout << "Center color BGR: [" << center_blob->mean_color_bgr[0] 
+             << ", " << center_blob->mean_color_bgr[1] 
+             << ", " << center_blob->mean_color_bgr[2] << "]" << endl;
+        cout << "Center color HSV: [" << center_blob->mean_color_hsv[0] 
+             << ", " << center_blob->mean_color_hsv[1] 
+             << ", " << center_blob->mean_color_hsv[2] << "]" << endl;
+        cout << "Center is dark: " << (center_blob->is_dark ? "YES" : "NO") << endl;
+    }
+    
+    // Step 3: 找到匹配的目标色块
+    ColorBlob* target_blob = find_matching_target(blobs, *center_blob);
+    if (target_blob == nullptr) {
+        if (config_.print_debug_info) {
+            cout << "No matching target blob found!" << endl;
+        }
+        return result;
+    }
+    
+    // Step 4: 计算结果
+    result.found = true;
+    result.board_center = center_blob->center;
+    result.target_center = target_blob->center;
+    
+    // 计算距离和角度
+    Point2f delta = target_blob->center - center_blob->center;
+    result.distance = norm(delta);
+    result.angle = atan2(delta.y, delta.x) * 180.0 / CV_PI;
+    
+    // 更新统计信息
+    successful_tracks_++;
+    last_target_position_ = target_blob->center;
+    last_board_position_ = center_blob->center;
+    has_previous_target_ = true;
+    
+    if (config_.print_debug_info) {
+        cout << "SUCCESS: Target found!" << endl;
+        cout << "  Target position: (" << target_blob->center.x 
+             << ", " << target_blob->center.y << ")" << endl;
+        cout << "  Distance: " << result.distance << " pixels" << endl;
+        cout << "  Angle: " << result.angle << " degrees" << endl;
+    }
+    
+    // Step 5: 调试显示
+    if (config_.show_debug_windows) {
+        Mat debug_frame = frame.clone();
+        draw_debug_info(debug_frame, blobs, center_blob, target_blob);
         
+        // 显示中间结果
+        vector<Mat> debug_images;
+        debug_images.push_back(debug_frame);
+        debug_images.push_back(debug_mask);
+        
+        Mat combined;
+        hconcat(debug_images, combined);
+        
+        resize(combined, combined, Size(), 0.5, 0.5);
+        imshow("Target Tracker Debug", combined);
+        waitKey(1);
+    }
+    
+    return result;
+}
+
+// ============ 核心处理函数 ============
+
+vector<ColorBlob> TargetTracker::extract_color_blobs(const Mat& frame, Mat& debug_mask) {
+    vector<ColorBlob> blobs;
+    
+    if (config_.print_debug_info) {
+        cout << "[DEBUG] extract_color_blobs: Starting..." << endl;
+    }
+    
+    // 1. 预处理：高斯模糊
+    Mat blurred;
+    GaussianBlur(frame, blurred, 
+                 Size(config_.blur_size, config_.blur_size), 
+                 config_.blur_sigma);
+    
+    // 2. 转换到HSV颜色空间
+    Mat hsv;
+    cvtColor(blurred, hsv, COLOR_BGR2HSV);
+    
+    // 3. 分离通道
+    vector<Mat> channels;
+    split(hsv, channels);
+    Mat hue = channels[0];
+    Mat saturation = channels[1];
+    Mat value = channels[2];
+    
+    // 分析图像整体亮度
+    Scalar mean_value = mean(value);
+    bool image_is_bright = mean_value[0] > 200;
+    
+    if (config_.print_debug_info) {
+        cout << "[DEBUG] Image mean brightness: " << mean_value[0] << endl;
+        cout << "[DEBUG] Image is bright: " << (image_is_bright ? "YES" : "NO") << endl;
+    }
+    
+    // 4. 创建掩码
+    Mat sat_mask, val_mask, combined_mask;
+    
+    // 饱和度掩码
+    threshold(saturation, sat_mask, config_.saturation_threshold, 255, THRESH_BINARY);
+    
+    // 自适应亮度阈值
+    int adaptive_val_thresh;
+    if (image_is_bright) {
+        adaptive_val_thresh = max(config_.value_threshold, 180);
+    } else {
+        adaptive_val_thresh = config_.value_threshold;
+    }
+    
+    threshold(value, val_mask, adaptive_val_thresh, 255, THRESH_BINARY);
+    
+    if (config_.print_debug_info) {
+        int sat_pixels = countNonZero(sat_mask);
+        int val_pixels = countNonZero(val_mask);
+        cout << "[DEBUG] Using adaptive brightness threshold: " << adaptive_val_thresh << endl;
+        cout << "[DEBUG] Saturation mask: " << sat_pixels << " pixels (" 
+             << (sat_pixels * 100.0 / (frame.cols * frame.rows)) << "%)" << endl;
+        cout << "[DEBUG] Value mask: " << val_pixels << " pixels (" 
+             << (val_pixels * 100.0 / (frame.cols * frame.rows)) << "%)" << endl;
+    }
+    
+    // 5. 组合掩码
+    if (image_is_bright) {
+        // 亮图像：主要使用饱和度掩码
+        combined_mask = sat_mask;
+        
+        // 特别处理深色：添加低亮度区域
+        Mat low_val_mask;
+        threshold(value, low_val_mask, 80, 255, THRESH_BINARY_INV);
+        Mat dark_sat_mask;
+        threshold(saturation, dark_sat_mask, 80, 255, THRESH_BINARY);
+        Mat dark_mask = low_val_mask & dark_sat_mask;
+        combined_mask = combined_mask | dark_mask;
+    } else {
+        // 正常图像：同时满足饱和度和亮度条件
+        combined_mask = sat_mask & val_mask;
+    }
+    
+    // 6. 形态学操作
+    Mat kernel = getStructuringElement(MORPH_ELLIPSE, Size(5, 5));
+    morphologyEx(combined_mask, combined_mask, MORPH_CLOSE, kernel);
+    morphologyEx(combined_mask, combined_mask, MORPH_OPEN, kernel);
+    
+    // 7. 查找轮廓
+    vector<vector<Point>> contours;
+    findContours(combined_mask.clone(), contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
+    
+    if (config_.print_debug_info) {
+        cout << "[DEBUG] Found " << contours.size() << " contours before filtering" << endl;
+    }
+    
+    // 8. 提取色块信息（仅基于几何特征过滤）
+    for (size_t i = 0; i < contours.size(); ++i) {
+        double area = contourArea(contours[i]);
+        
+        // 面积过滤
         if (area < config_.min_blob_area || area > config_.max_blob_area) {
+            if (config_.print_debug_info && area < config_.min_blob_area) {
+                cout << "[DEBUG] Contour " << i << " rejected: area " << area 
+                     << " < min " << config_.min_blob_area << endl;
+            }
             continue;
         }
         
         ColorBlob blob;
-        blob.contour = all_contours[i];
-        blob.bounding_rect = cv::boundingRect(all_contours[i]);
+        blob.bounding_rect = boundingRect(contours[i]);
+        blob.area = area;
+        blob.circularity = calculate_circularity(contours[i]);
         
-        // 计算中心点
-        cv::Moments m = cv::moments(all_contours[i]);
-        if (m.m00 != 0) {
-            blob.center = cv::Point2f(m.m10 / m.m00, m.m01 / m.m00);
-        }
-        
-        // 计算形状特征
-        double perimeter = cv::arcLength(all_contours[i], true);
-        blob.circularity = (perimeter == 0) ? 0 : (4 * CV_PI * area) / (perimeter * perimeter);
-        
-        // 提取该区域的代表颜色（BGR）
-        cv::Mat roi = frame(blob.bounding_rect);
-        cv::Scalar mean_color = cv::mean(roi);
-        blob.color_bgr = mean_color;
-        
-        // 计算宽高比（用于矩形识别）
-        cv::RotatedRect rotated_rect = cv::minAreaRect(all_contours[i]);
-        float width = rotated_rect.size.width;
-        float height = rotated_rect.size.height;
-        blob.aspect_ratio = (width > height) ? width / height : height / width;
-        
-        candidate_blobs.push_back(blob);
-    }
-    
-    // 如果没有至少6个色块，直接返回
-    if (candidate_blobs.size() < 6) {
-        return result;
-    }
-    
-    // 步骤5: 使用HSV色彩空间分配颜色标签
-    assign_color_labels_by_hsv(candidate_blobs);
-    
-    // 步骤6: 识别中心色块
-    cv::Point2f putative_center;
-    int center_label = -1;
-    float best_center_score = -1.0f;
-    
-    for (size_t idx = 0; idx < candidate_blobs.size(); idx++) {
-        const auto& blob = candidate_blobs[idx];
-        
-        // 跳过黑色或太暗的色块
-        if (blob.is_black || blob.color_hsv[2] < config_.value_min_threshold) {
+        // 圆形度过滤
+        if (blob.circularity < config_.min_circularity) {
+            if (config_.print_debug_info) {
+                cout << "[DEBUG] Contour " << i << " rejected: circularity " << blob.circularity 
+                     << " < threshold " << config_.min_circularity << endl;
+            }
             continue;
         }
         
-        if (blob.circularity < config_.circularity_threshold) {
-            continue;
+        // 计算质心
+        Moments m = moments(contours[i]);
+        if (m.m00 > 0) {
+            blob.center = Point2f(m.m10 / m.m00, m.m01 / m.m00);
+        } else {
+            blob.center = Point2f(blob.bounding_rect.x + blob.bounding_rect.width / 2,
+                                 blob.bounding_rect.y + blob.bounding_rect.height / 2);
         }
         
-        // 计算被围绕程度
+        // 计算平均颜色
+        Mat roi = frame(blob.bounding_rect);
+        blob.mean_color_bgr = mean(roi);
+        blob.mean_color_hsv = bgr_to_hsv(blob.mean_color_bgr);
+        
+        // 判断是否为深色
+        blob.is_dark = is_dark_color(blob.mean_color_bgr, config_.dark_brightness_threshold);
+        
+        if (config_.print_debug_info) {
+            cout << "[DEBUG] Contour " << i << " accepted:" << endl;
+            cout << "[DEBUG]   Position: (" << blob.center.x << ", " << blob.center.y << ")" << endl;
+            cout << "[DEBUG]   Area: " << blob.area << ", Circularity: " << blob.circularity << endl;
+            cout << "[DEBUG]   BGR: (" << blob.mean_color_bgr[0] << ", " 
+                 << blob.mean_color_bgr[1] << ", " << blob.mean_color_bgr[2] << ")" << endl;
+            cout << "[DEBUG]   HSV: (" << blob.mean_color_hsv[0] << ", " 
+                 << blob.mean_color_hsv[1] << ", " << blob.mean_color_hsv[2] << ")" << endl;
+            cout << "[DEBUG]   Is dark: " << (blob.is_dark ? "YES" : "NO") << endl;
+        }
+        
+        blobs.push_back(blob);
+    }
+    
+    // 保存调试掩码
+    debug_mask = combined_mask;
+    
+    if (config_.print_debug_info) {
+        cout << "[DEBUG] extract_color_blobs: Returning " << blobs.size() << " blobs" << endl;
+    }
+    
+    return blobs;
+}
+
+ColorBlob* TargetTracker::find_center_blob(vector<ColorBlob>& blobs) {
+    if (blobs.empty()) return nullptr;
+    
+    ColorBlob* best_center = nullptr;
+    float best_score = -1.0f;
+    
+    // 图像中心
+    Point2f image_center(frame_size_.width / 2.0f, frame_size_.height / 2.0f);
+    
+    for (auto& blob : blobs) {
+        // 计算分数：考虑圆形度和位置
+        float circularity_score = blob.circularity;
+        
+        // 位置分数：距离图像中心越近，分数越高
+        float dist_to_center = norm(blob.center - image_center);
+        float max_dist = norm(Point2f(0, 0) - image_center);
+        float position_score = 1.0f - (dist_to_center / max_dist);
+        
+        // 周围色块数量
         int surrounding_count = 0;
-        for (size_t j = 0; j < candidate_blobs.size(); j++) {
-            if (idx == j) continue;
+        for (const auto& other : blobs) {
+            if (&blob == &other) continue;
             
-            const auto& other = candidate_blobs[j];
-            float distance = cv::norm(other.center - blob.center);
-            
-            if (distance < config_.max_distance_to_center && 
-                distance > config_.min_distance_to_center) {
+            float dist = norm(other.center - blob.center);
+            if (dist >= config_.min_distance_to_center && 
+                dist <= config_.max_distance_to_center) {
                 surrounding_count++;
             }
         }
         
-        float score = blob.circularity * config_.circularity_weight + 
-                     (surrounding_count / 5.0f) * config_.surround_weight;
+        float surround_score = surrounding_count / 5.0f;  // 期望5个
         
-        if (score > best_center_score) {
-            best_center_score = score;
-            putative_center = blob.center;
-            center_label = blob.color_label;
-            
-            // 检查中心是否为暗色
-            cv::Scalar center_bgr = blob.color_bgr;
-            bool center_is_dark = is_dark_color_bgr(center_bgr);
-            
-            if (debug_mode_ && center_is_dark) {
-                cv::Scalar center_hsv = blob.color_hsv;
-                std::cout << "[警告] 中心色块是暗色: BGR=[" 
-                          << (int)center_bgr[0] << "," << (int)center_bgr[1] << "," << (int)center_bgr[2] 
-                          << "], HSV=[H=" << (int)center_hsv[0] << "°,S=" << (int)center_hsv[1] 
-                          << "%,V=" << (int)center_hsv[2] << "%]" << std::endl;
-            }
+        // 综合分数
+        float total_score = circularity_score * 0.4f + 
+                           position_score * 0.3f + 
+                           surround_score * 0.3f;
+        
+        if (total_score > best_score) {
+            best_score = total_score;
+            best_center = &blob;
         }
     }
     
-    if (center_label == -1) {
+    if (config_.print_debug_info && best_center != nullptr) {
+        cout << "Center blob score: " << best_score << endl;
+        cout << "Surrounding blobs: ";
+        for (const auto& blob : blobs) {
+            if (&blob == best_center) continue;
+            float dist = norm(blob.center - best_center->center);
+            if (dist >= config_.min_distance_to_center && 
+                dist <= config_.max_distance_to_center) {
+                cout << "(" << blob.center.x << "," << blob.center.y << ") ";
+            }
+        }
+        cout << endl;
+    }
+    
+    return best_center;
+}
+
+ColorBlob* TargetTracker::find_matching_target(const vector<ColorBlob>& blobs, 
+                                              const ColorBlob& center_blob) {
+    ColorBlob* best_match = nullptr;
+    float best_similarity = -1.0f;
+    
+    // 计算中心色块是否为暗色
+    bool center_is_dark = is_dark_color(center_blob.mean_color_bgr, config_.dark_brightness_threshold);
+    
+    if (config_.print_debug_info) {
+        cout << "Finding match for center at (" << center_blob.center.x 
+             << ", " << center_blob.center.y << ")" << endl;
+        cout << "Center color BGR: (" << center_blob.mean_color_bgr[0] << ", "
+             << center_blob.mean_color_bgr[1] << ", " << center_blob.mean_color_bgr[2] << ")" << endl;
+        cout << "Center is dark: " << (center_is_dark ? "YES" : "NO") << endl;
+    }
+    
+    // 方法1：直接取最大值
+    for (const auto& blob : blobs) {
+        if (&blob == &center_blob) continue;
+        if (!is_valid_surrounding_blob(blob, center_blob)) continue;
+        
+        float similarity = calculate_color_similarity(
+            center_blob.mean_color_bgr, 
+            blob.mean_color_bgr, 
+            center_is_dark
+        );
+        
+        if (config_.print_debug_info) {
+            cout << "  Candidate at (" << blob.center.x << "," << blob.center.y 
+                 << "): similarity = " << similarity << endl;
+        }
+        
+        if (similarity > best_similarity) {
+            best_similarity = similarity;
+            best_match = const_cast<ColorBlob*>(&blob);
+        }
+    }
+    
+    // 方法2：归一化后取最大值
+    // vector<float> similarities;
+    // vector<const ColorBlob*> candidates;
+    // ... 收集所有相似度
+    // vector<float> normalized = normalize_similarities(similarities);
+    // int best_idx = 找到最大值索引
+    // best_match = candidates[best_idx];
+    
+    if (best_match != nullptr && config_.print_debug_info) {
+        cout << "Selected target at (" << best_match->center.x 
+             << ", " << best_match->center.y << ")" << endl;
+        cout << "Best similarity: " << best_similarity << endl;
+    }
+    
+    return best_match;
+}
+// ============ 颜色匹配函数 ============
+
+float TargetTracker::calculate_color_similarity(const Scalar& color1, const Scalar& color2, bool center_is_dark) {
+    // 将BGR转换为HSV进行比较
+    Scalar hsv1 = bgr_to_hsv(color1);
+    Scalar hsv2 = bgr_to_hsv(color2);
+    
+    if (center_is_dark) {
+        // 对于暗色，主要使用BGR距离
+        float dist = color_distance_bgr(color1, color2);
+        float similarity = 1.0f - min(dist / config_.bgr_distance_threshold, 1.0f);
+        return similarity;
+    } else {
+        // 对于亮色，主要使用HSV色调距离
+        float hue_diff = abs(hsv1[0] - hsv2[0]);
+        hue_diff = min(hue_diff, 180.0f - hue_diff);  // 色调是环形的
+        
+        // 同时考虑饱和度和明度
+        float sat_diff = abs(hsv1[1] - hsv2[1]);
+        float val_diff = abs(hsv1[2] - hsv2[2]);
+        
+        // 加权计算总差异
+        float total_diff = hue_diff * 2.0f + sat_diff * 0.5f + val_diff * 0.3f;
+        float similarity = 1.0f - min(total_diff / 200.0f, 1.0f);
+        return similarity;
+    }
+}
+
+// ============ 辅助函数 ============
+
+// 在TargetTracker.cpp中实现
+vector<float> TargetTracker::normalize_similarities(const vector<float>& similarities) {
+    vector<float> result;
+    result.reserve(similarities.size());
+    
+    if (similarities.empty()) {
         return result;
     }
     
-    // 步骤7: 寻找与中心同色的外围色块
-    cv::Point2f target_square_center;
-    float best_square_score = -1.0f;
-    size_t best_candidate_idx = candidate_blobs.size();
+    // 找到最大值和最小值
+    float min_val = similarities[0];
+    float max_val = similarities[0];
     
-    // 计算每个候选色块的角度
-    std::vector<float> candidate_angles;
-    for (size_t idx = 0; idx < candidate_blobs.size(); idx++) {
-        const auto& blob = candidate_blobs[idx];
-        
-        // 排除中心自身
-        float dist_to_center = cv::norm(blob.center - putative_center);
-        if (dist_to_center < 10) {
-            candidate_angles.push_back(0.0f);
-            continue;
-        }
-        
-        // 计算相对于中心的角度
-        cv::Point2f relative = blob.center - putative_center;
-        float angle = std::atan2(relative.y, relative.x) * 180.0f / CV_PI;
-        candidate_angles.push_back(angle);
+    for (float val : similarities) {
+        if (val < min_val) min_val = val;
+        if (val > max_val) max_val = val;
     }
     
-    for (size_t idx = 0; idx < candidate_blobs.size(); idx++) {
-        const auto& blob = candidate_blobs[idx];
-        
-        // 排除中心自身
-        float dist_to_center = cv::norm(blob.center - putative_center);
-        if (dist_to_center < 10) {
-            continue;
-        }
-        
-        // 必须与中心颜色标签相同
-        if (blob.color_label != center_label) {
-            continue;
-        }
-        
-        // 跳过黑色或太暗的色块（额外检查）
-        if (blob.is_black) {
-            continue;
-        }
-        
-        // 应该是矩形（外围方块），检查宽高比
-        if (blob.aspect_ratio > config_.max_aspect_ratio) {
-            continue;
-        }
-        
-        // === 新增：角度约束检查 ===
-        float candidate_angle = candidate_angles[idx];
-        
-        if (last_angle_valid_) {
-            // 计算角度差异
-            float angle_diff = angle_difference(candidate_angle, last_target_angle_);
-            
-            // 如果角度差异太大，跳过这个候选（硬约束）
-            if (angle_diff > angle_prediction_threshold_) {
-                if (debug_mode_) {
-                    std::cout << "[角度约束] 跳过候选" << idx 
-                              << ": 角度=" << candidate_angle 
-                              << ", 预期=" << last_target_angle_
-                              << ", 差异=" << angle_diff 
-                              << " > 阈值=" << angle_prediction_threshold_ << std::endl;
-                }
-                continue;
-            }
-        }
-        
-        // === 原有评分计算 ===
-        // 计算指向中心的方向一致性
-        cv::Vec2f to_center(putative_center.x - blob.center.x,
-                           putative_center.y - blob.center.y);
-        float to_center_norm = cv::norm(to_center);
-        to_center /= to_center_norm;
-        
-        cv::RotatedRect rotated_rect = cv::minAreaRect(blob.contour);
-        float angle_rad = rotated_rect.angle * CV_PI / 180;
-        cv::Vec2f rect_direction(cos(angle_rad), sin(angle_rad));
-        
-        float direction_score = std::abs(to_center.dot(rect_direction));
-        
-        // 距离评分
-        float distance_score = 1.0f - std::abs(to_center_norm - config_.expected_radius) / config_.expected_radius;
-        distance_score = std::max(0.0f, distance_score);
-        
-        // 宽高比评分（更接近正方形的得分更高）
-        float aspect_score = 1.0f / blob.aspect_ratio;
-        
-        // 角度一致性评分（如果先验角度有效）
-        float angle_consistency_score = 1.0f;
-        if (last_angle_valid_) {
-            float angle_diff = angle_difference(candidate_angle, last_target_angle_);
-            angle_consistency_score = 1.0f - (angle_diff / angle_prediction_threshold_);
-            angle_consistency_score = std::max(0.1f, angle_consistency_score); // 最低0.1分
-        }
-        
-        // 综合评分（角度一致性权重较高）
-        float angle_weight = last_angle_valid_ ? 0.4f : 0.0f;
-        float score = direction_score * config_.direction_weight * (1.0f - angle_weight) + 
-                     distance_score * config_.distance_weight * (1.0f - angle_weight) + 
-                     aspect_score * config_.aspect_ratio_weight * (1.0f - angle_weight) + 
-                     angle_consistency_score * angle_weight;
-        
-        if (score > best_square_score) {
-            best_square_score = score;
-            target_square_center = blob.center;
-            best_candidate_idx = idx;
-        }
-    }
+    // 最大最小归一化：映射到0-1范围
+    float range = max_val - min_val;
     
-    // 步骤8: 验证并输出结果
-    if (best_square_score > config_.match_threshold) {
-        result.found = true;
-        result.target_center = target_square_center;
-        result.board_center = putative_center;
-        
-        // 计算相对位置
-        cv::Point2f relative = target_square_center - putative_center;
-        result.distance = cv::norm(relative);
-        result.angle = std::atan2(relative.y, relative.x) * 180 / CV_PI;
-        result.center_color_label = center_label;
-        
-        // 更新先验信息
-        if (best_candidate_idx < candidate_blobs.size()) {
-            last_target_angle_ = candidate_angles[best_candidate_idx];
-            last_angle_valid_ = true;
-            consecutive_success_++;
-            consecutive_failures_ = 0;
-            
-            // 记录历史用于分析
-            angle_history_.push_back(last_target_angle_);
-            time_history_.push_back(static_cast<float>(total_frames_));
-            
-            // 保持历史记录长度
-            if (angle_history_.size() > 10) {
-                angle_history_.pop_front();
-                time_history_.pop_front();
-            }
-        }
-        
-        successful_detections_++;
-        
-        if (debug_mode_) {
-            std::cout << "[角度约束] 成功识别: 角度=" << result.angle 
-                      << ", 先验角度=" << last_target_angle_
-                      << ", 连续成功=" << consecutive_success_ << std::endl;
+    if (range > 0) {
+        for (float val : similarities) {
+            result.push_back((val - min_val) / range);
         }
     } else {
-        // 识别失败
-        consecutive_failures_++;
-        consecutive_success_ = 0;
-        
-        // 如果连续失败太多，重置先验信息
-        if (consecutive_failures_ > 5) {
-            if (debug_mode_) {
-                std::cout << "[角度约束] 连续失败" << consecutive_failures_ 
-                          << "次，重置先验信息" << std::endl;
-            }
-            last_angle_valid_ = false;
-            consecutive_failures_ = 0;
-        }
-        
-        if (debug_mode_) {
-            std::cout << "[角度约束] 识别失败: 连续失败=" << consecutive_failures_ 
-                      << ", 先验有效=" << (last_angle_valid_ ? "是" : "否") << std::endl;
+        // 如果所有值相等，都给0.5（中立值）
+        for (size_t i = 0; i < similarities.size(); ++i) {
+            result.push_back(0.5f);
         }
     }
     
     return result;
+}
+
+double TargetTracker::calculate_circularity(const vector<Point>& contour) {
+    double area = contourArea(contour);
+    double perimeter = arcLength(contour, true);
+    
+    if (perimeter == 0) return 0;
+    
+    double circularity = (4 * CV_PI * area) / (perimeter * perimeter);
+    return circularity;
+}
+
+bool TargetTracker::is_valid_surrounding_blob(const ColorBlob& blob, 
+                                             const ColorBlob& center) {
+    // 检查距离
+    float distance = norm(blob.center - center.center);
+    
+    if (distance < config_.min_distance_to_center || 
+        distance > config_.max_distance_to_center) {
+        return false;
+    }
+    
+    return true;
+}
+
+Scalar TargetTracker::bgr_to_hsv(const Scalar& bgr) {
+    Mat bgr_mat(1, 1, CV_8UC3, Scalar(bgr[0], bgr[1], bgr[2]));
+    Mat hsv_mat;
+    cvtColor(bgr_mat, hsv_mat, COLOR_BGR2HSV);
+    Vec3b hsv = hsv_mat.at<Vec3b>(0, 0);
+    return Scalar(hsv[0], hsv[1], hsv[2]);
+}
+
+float TargetTracker::color_distance_bgr(const Scalar& c1, const Scalar& c2) {
+    float db = c1[0] - c2[0];
+    float dg = c1[1] - c2[1];
+    float dr = c1[2] - c2[2];
+    return sqrt(db * db + dg * dg + dr * dr);
+}
+
+bool TargetTracker::is_dark_color(const Scalar& bgr, int threshold) {
+    // 计算亮度: 0.299*R + 0.587*G + 0.114*B
+    float brightness = 0.299f * bgr[2] + 0.587f * bgr[1] + 0.114f * bgr[0];
+    return brightness < threshold;
+}
+
+// ============ 调试功能 ============
+
+void TargetTracker::draw_debug_info(Mat& frame, 
+                                   const vector<ColorBlob>& blobs,
+                                   const ColorBlob* center,
+                                   const ColorBlob* target) {
+    // 绘制所有色块
+    for (const auto& blob : blobs) {
+        // 边界框
+        rectangle(frame, blob.bounding_rect, Scalar(255, 0, 0), 2);
+        
+        // 中心点
+        circle(frame, blob.center, 3, Scalar(0, 255, 0), -1);
+        
+        // 面积和圆形度
+        string info = format("A:%.0f C:%.2f", blob.area, blob.circularity);
+        putText(frame, info, 
+                Point(blob.bounding_rect.x, blob.bounding_rect.y - 5),
+                FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 255, 255), 1);
+    }
+    
+    // 绘制中心色块
+    if (center != nullptr) {
+        circle(frame, center->center, 8, Scalar(0, 255, 255), 3);
+        putText(frame, "CENTER", 
+                Point(center->center.x + 10, center->center.y),
+                FONT_HERSHEY_SIMPLEX, 0.7, Scalar(0, 255, 255), 2);
+    }
+    
+    // 绘制目标色块
+    if (target != nullptr && center != nullptr) {
+        // 目标色块
+        circle(frame, target->center, 8, Scalar(0, 0, 255), 3);
+        
+        // 连接线
+        line(frame, center->center, target->center, Scalar(0, 255, 0), 2);
+        
+        // 距离和角度信息
+        float distance = norm(target->center - center->center);
+        float angle = atan2(target->center.y - center->center.y,
+                           target->center.x - center->center.x) * 180 / CV_PI;
+        
+        string info = format("Dist: %.1fpx, Angle: %.1f deg", distance, angle);
+        putText(frame, info, Point(10, 30), 
+                FONT_HERSHEY_SIMPLEX, 1.0, Scalar(0, 0, 255), 2);
+        
+        // 显示颜色信息
+        string color_info = format("Center: (%.0f,%.0f,%.0f)", 
+                                  center->mean_color_bgr[0],
+                                  center->mean_color_bgr[1],
+                                  center->mean_color_bgr[2]);
+        putText(frame, color_info, Point(10, 60), 
+                FONT_HERSHEY_SIMPLEX, 0.8, Scalar(255, 255, 0), 2);
+    }
+}
+
+
+void TargetTracker::enable_debug(bool enabled) {
+    debug_enabled_ = enabled;
+    config_.show_debug_windows = enabled;
+    config_.print_debug_info = enabled;
+}
+
+void TargetTracker::reset_statistics() {
+    frames_processed_ = 0;
+    successful_tracks_ = 0;
+    has_previous_target_ = false;
+}
+
+void TargetTracker::print_statistics() const {
+    cout << "\n=== Tracker Statistics ===" << endl;
+    cout << "Frames processed: " << frames_processed_ << endl;
+    cout << "Successful tracks: " << successful_tracks_ << endl;
+    
+    if (frames_processed_ > 0) {
+        float success_rate = (float)successful_tracks_ / frames_processed_ * 100;
+        cout << "Success rate: " << success_rate << "%" << endl;
+    }
+    
+    cout << "=========================" << endl;
 }

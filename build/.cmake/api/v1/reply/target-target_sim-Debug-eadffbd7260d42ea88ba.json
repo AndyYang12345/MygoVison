@@ -3,7 +3,7 @@
 	"artifacts" : 
 	[
 		{
-			"path" : "lib/libtarget_sim.a"
+			"path" : "src/TargetSim/libtarget_sim.a"
 		}
 	],
 	"backtrace" : 1,
@@ -12,10 +12,7 @@
 		"commands" : 
 		[
 			"add_library",
-			"add_compile_options",
-			"target_compile_definitions",
 			"include_directories",
-			"target_include_directories",
 			"target_link_libraries"
 		],
 		"files" : 
@@ -31,7 +28,7 @@
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 17,
+				"line" : 8,
 				"parent" : 0
 			},
 			{
@@ -40,31 +37,13 @@
 			{
 				"command" : 1,
 				"file" : 1,
-				"line" : 31,
+				"line" : 24,
 				"parent" : 2
 			},
 			{
 				"command" : 2,
 				"file" : 0,
-				"line" : 32,
-				"parent" : 0
-			},
-			{
-				"command" : 3,
-				"file" : 1,
-				"line" : 18,
-				"parent" : 2
-			},
-			{
-				"command" : 4,
-				"file" : 0,
-				"line" : 20,
-				"parent" : 0
-			},
-			{
-				"command" : 5,
-				"file" : 0,
-				"line" : 29,
+				"line" : 16,
 				"parent" : 0
 			}
 		]
@@ -76,43 +55,16 @@
 			[
 				{
 					"fragment" : "-g -std=c++17 -fPIC"
-				},
-				{
-					"backtrace" : 3,
-					"fragment" : "-Wall"
-				},
-				{
-					"backtrace" : 3,
-					"fragment" : "-Wextra"
-				},
-				{
-					"backtrace" : 3,
-					"fragment" : "-Wpedantic"
-				}
-			],
-			"defines" : 
-			[
-				{
-					"backtrace" : 4,
-					"define" : "TARGET_SIM_EXPORTS"
 				}
 			],
 			"includes" : 
 			[
 				{
-					"backtrace" : 5,
+					"backtrace" : 3,
 					"path" : "/home/harekasa/Mygo/include"
 				},
 				{
-					"backtrace" : 6,
-					"path" : "/home/harekasa/Mygo/include/TargetSim"
-				},
-				{
-					"backtrace" : 6,
-					"path" : "/home/harekasa/Mygo/src/TargetSim"
-				},
-				{
-					"backtrace" : 5,
+					"backtrace" : 4,
 					"isSystem" : true,
 					"path" : "/usr/local/include/opencv4"
 				}
@@ -122,7 +74,7 @@
 			{
 				"backtraces" : 
 				[
-					7
+					4
 				],
 				"standard" : "17"
 			},

@@ -1,39 +1,33 @@
-cmake_minimum_required(VERSION 3.15)
-project(target_sim_project VERSION 1.0.0 LANGUAGES CXX)
+# Mygo/CMakeLists.txt
+cmake_minimum_required(VERSION 3.14)
+project(Mygo LANGUAGES CXX)
 
-# 设置C++标准
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# 设置输出目录
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+# 启用编译命令输出（用于 IDE）
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# 查找OpenCV
-find_package(OpenCV REQUIRED)
+# =============== ✅ 关键修复：只在这里查找 OpenCV ===============
+find_package(OpenCV REQUIRED core imgproc highgui)
 
-# 设置全局包含目录
-include_directories(
-    ${CMAKE_SOURCE_DIR}/include
-    ${OpenCV_INCLUDE_DIRS}
-)
-
-# 打印调试信息
-message(STATUS "Project source directory: ${CMAKE_SOURCE_DIR}")
-message(STATUS "OpenCV found: ${OpenCV_VERSION}")
-message(STATUS "OpenCV include dirs: ${OpenCV_INCLUDE_DIRS}")
-message(STATUS "OpenCV libs: ${OpenCV_LIBS}")
-
-# 设置编译选项
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    add_compile_options(-Wall -Wextra -Wpedantic)
+if(NOT OpenCV_FOUND)
+    message(FATAL_ERROR "OpenCV not found! Please install libopencv-dev")
 endif()
 
-# 添加子目录
-add_subdirectory(src/apps)
-add_subdirectory(src/TargetSim)
-add_subdirectory(src/TargetTracking)
+# 输出调试信息
+message(STATUS "🎯 Found OpenCV version: ${OpenCV_VERSION}")
+message(STATUS "📚 OpenCV libraries: ${OpenCV_LIBS}")
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+# 允许所有子模块访问 include/
+include_directories(${CMAKE_SOURCE_DIR}/include)
+
+# 导出 OpenCV 到子目录（可选，因为是全局变量）
+# set(OpenCV_LIBS ${OpenCV_LIBS} PARENT_SCOPE)
+
+# 添加子模块
+add_subdirectory(src/TargetTracking)
+add_subdirectory(src/TargetSim)
+add_subdirectory(src/apps)
+message(STATUS "🚀 Mygo build configuration complete.")

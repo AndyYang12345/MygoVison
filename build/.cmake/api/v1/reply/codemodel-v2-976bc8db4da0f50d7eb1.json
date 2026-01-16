@@ -15,25 +15,24 @@
 					"jsonFile" : "directory-.-Debug-f5ebdc15457944623624.json",
 					"minimumCMakeVersion" : 
 					{
-						"string" : "3.15"
+						"string" : "3.14"
 					},
 					"projectIndex" : 0,
 					"source" : "."
 				},
 				{
-					"build" : "src/apps",
-					"jsonFile" : "directory-src.apps-Debug-50dbd47a2650d25d642b.json",
+					"build" : "src/TargetTracking",
+					"jsonFile" : "directory-src.TargetTracking-Debug-84cf56f3f945fd4c65dc.json",
 					"minimumCMakeVersion" : 
 					{
-						"string" : "3.15"
+						"string" : "3.14"
 					},
 					"parentIndex" : 0,
 					"projectIndex" : 0,
-					"source" : "src/apps",
+					"source" : "src/TargetTracking",
 					"targetIndexes" : 
 					[
-						2,
-						3
+						1
 					]
 				},
 				{
@@ -41,7 +40,7 @@
 					"jsonFile" : "directory-src.TargetSim-Debug-362829db1b0b09af42b9.json",
 					"minimumCMakeVersion" : 
 					{
-						"string" : "3.15"
+						"string" : "3.14"
 					},
 					"parentIndex" : 0,
 					"projectIndex" : 0,
@@ -52,18 +51,21 @@
 					]
 				},
 				{
-					"build" : "src/TargetTracking",
-					"jsonFile" : "directory-src.TargetTracking-Debug-84cf56f3f945fd4c65dc.json",
+					"build" : "src/apps",
+					"jsonFile" : "directory-src.apps-Debug-50dbd47a2650d25d642b.json",
 					"minimumCMakeVersion" : 
 					{
-						"string" : "3.15"
+						"string" : "3.14"
 					},
 					"parentIndex" : 0,
 					"projectIndex" : 0,
-					"source" : "src/TargetTracking",
+					"source" : "src/apps",
 					"targetIndexes" : 
 					[
-						1
+						2,
+						3,
+						4,
+						5
 					]
 				}
 			],
@@ -78,13 +80,15 @@
 						2,
 						3
 					],
-					"name" : "target_sim_project",
+					"name" : "Mygo",
 					"targetIndexes" : 
 					[
 						0,
 						1,
 						2,
-						3
+						3,
+						4,
+						5
 					]
 				}
 			],
@@ -93,28 +97,42 @@
 				{
 					"directoryIndex" : 2,
 					"id" : "target_sim::@cfdc25a7abde0447e653",
-					"jsonFile" : "target-target_sim-Debug-72e1ab5c8ca36e040eec.json",
+					"jsonFile" : "target-target_sim-Debug-eadffbd7260d42ea88ba.json",
 					"name" : "target_sim",
 					"projectIndex" : 0
 				},
 				{
-					"directoryIndex" : 3,
+					"directoryIndex" : 1,
 					"id" : "target_tracker::@905fc951916d22901a73",
-					"jsonFile" : "target-target_tracker-Debug-d76a463cd11b46d8d229.json",
+					"jsonFile" : "target-target_tracker-Debug-d3185cae7eb40913d685.json",
 					"name" : "target_tracker",
 					"projectIndex" : 0
 				},
 				{
-					"directoryIndex" : 1,
+					"directoryIndex" : 3,
 					"id" : "test_basic::@57fecd540e8aa42f9f2f",
-					"jsonFile" : "target-test_basic-Debug-0bbd5b64835282f97d28.json",
+					"jsonFile" : "target-test_basic-Debug-1b442ed8240b999d4aca.json",
 					"name" : "test_basic",
 					"projectIndex" : 0
 				},
 				{
-					"directoryIndex" : 1,
+					"directoryIndex" : 3,
+					"id" : "test_single_image::@57fecd540e8aa42f9f2f",
+					"jsonFile" : "target-test_single_image-Debug-a8b44a446c106da9ff34.json",
+					"name" : "test_single_image",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 3,
+					"id" : "test_threshold_tuner::@57fecd540e8aa42f9f2f",
+					"jsonFile" : "target-test_threshold_tuner-Debug-a576daeb4492fbf41665.json",
+					"name" : "test_threshold_tuner",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 3,
 					"id" : "test_training::@57fecd540e8aa42f9f2f",
-					"jsonFile" : "target-test_training-Debug-086123826bf5de3914cb.json",
+					"jsonFile" : "target-test_training-Debug-42d684faf45e081773b9.json",
 					"name" : "test_training",
 					"projectIndex" : 0
 				}

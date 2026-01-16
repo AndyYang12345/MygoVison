@@ -1,38 +1,56 @@
 [
 {
-  "directory": "/home/harekasa/Mygo/build/src/apps",
-  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -I/home/harekasa/Mygo/include/TargetSim -isystem /usr/local/include/opencv4 -g -std=c++17 -Wall -Wextra -Wpedantic -o CMakeFiles/test_basic.dir/test_basic.cpp.o -c /home/harekasa/Mygo/src/apps/test_basic.cpp",
-  "file": "/home/harekasa/Mygo/src/apps/test_basic.cpp",
-  "output": "src/apps/CMakeFiles/test_basic.dir/test_basic.cpp.o"
-},
-{
-  "directory": "/home/harekasa/Mygo/build/src/apps",
-  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -I/home/harekasa/Mygo/include/TargetSim -I/home/harekasa/Mygo/include/TargetTracking -isystem /usr/local/include/opencv4 -g -std=c++17 -Wall -Wextra -Wpedantic -o CMakeFiles/test_training.dir/test_simple_training.cpp.o -c /home/harekasa/Mygo/src/apps/test_simple_training.cpp",
-  "file": "/home/harekasa/Mygo/src/apps/test_simple_training.cpp",
-  "output": "src/apps/CMakeFiles/test_training.dir/test_simple_training.cpp.o"
+  "directory": "/home/harekasa/Mygo/build/src/TargetTracking",
+  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -isystem /usr/local/include/opencv4 -g -std=c++17 -fPIC -o CMakeFiles/target_tracker.dir/TargetTracker.cpp.o -c /home/harekasa/Mygo/src/TargetTracking/TargetTracker.cpp",
+  "file": "/home/harekasa/Mygo/src/TargetTracking/TargetTracker.cpp",
+  "output": "src/TargetTracking/CMakeFiles/target_tracker.dir/TargetTracker.cpp.o"
 },
 {
   "directory": "/home/harekasa/Mygo/build/src/TargetSim",
-  "command": "/usr/bin/g++ -DTARGET_SIM_EXPORTS -I/home/harekasa/Mygo/include -I/home/harekasa/Mygo/include/TargetSim -I/home/harekasa/Mygo/src/TargetSim -isystem /usr/local/include/opencv4 -g -std=c++17 -fPIC -Wall -Wextra -Wpedantic -o CMakeFiles/target_sim.dir/TargetSim.cpp.o -c /home/harekasa/Mygo/src/TargetSim/TargetSim.cpp",
+  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -isystem /usr/local/include/opencv4 -g -std=c++17 -fPIC -o CMakeFiles/target_sim.dir/TargetSim.cpp.o -c /home/harekasa/Mygo/src/TargetSim/TargetSim.cpp",
   "file": "/home/harekasa/Mygo/src/TargetSim/TargetSim.cpp",
   "output": "src/TargetSim/CMakeFiles/target_sim.dir/TargetSim.cpp.o"
 },
 {
   "directory": "/home/harekasa/Mygo/build/src/TargetSim",
-  "command": "/usr/bin/g++ -DTARGET_SIM_EXPORTS -I/home/harekasa/Mygo/include -I/home/harekasa/Mygo/include/TargetSim -I/home/harekasa/Mygo/src/TargetSim -isystem /usr/local/include/opencv4 -g -std=c++17 -fPIC -Wall -Wextra -Wpedantic -o CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.o -c /home/harekasa/Mygo/src/TargetSim/TrainingFrameGenerator.cpp",
+  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -isystem /usr/local/include/opencv4 -g -std=c++17 -fPIC -o CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.o -c /home/harekasa/Mygo/src/TargetSim/TrainingFrameGenerator.cpp",
   "file": "/home/harekasa/Mygo/src/TargetSim/TrainingFrameGenerator.cpp",
   "output": "src/TargetSim/CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.o"
 },
 {
   "directory": "/home/harekasa/Mygo/build/src/TargetSim",
-  "command": "/usr/bin/g++ -DTARGET_SIM_EXPORTS -I/home/harekasa/Mygo/include -I/home/harekasa/Mygo/include/TargetSim -I/home/harekasa/Mygo/src/TargetSim -isystem /usr/local/include/opencv4 -g -std=c++17 -fPIC -Wall -Wextra -Wpedantic -o CMakeFiles/target_sim.dir/PerformanceMonitor.cpp.o -c /home/harekasa/Mygo/src/TargetSim/PerformanceMonitor.cpp",
+  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -isystem /usr/local/include/opencv4 -g -std=c++17 -fPIC -o CMakeFiles/target_sim.dir/PerformanceMonitor.cpp.o -c /home/harekasa/Mygo/src/TargetSim/PerformanceMonitor.cpp",
   "file": "/home/harekasa/Mygo/src/TargetSim/PerformanceMonitor.cpp",
   "output": "src/TargetSim/CMakeFiles/target_sim.dir/PerformanceMonitor.cpp.o"
 },
 {
-  "directory": "/home/harekasa/Mygo/build/src/TargetTracking",
-  "command": "/usr/bin/g++ -DTARGET_TRACKER_EXPORTS -I/home/harekasa/Mygo/include -I/home/harekasa/Mygo/include/TargetSim -I/home/harekasa/Mygo/include/TargetTracking -I/home/harekasa/Mygo/src/TargetTracking -isystem /usr/local/include/opencv4 -g -std=c++17 -fPIC -Wall -Wextra -Wpedantic -o CMakeFiles/target_tracker.dir/TargetTracker.cpp.o -c /home/harekasa/Mygo/src/TargetTracking/TargetTracker.cpp",
-  "file": "/home/harekasa/Mygo/src/TargetTracking/TargetTracker.cpp",
-  "output": "src/TargetTracking/CMakeFiles/target_tracker.dir/TargetTracker.cpp.o"
+  "directory": "/home/harekasa/Mygo/build/src/apps",
+  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -isystem /usr/local/include/opencv4 -g -std=c++17 -g -Wall -Wextra -o CMakeFiles/test_basic.dir/test_basic.cpp.o -c /home/harekasa/Mygo/src/apps/test_basic.cpp",
+  "file": "/home/harekasa/Mygo/src/apps/test_basic.cpp",
+  "output": "src/apps/CMakeFiles/test_basic.dir/test_basic.cpp.o"
+},
+{
+  "directory": "/home/harekasa/Mygo/build/src/apps",
+  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -isystem /usr/local/include/opencv4 -g -std=c++17 -g -Wall -Wextra -o CMakeFiles/test_training.dir/test_simple_training.cpp.o -c /home/harekasa/Mygo/src/apps/test_simple_training.cpp",
+  "file": "/home/harekasa/Mygo/src/apps/test_simple_training.cpp",
+  "output": "src/apps/CMakeFiles/test_training.dir/test_simple_training.cpp.o"
+},
+{
+  "directory": "/home/harekasa/Mygo/build/src/apps",
+  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -isystem /usr/local/include/opencv4 -g -std=c++17 -g -Wall -Wextra -o CMakeFiles/test_threshold_tuner.dir/test_threshold_tuner.cpp.o -c /home/harekasa/Mygo/src/apps/test_threshold_tuner.cpp",
+  "file": "/home/harekasa/Mygo/src/apps/test_threshold_tuner.cpp",
+  "output": "src/apps/CMakeFiles/test_threshold_tuner.dir/test_threshold_tuner.cpp.o"
+},
+{
+  "directory": "/home/harekasa/Mygo/build/src/apps",
+  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -isystem /usr/local/include/opencv4 -g -std=c++17 -o CMakeFiles/test_single_image.dir/test_single_image.cpp.o -c /home/harekasa/Mygo/src/apps/test_single_image.cpp",
+  "file": "/home/harekasa/Mygo/src/apps/test_single_image.cpp",
+  "output": "src/apps/CMakeFiles/test_single_image.dir/test_single_image.cpp.o"
+},
+{
+  "directory": "/home/harekasa/Mygo/build/src/apps",
+  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -isystem /usr/local/include/opencv4 -g -std=c++17 -o CMakeFiles/test_single_image.dir/TestUtils.cpp.o -c /home/harekasa/Mygo/src/apps/TestUtils.cpp",
+  "file": "/home/harekasa/Mygo/src/apps/TestUtils.cpp",
+  "output": "src/apps/CMakeFiles/test_single_image.dir/TestUtils.cpp.o"
 }
 ]

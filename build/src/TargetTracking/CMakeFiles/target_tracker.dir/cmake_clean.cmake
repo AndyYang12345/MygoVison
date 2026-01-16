@@ -1,8 +1,8 @@
 file(REMOVE_RECURSE
-  "../../lib/libtarget_tracker.a"
-  "../../lib/libtarget_tracker.pdb"
   "CMakeFiles/target_tracker.dir/TargetTracker.cpp.o"
   "CMakeFiles/target_tracker.dir/TargetTracker.cpp.o.d"
+  "libtarget_tracker.a"
+  "libtarget_tracker.pdb"
 )
 
 # Per-language clean rules from dependency scanning.

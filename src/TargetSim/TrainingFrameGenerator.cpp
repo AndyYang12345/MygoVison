@@ -1,4 +1,4 @@
-#include "TrainingFrameGenerator.hpp"
+#include "TargetSim/TrainingFrameGenerator.hpp"
 #include <cmath>
 #include <iostream>
 #include <random>

@@ -12,12 +12,17 @@
 		[
 			"add_executable",
 			"target_link_libraries",
-			"add_compile_options",
+			"set_target_properties",
+			"include",
+			"find_package",
+			"target_compile_options",
 			"include_directories"
 		],
 		"files" : 
 		[
 			"src/apps/CMakeLists.txt",
+			"/usr/local/lib/cmake/opencv4/OpenCVModules.cmake",
+			"/usr/local/lib/cmake/opencv4/OpenCVConfig.cmake",
 			"CMakeLists.txt"
 		],
 		"nodes" : 
@@ -28,28 +33,54 @@
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 5,
+				"line" : 2,
 				"parent" : 0
 			},
 			{
 				"command" : 1,
 				"file" : 0,
-				"line" : 9,
+				"line" : 3,
 				"parent" : 0
 			},
 			{
-				"file" : 1
+				"file" : 3
+			},
+			{
+				"command" : 4,
+				"file" : 3,
+				"line" : 13,
+				"parent" : 3
+			},
+			{
+				"file" : 2,
+				"parent" : 4
+			},
+			{
+				"command" : 3,
+				"file" : 2,
+				"line" : 126,
+				"parent" : 5
+			},
+			{
+				"file" : 1,
+				"parent" : 6
 			},
 			{
 				"command" : 2,
 				"file" : 1,
-				"line" : 31,
-				"parent" : 3
+				"line" : 127,
+				"parent" : 7
 			},
 			{
-				"command" : 3,
-				"file" : 1,
-				"line" : 18,
+				"command" : 5,
+				"file" : 0,
+				"line" : 22,
+				"parent" : 0
+			},
+			{
+				"command" : 6,
+				"file" : 3,
+				"line" : 24,
 				"parent" : 3
 			}
 		]
@@ -63,30 +94,26 @@
 					"fragment" : "-g -std=c++17"
 				},
 				{
-					"backtrace" : 4,
+					"backtrace" : 9,
+					"fragment" : "-g"
+				},
+				{
+					"backtrace" : 9,
 					"fragment" : "-Wall"
 				},
 				{
-					"backtrace" : 4,
+					"backtrace" : 9,
 					"fragment" : "-Wextra"
-				},
-				{
-					"backtrace" : 4,
-					"fragment" : "-Wpedantic"
 				}
 			],
 			"includes" : 
 			[
 				{
-					"backtrace" : 5,
+					"backtrace" : 10,
 					"path" : "/home/harekasa/Mygo/include"
 				},
 				{
 					"backtrace" : 2,
-					"path" : "/home/harekasa/Mygo/include/TargetSim"
-				},
-				{
-					"backtrace" : 5,
 					"isSystem" : true,
 					"path" : "/usr/local/include/opencv4"
 				}
@@ -108,6 +135,10 @@
 	],
 	"dependencies" : 
 	[
+		{
+			"backtrace" : 2,
+			"id" : "target_tracker::@905fc951916d22901a73"
+		},
 		{
 			"backtrace" : 2,
 			"id" : "target_sim::@cfdc25a7abde0447e653"
@@ -132,12 +163,12 @@
 			},
 			{
 				"backtrace" : 2,
-				"fragment" : "../../lib/libtarget_sim.a",
+				"fragment" : "../TargetTracking/libtarget_tracker.a",
 				"role" : "libraries"
 			},
 			{
 				"backtrace" : 2,
-				"fragment" : "/usr/local/lib/libopencv_gapi.so.4.7.0",
+				"fragment" : "../TargetSim/libtarget_sim.a",
 				"role" : "libraries"
 			},
 			{
@@ -146,57 +177,12 @@
 				"role" : "libraries"
 			},
 			{
-				"backtrace" : 2,
-				"fragment" : "/usr/local/lib/libopencv_ml.so.4.7.0",
-				"role" : "libraries"
-			},
-			{
-				"backtrace" : 2,
-				"fragment" : "/usr/local/lib/libopencv_objdetect.so.4.7.0",
-				"role" : "libraries"
-			},
-			{
-				"backtrace" : 2,
-				"fragment" : "/usr/local/lib/libopencv_photo.so.4.7.0",
-				"role" : "libraries"
-			},
-			{
-				"backtrace" : 2,
-				"fragment" : "/usr/local/lib/libopencv_stitching.so.4.7.0",
-				"role" : "libraries"
-			},
-			{
-				"backtrace" : 2,
-				"fragment" : "/usr/local/lib/libopencv_video.so.4.7.0",
-				"role" : "libraries"
-			},
-			{
-				"backtrace" : 2,
+				"backtrace" : 8,
 				"fragment" : "/usr/local/lib/libopencv_videoio.so.4.7.0",
 				"role" : "libraries"
 			},
 			{
-				"backtrace" : 2,
-				"fragment" : "/usr/local/lib/libopencv_calib3d.so.4.7.0",
-				"role" : "libraries"
-			},
-			{
-				"backtrace" : 2,
-				"fragment" : "/usr/local/lib/libopencv_dnn.so.4.7.0",
-				"role" : "libraries"
-			},
-			{
-				"backtrace" : 2,
-				"fragment" : "/usr/local/lib/libopencv_features2d.so.4.7.0",
-				"role" : "libraries"
-			},
-			{
-				"backtrace" : 2,
-				"fragment" : "/usr/local/lib/libopencv_flann.so.4.7.0",
-				"role" : "libraries"
-			},
-			{
-				"backtrace" : 2,
+				"backtrace" : 8,
 				"fragment" : "/usr/local/lib/libopencv_imgcodecs.so.4.7.0",
 				"role" : "libraries"
 			},

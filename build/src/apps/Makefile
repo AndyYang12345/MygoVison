@@ -144,6 +144,58 @@ test_training/fast:
 	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_training.dir/build.make src/apps/CMakeFiles/test_training.dir/build
 .PHONY : test_training/fast
 
+# Convenience name for target.
+src/apps/CMakeFiles/test_threshold_tuner.dir/rule:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/apps/CMakeFiles/test_threshold_tuner.dir/rule
+.PHONY : src/apps/CMakeFiles/test_threshold_tuner.dir/rule
+
+# Convenience name for target.
+test_threshold_tuner: src/apps/CMakeFiles/test_threshold_tuner.dir/rule
+.PHONY : test_threshold_tuner
+
+# fast build rule for target.
+test_threshold_tuner/fast:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_threshold_tuner.dir/build.make src/apps/CMakeFiles/test_threshold_tuner.dir/build
+.PHONY : test_threshold_tuner/fast
+
+# Convenience name for target.
+src/apps/CMakeFiles/test_single_image.dir/rule:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/apps/CMakeFiles/test_single_image.dir/rule
+.PHONY : src/apps/CMakeFiles/test_single_image.dir/rule
+
+# Convenience name for target.
+test_single_image: src/apps/CMakeFiles/test_single_image.dir/rule
+.PHONY : test_single_image
+
+# fast build rule for target.
+test_single_image/fast:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_single_image.dir/build.make src/apps/CMakeFiles/test_single_image.dir/build
+.PHONY : test_single_image/fast
+
+TestUtils.o: TestUtils.cpp.o
+.PHONY : TestUtils.o
+
+# target to build an object file
+TestUtils.cpp.o:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_single_image.dir/build.make src/apps/CMakeFiles/test_single_image.dir/TestUtils.cpp.o
+.PHONY : TestUtils.cpp.o
+
+TestUtils.i: TestUtils.cpp.i
+.PHONY : TestUtils.i
+
+# target to preprocess a source file
+TestUtils.cpp.i:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_single_image.dir/build.make src/apps/CMakeFiles/test_single_image.dir/TestUtils.cpp.i
+.PHONY : TestUtils.cpp.i
+
+TestUtils.s: TestUtils.cpp.s
+.PHONY : TestUtils.s
+
+# target to generate assembly for a file
+TestUtils.cpp.s:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_single_image.dir/build.make src/apps/CMakeFiles/test_single_image.dir/TestUtils.cpp.s
+.PHONY : TestUtils.cpp.s
+
 test_basic.o: test_basic.cpp.o
 .PHONY : test_basic.o
 
@@ -192,6 +244,54 @@ test_simple_training.cpp.s:
 	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_training.dir/build.make src/apps/CMakeFiles/test_training.dir/test_simple_training.cpp.s
 .PHONY : test_simple_training.cpp.s
 
+test_single_image.o: test_single_image.cpp.o
+.PHONY : test_single_image.o
+
+# target to build an object file
+test_single_image.cpp.o:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_single_image.dir/build.make src/apps/CMakeFiles/test_single_image.dir/test_single_image.cpp.o
+.PHONY : test_single_image.cpp.o
+
+test_single_image.i: test_single_image.cpp.i
+.PHONY : test_single_image.i
+
+# target to preprocess a source file
+test_single_image.cpp.i:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_single_image.dir/build.make src/apps/CMakeFiles/test_single_image.dir/test_single_image.cpp.i
+.PHONY : test_single_image.cpp.i
+
+test_single_image.s: test_single_image.cpp.s
+.PHONY : test_single_image.s
+
+# target to generate assembly for a file
+test_single_image.cpp.s:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_single_image.dir/build.make src/apps/CMakeFiles/test_single_image.dir/test_single_image.cpp.s
+.PHONY : test_single_image.cpp.s
+
+test_threshold_tuner.o: test_threshold_tuner.cpp.o
+.PHONY : test_threshold_tuner.o
+
+# target to build an object file
+test_threshold_tuner.cpp.o:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_threshold_tuner.dir/build.make src/apps/CMakeFiles/test_threshold_tuner.dir/test_threshold_tuner.cpp.o
+.PHONY : test_threshold_tuner.cpp.o
+
+test_threshold_tuner.i: test_threshold_tuner.cpp.i
+.PHONY : test_threshold_tuner.i
+
+# target to preprocess a source file
+test_threshold_tuner.cpp.i:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_threshold_tuner.dir/build.make src/apps/CMakeFiles/test_threshold_tuner.dir/test_threshold_tuner.cpp.i
+.PHONY : test_threshold_tuner.cpp.i
+
+test_threshold_tuner.s: test_threshold_tuner.cpp.s
+.PHONY : test_threshold_tuner.s
+
+# target to generate assembly for a file
+test_threshold_tuner.cpp.s:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_threshold_tuner.dir/build.make src/apps/CMakeFiles/test_threshold_tuner.dir/test_threshold_tuner.cpp.s
+.PHONY : test_threshold_tuner.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -201,13 +301,24 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... test_basic"
+	@echo "... test_single_image"
+	@echo "... test_threshold_tuner"
 	@echo "... test_training"
+	@echo "... TestUtils.o"
+	@echo "... TestUtils.i"
+	@echo "... TestUtils.s"
 	@echo "... test_basic.o"
 	@echo "... test_basic.i"
 	@echo "... test_basic.s"
 	@echo "... test_simple_training.o"
 	@echo "... test_simple_training.i"
 	@echo "... test_simple_training.s"
+	@echo "... test_single_image.o"
+	@echo "... test_single_image.i"
+	@echo "... test_single_image.s"
+	@echo "... test_threshold_tuner.o"
+	@echo "... test_threshold_tuner.i"
+	@echo "... test_threshold_tuner.s"
 .PHONY : help
 
 

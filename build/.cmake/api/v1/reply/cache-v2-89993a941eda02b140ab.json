@@ -747,7 +747,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "target_sim_project"
+			"value" : "Mygo"
 		},
 		{
 			"name" : "CMAKE_PROJECT_VERSION",
@@ -1115,7 +1115,43 @@
 				}
 			],
 			"type" : "INTERNAL",
-			"value" : "[/usr/local][v4.7.0()]"
+			"value" : "[/usr/local][cfound components: core imgproc highgui ][v4.7.0()]"
+		},
+		{
+			"name" : "Mygo_BINARY_DIR",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Value Computed by CMake"
+				}
+			],
+			"type" : "STATIC",
+			"value" : "/home/harekasa/Mygo/build"
+		},
+		{
+			"name" : "Mygo_IS_TOP_LEVEL",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Value Computed by CMake"
+				}
+			],
+			"type" : "STATIC",
+			"value" : "ON"
+		},
+		{
+			"name" : "Mygo_SOURCE_DIR",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Value Computed by CMake"
+				}
+			],
+			"type" : "STATIC",
+			"value" : "/home/harekasa/Mygo"
 		},
 		{
 			"name" : "OpenCV_DIR",

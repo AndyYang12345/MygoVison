@@ -92,19 +92,10 @@ test_basic_EXTERNAL_OBJECTS =
 
 bin/test_basic: src/apps/CMakeFiles/test_basic.dir/test_basic.cpp.o
 bin/test_basic: src/apps/CMakeFiles/test_basic.dir/build.make
-bin/test_basic: lib/libtarget_sim.a
-bin/test_basic: /usr/local/lib/libopencv_gapi.so.4.7.0
+bin/test_basic: src/TargetTracking/libtarget_tracker.a
+bin/test_basic: src/TargetSim/libtarget_sim.a
 bin/test_basic: /usr/local/lib/libopencv_highgui.so.4.7.0
-bin/test_basic: /usr/local/lib/libopencv_ml.so.4.7.0
-bin/test_basic: /usr/local/lib/libopencv_objdetect.so.4.7.0
-bin/test_basic: /usr/local/lib/libopencv_photo.so.4.7.0
-bin/test_basic: /usr/local/lib/libopencv_stitching.so.4.7.0
-bin/test_basic: /usr/local/lib/libopencv_video.so.4.7.0
 bin/test_basic: /usr/local/lib/libopencv_videoio.so.4.7.0
-bin/test_basic: /usr/local/lib/libopencv_calib3d.so.4.7.0
-bin/test_basic: /usr/local/lib/libopencv_dnn.so.4.7.0
-bin/test_basic: /usr/local/lib/libopencv_features2d.so.4.7.0
-bin/test_basic: /usr/local/lib/libopencv_flann.so.4.7.0
 bin/test_basic: /usr/local/lib/libopencv_imgcodecs.so.4.7.0
 bin/test_basic: /usr/local/lib/libopencv_imgproc.so.4.7.0
 bin/test_basic: /usr/local/lib/libopencv_core.so.4.7.0

@@ -117,6 +117,32 @@ depend:
 .PHONY : depend
 
 #=============================================================================
+# Target rules for targets named target_tracker
+
+# Build rule for target.
+target_tracker: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 target_tracker
+.PHONY : target_tracker
+
+# fast build rule for target.
+target_tracker/fast:
+	$(MAKE) $(MAKESILENT) -f src/TargetTracking/CMakeFiles/target_tracker.dir/build.make src/TargetTracking/CMakeFiles/target_tracker.dir/build
+.PHONY : target_tracker/fast
+
+#=============================================================================
+# Target rules for targets named target_sim
+
+# Build rule for target.
+target_sim: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 target_sim
+.PHONY : target_sim
+
+# fast build rule for target.
+target_sim/fast:
+	$(MAKE) $(MAKESILENT) -f src/TargetSim/CMakeFiles/target_sim.dir/build.make src/TargetSim/CMakeFiles/target_sim.dir/build
+.PHONY : target_sim/fast
+
+#=============================================================================
 # Target rules for targets named test_basic
 
 # Build rule for target.
@@ -143,30 +169,30 @@ test_training/fast:
 .PHONY : test_training/fast
 
 #=============================================================================
-# Target rules for targets named target_sim
+# Target rules for targets named test_threshold_tuner
 
 # Build rule for target.
-target_sim: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 target_sim
-.PHONY : target_sim
+test_threshold_tuner: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_threshold_tuner
+.PHONY : test_threshold_tuner
 
 # fast build rule for target.
-target_sim/fast:
-	$(MAKE) $(MAKESILENT) -f src/TargetSim/CMakeFiles/target_sim.dir/build.make src/TargetSim/CMakeFiles/target_sim.dir/build
-.PHONY : target_sim/fast
+test_threshold_tuner/fast:
+	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_threshold_tuner.dir/build.make src/apps/CMakeFiles/test_threshold_tuner.dir/build
+.PHONY : test_threshold_tuner/fast
 
 #=============================================================================
-# Target rules for targets named target_tracker
+# Target rules for targets named test_single_image
 
 # Build rule for target.
-target_tracker: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 target_tracker
-.PHONY : target_tracker
+test_single_image: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_single_image
+.PHONY : test_single_image
 
 # fast build rule for target.
-target_tracker/fast:
-	$(MAKE) $(MAKESILENT) -f src/TargetTracking/CMakeFiles/target_tracker.dir/build.make src/TargetTracking/CMakeFiles/target_tracker.dir/build
-.PHONY : target_tracker/fast
+test_single_image/fast:
+	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_single_image.dir/build.make src/apps/CMakeFiles/test_single_image.dir/build
+.PHONY : test_single_image/fast
 
 # Help Target
 help:
@@ -179,6 +205,8 @@ help:
 	@echo "... target_sim"
 	@echo "... target_tracker"
 	@echo "... test_basic"
+	@echo "... test_single_image"
+	@echo "... test_threshold_tuner"
 	@echo "... test_training"
 .PHONY : help
 
