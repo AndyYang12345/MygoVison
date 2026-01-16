@@ -361,9 +361,6 @@ ColorBlob* TargetTracker::find_center_blob(vector<ColorBlob>& blobs) {
 
 ColorBlob* TargetTracker::find_matching_target(const vector<ColorBlob>& blobs, 
                                               const ColorBlob& center_blob) {
-    ColorBlob* best_match = nullptr;
-    float best_similarity = -1.0f;
-    
     // 计算中心色块是否为暗色
     bool center_is_dark = is_dark_color(center_blob.mean_color_bgr, config_.dark_brightness_threshold);
     
@@ -375,7 +372,10 @@ ColorBlob* TargetTracker::find_matching_target(const vector<ColorBlob>& blobs,
         cout << "Center is dark: " << (center_is_dark ? "YES" : "NO") << endl;
     }
     
-    // 方法1：直接取最大值
+    // 收集所有候选色块的相似度
+    vector<float> similarities;
+    vector<const ColorBlob*> candidates;
+    
     for (const auto& blob : blobs) {
         if (&blob == &center_blob) continue;
         if (!is_valid_surrounding_blob(blob, center_blob)) continue;
@@ -386,32 +386,47 @@ ColorBlob* TargetTracker::find_matching_target(const vector<ColorBlob>& blobs,
             center_is_dark
         );
         
+        similarities.push_back(similarity);
+        candidates.push_back(&blob);
+        
         if (config_.print_debug_info) {
             cout << "  Candidate at (" << blob.center.x << "," << blob.center.y 
-                 << "): similarity = " << similarity << endl;
-        }
-        
-        if (similarity > best_similarity) {
-            best_similarity = similarity;
-            best_match = const_cast<ColorBlob*>(&blob);
+                 << "): raw_sim = " << similarity << endl;
         }
     }
     
-    // 方法2：归一化后取最大值
-    // vector<float> similarities;
-    // vector<const ColorBlob*> candidates;
-    // ... 收集所有相似度
-    // vector<float> normalized = normalize_similarities(similarities);
-    // int best_idx = 找到最大值索引
-    // best_match = candidates[best_idx];
-    
-    if (best_match != nullptr && config_.print_debug_info) {
-        cout << "Selected target at (" << best_match->center.x 
-             << ", " << best_match->center.y << ")" << endl;
-        cout << "Best similarity: " << best_similarity << endl;
+    if (candidates.empty()) {
+        if (config_.print_debug_info) {
+            cout << "No valid surrounding blobs!" << endl;
+        }
+        return nullptr;
     }
     
-    return best_match;
+    // 归一化相似度（最大-最小归一化）
+    vector<float> normalized = normalize_similarities(similarities);
+    
+    // 找到归一化后相似度最大的色块
+    int best_idx = 0;
+    for (size_t i = 1; i < normalized.size(); ++i) {
+        if (normalized[i] > normalized[best_idx]) {
+            best_idx = i;
+        }
+    }
+    
+    if (config_.print_debug_info) {
+        cout << "After normalization:" << endl;
+        for (size_t i = 0; i < candidates.size(); ++i) {
+            cout << "  Candidate " << i << " at (" << candidates[i]->center.x 
+                 << "," << candidates[i]->center.y << "): raw=" 
+                 << similarities[i] << ", norm=" << normalized[i] << endl;
+        }
+        cout << "Selected target at (" << candidates[best_idx]->center.x 
+             << ", " << candidates[best_idx]->center.y << ")" << endl;
+        cout << "Best normalized similarity: " << normalized[best_idx] 
+             << " (raw: " << similarities[best_idx] << ")" << endl;
+    }
+    
+    return const_cast<ColorBlob*>(candidates[best_idx]);
 }
 // ============ 颜色匹配函数 ============
 
