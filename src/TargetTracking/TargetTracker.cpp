@@ -422,28 +422,84 @@ ColorBlob* TargetTracker::find_matching_target(const vector<ColorBlob>& blobs,
         return nullptr;
     }
     
-    // 归一化相似度（最大-最小归一化）
-    vector<double> normalized = normalize_similarities(similarities);
+    // 直接使用原始相似度，不进行归一化
+    // 这样可以保留原始相似度的绝对差异，对蓝色/紫色等相似颜色的区分更有利
     
-    // 找到归一化后相似度最大的色块
+    // 第一步：检查是否有色调完全相同或极其相近的候选（对蓝紫色关键）
+    cv::Scalar center_hsv = bgr_to_hsv(center_blob.mean_color_bgr);
+    float center_hue = center_hsv[0];
+    
+    const float HUE_MATCH_THRESHOLD = 8.0f;  // 色调匹配阈值（度）
+    int hue_matched_idx = -1;
+    float best_hue_diff = HUE_MATCH_THRESHOLD;
+    
+    for (size_t i = 0; i < candidates.size(); ++i) {
+        cv::Scalar candidate_hsv = bgr_to_hsv(candidates[i]->mean_color_bgr);
+        float candidate_hue = candidate_hsv[0];
+        
+        // 计算环形Hue差异
+        float hue_diff = abs(candidate_hue - center_hue);
+        hue_diff = min(hue_diff, 180.0f - hue_diff);
+        
+        if (hue_diff < best_hue_diff) {
+            best_hue_diff = hue_diff;
+            hue_matched_idx = i;
+        }
+    }
+    
+    // 如果找到色调匹配的候选，从这些候选中选出最高的相似度
     int best_idx = 0;
-    for (size_t i = 1; i < normalized.size(); ++i) {
-        if (normalized[i] > normalized[best_idx]) {
-            best_idx = i;
+    if (hue_matched_idx != -1 && best_hue_diff < HUE_MATCH_THRESHOLD) {
+        if (config_.print_debug_info) {
+            cout << "[HUE-MATCH] Found candidate with Hue diff=" << best_hue_diff << " at index " << hue_matched_idx << endl;
+        }
+        
+        // 在色调匹配的候选中选择相似度最高的
+        best_idx = hue_matched_idx;
+        float max_sim_in_hue_matched = similarities[hue_matched_idx];
+        
+        for (size_t i = 0; i < candidates.size(); ++i) {
+            cv::Scalar candidate_hsv = bgr_to_hsv(candidates[i]->mean_color_bgr);
+            float candidate_hue = candidate_hsv[0];
+            float hue_diff = abs(candidate_hue - center_hue);
+            hue_diff = min(hue_diff, 180.0f - hue_diff);
+            
+            if (hue_diff < HUE_MATCH_THRESHOLD && similarities[i] > max_sim_in_hue_matched) {
+                max_sim_in_hue_matched = similarities[i];
+                best_idx = i;
+            }
+        }
+        
+        if (config_.print_debug_info) {
+            cout << "[HUE-MATCH-SELECTED] Chose candidate with best similarity among Hue-matched ones" << endl;
+        }
+    } else {
+        // 否则按原始相似度选择
+        for (size_t i = 1; i < similarities.size(); ++i) {
+            if (similarities[i] > similarities[best_idx]) {
+                best_idx = i;
+            }
+        }
+        
+        if (config_.print_debug_info) {
+            cout << "[NO-HUE-MATCH] No Hue-matched candidate, using best overall similarity" << endl;
         }
     }
     
     if (config_.print_debug_info) {
-        cout << "After normalization:" << endl;
+        cout << "Raw similarities (with Hue-consistency check):" << endl;
         for (size_t i = 0; i < candidates.size(); ++i) {
+            cv::Scalar candidate_hsv = bgr_to_hsv(candidates[i]->mean_color_bgr);
+            float candidate_hue = candidate_hsv[0];
+            float hue_diff = abs(candidate_hue - center_hue);
+            hue_diff = min(hue_diff, 180.0f - hue_diff);
             cout << "  Candidate " << i << " at (" << candidates[i]->center.x 
-                 << "," << candidates[i]->center.y << "): raw=" 
-                 << similarities[i] << ", norm=" << normalized[i] << endl;
+                 << "," << candidates[i]->center.y << "): similarity=" 
+                 << similarities[i] << ", Hue_diff=" << hue_diff << endl;
         }
         cout << "Selected target at (" << candidates[best_idx]->center.x 
              << ", " << candidates[best_idx]->center.y << ")" << endl;
-        cout << "Best normalized similarity: " << normalized[best_idx] 
-             << " (raw: " << similarities[best_idx] << ")" << endl;
+        cout << "Best similarity: " << similarities[best_idx] << endl;
     }
     
     return const_cast<ColorBlob*>(candidates[best_idx]);
