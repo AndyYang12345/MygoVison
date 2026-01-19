@@ -4,17 +4,48 @@
 #include <iostream>
 #include <cmath>
 #include <opencv2/highgui.hpp>
+#include <random>
 
 /**
  * @brief 五角形旋转靶子3D投影演示
  * 
  * 功能：
  * 1. 靶子中心固定在空间原点 (0, 0, 0)，面朝 X 轴正方向
- * 2. 相机位置：前方 30cm (300mm)，视角向下约 20°
+ * 2. 相机位置：前方 1m，视角向下约 20°
  * 3. TrainingFrameGenerator 自动生成旋转的靶子帧
  * 4. 将每一帧投影到3D空间，从目标相机观察
  * 5. 使用 OpenCV imshow 实时显示投影结果
+ * 6. 支持变速旋转（能量机制）
  */
+
+/**
+ * @brief 能量机制变速旋转函数生成器
+ * 
+ * 生成一个角速度函数：spd(t) = a * sin(ω * t) + b
+ * 参数范围：a ∈ [0.780, 1.045], ω ∈ [1.884, 2.000]
+ */
+TrainingFrameGenerator::AngularVelocityFunction energy_mechanism_velocity_generator() {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    
+    // 参数范围
+    std::uniform_real_distribution<float> a_dist(0.780f, 1.045f);  // a ∈ [0.780, 1.045]
+    std::uniform_real_distribution<float> omega_dist(1.884f, 2.000f); // ω ∈ [1.884, 2.000]
+    
+    // 随机生成参数
+    float a = a_dist(gen);
+    float omega = omega_dist(gen);
+    float b = 2.090f - a;  // b = 2.090 - a
+    
+    std::cout << "[能量机制] 生成变速参数: "
+              << "a = " << a << ", ω = " << omega 
+              << ", b = " << b << ", spd(t) = " << a << " * sin(" << omega << " * t) + " << b 
+              << std::endl;
+    
+    return [a, omega, b](float t) -> float {
+        return a * std::sin(omega * t) + b;
+    };
+}
 
 /**
  * @brief 使用透视变换矩阵投影整个图像
@@ -68,14 +99,15 @@ cv::Mat reproject_image_3d(const cv::Mat& src_image,
 
 int main() {
     std::cout << "\n╔════════════════════════════════════════════════════════════╗" << std::endl;
-    std::cout << "║      五角形靶子3D旋转投影实时显示演示                       ║" << std::endl;
+    std::cout << "║      五角形靶子3D旋转投影实时显示演示（变速旋转）          ║" << std::endl;
     std::cout << "║  按 'q' 键退出，按 'p' 键暂停/继续                         ║" << std::endl;
     std::cout << "║  交互式调试：W/S 上下旋转  A/D 左右旋转                    ║" << std::endl;
     std::cout << "╚════════════════════════════════════════════════════════════╝\n" << std::endl;
     
-    // 创建靶子生成器 - 自动生成旋转的靶子
+    // 创建靶子生成器 - 自动生成旋转的靶子（使用能量机制变速旋转）
     TrainingFrameGenerator generator(800, 600, 30.0f);
-    generator.set_training_mode(TrainingFrameGenerator::MODE_PENTAGON_ROTATION, 0.1f);
+    auto velocity_func = energy_mechanism_velocity_generator();
+    generator.set_training_mode(TrainingFrameGenerator::MODE_PENTAGON_ROTATION, 1.0f, 1.0f, velocity_func);
     
     // 源相机（生成靶子的相机 - 俯视）
     SimulationCamera src_camera(800, 600, 30.0f);
@@ -142,7 +174,7 @@ int main() {
         cv::imshow("Rotating Pentagon Target - 3D Projection", projected);
         
         // 获取键盘输入
-        int key = cv::waitKey(33);  // ~30 FPS
+        int key = cv::waitKey(30);  // ~30 FPS
         
         if (key == 'q' || key == 27) {  // 'q' 或 ESC
             std::cout << "\n程序退出。" << std::endl;
@@ -161,11 +193,11 @@ int main() {
         } else if (key == 's' || key == 'S') {  // S: 向下旋转镜头（增加俯仰角）
             camera_pitch += rotation_step;
             std::cout << "镜头向下旋转，俯仰角: " << (camera_pitch * 180 / M_PI) << "°" << std::endl;
-        } else if (key == 'a' || key == 'A') {  // A: 镜头向左旋转（减小偏航角）
-            camera_yaw -= rotation_step;
-            std::cout << "镜头向左旋转，偏航角: " << (camera_yaw * 180 / M_PI) << "°" << std::endl;
-        } else if (key == 'd' || key == 'D') {  // D: 镜头向右旋转（增加偏航角）
+        } else if (key == 'a' || key == 'A') {  // A: 镜头向右旋转（增加偏航角）
             camera_yaw += rotation_step;
+            std::cout << "镜头向左旋转，偏航角: " << (camera_yaw * 180 / M_PI) << "°" << std::endl;
+        } else if (key == 'd' || key == 'D') {  // D: 镜头向左旋转（减小偏航角）
+            camera_yaw -= rotation_step;
             std::cout << "镜头向右旋转，偏航角: " << (camera_yaw * 180 / M_PI) << "°" << std::endl;
         }
         
