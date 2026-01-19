@@ -154,6 +154,30 @@ PerformanceMonitor.cpp.s:
 	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/TargetSim/CMakeFiles/target_sim.dir/build.make src/TargetSim/CMakeFiles/target_sim.dir/PerformanceMonitor.cpp.s
 .PHONY : PerformanceMonitor.cpp.s
 
+SimulationCamera.o: SimulationCamera.cpp.o
+.PHONY : SimulationCamera.o
+
+# target to build an object file
+SimulationCamera.cpp.o:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/TargetSim/CMakeFiles/target_sim.dir/build.make src/TargetSim/CMakeFiles/target_sim.dir/SimulationCamera.cpp.o
+.PHONY : SimulationCamera.cpp.o
+
+SimulationCamera.i: SimulationCamera.cpp.i
+.PHONY : SimulationCamera.i
+
+# target to preprocess a source file
+SimulationCamera.cpp.i:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/TargetSim/CMakeFiles/target_sim.dir/build.make src/TargetSim/CMakeFiles/target_sim.dir/SimulationCamera.cpp.i
+.PHONY : SimulationCamera.cpp.i
+
+SimulationCamera.s: SimulationCamera.cpp.s
+.PHONY : SimulationCamera.s
+
+# target to generate assembly for a file
+SimulationCamera.cpp.s:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/TargetSim/CMakeFiles/target_sim.dir/build.make src/TargetSim/CMakeFiles/target_sim.dir/SimulationCamera.cpp.s
+.PHONY : SimulationCamera.cpp.s
+
 TargetSim.o: TargetSim.cpp.o
 .PHONY : TargetSim.o
 
@@ -214,6 +238,9 @@ help:
 	@echo "... PerformanceMonitor.o"
 	@echo "... PerformanceMonitor.i"
 	@echo "... PerformanceMonitor.s"
+	@echo "... SimulationCamera.o"
+	@echo "... SimulationCamera.i"
+	@echo "... SimulationCamera.s"
 	@echo "... TargetSim.o"
 	@echo "... TargetSim.i"
 	@echo "... TargetSim.s"

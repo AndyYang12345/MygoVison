@@ -3,6 +3,7 @@ set(TARGET_SIM_SOURCES
     TargetSim.cpp
     TrainingFrameGenerator.cpp
     PerformanceMonitor.cpp
+    SimulationCamera.cpp
 )
 
 add_library(target_sim ${TARGET_SIM_SOURCES})

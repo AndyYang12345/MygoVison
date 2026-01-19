@@ -172,6 +172,48 @@ test_single_image/fast:
 	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_single_image.dir/build.make src/apps/CMakeFiles/test_single_image.dir/build
 .PHONY : test_single_image/fast
 
+# Convenience name for target.
+src/apps/CMakeFiles/test_simulation_camera.dir/rule:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/apps/CMakeFiles/test_simulation_camera.dir/rule
+.PHONY : src/apps/CMakeFiles/test_simulation_camera.dir/rule
+
+# Convenience name for target.
+test_simulation_camera: src/apps/CMakeFiles/test_simulation_camera.dir/rule
+.PHONY : test_simulation_camera
+
+# fast build rule for target.
+test_simulation_camera/fast:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_simulation_camera.dir/build.make src/apps/CMakeFiles/test_simulation_camera.dir/build
+.PHONY : test_simulation_camera/fast
+
+# Convenience name for target.
+src/apps/CMakeFiles/advanced_simulation_camera.dir/rule:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/apps/CMakeFiles/advanced_simulation_camera.dir/rule
+.PHONY : src/apps/CMakeFiles/advanced_simulation_camera.dir/rule
+
+# Convenience name for target.
+advanced_simulation_camera: src/apps/CMakeFiles/advanced_simulation_camera.dir/rule
+.PHONY : advanced_simulation_camera
+
+# fast build rule for target.
+advanced_simulation_camera/fast:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/advanced_simulation_camera.dir/build.make src/apps/CMakeFiles/advanced_simulation_camera.dir/build
+.PHONY : advanced_simulation_camera/fast
+
+# Convenience name for target.
+src/apps/CMakeFiles/pentagon_3d_perspective.dir/rule:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/apps/CMakeFiles/pentagon_3d_perspective.dir/rule
+.PHONY : src/apps/CMakeFiles/pentagon_3d_perspective.dir/rule
+
+# Convenience name for target.
+pentagon_3d_perspective: src/apps/CMakeFiles/pentagon_3d_perspective.dir/rule
+.PHONY : pentagon_3d_perspective
+
+# fast build rule for target.
+pentagon_3d_perspective/fast:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/pentagon_3d_perspective.dir/build.make src/apps/CMakeFiles/pentagon_3d_perspective.dir/build
+.PHONY : pentagon_3d_perspective/fast
+
 TestUtils.o: TestUtils.cpp.o
 .PHONY : TestUtils.o
 
@@ -195,6 +237,54 @@ TestUtils.s: TestUtils.cpp.s
 TestUtils.cpp.s:
 	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_single_image.dir/build.make src/apps/CMakeFiles/test_single_image.dir/TestUtils.cpp.s
 .PHONY : TestUtils.cpp.s
+
+advanced_simulation_camera.o: advanced_simulation_camera.cpp.o
+.PHONY : advanced_simulation_camera.o
+
+# target to build an object file
+advanced_simulation_camera.cpp.o:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/advanced_simulation_camera.dir/build.make src/apps/CMakeFiles/advanced_simulation_camera.dir/advanced_simulation_camera.cpp.o
+.PHONY : advanced_simulation_camera.cpp.o
+
+advanced_simulation_camera.i: advanced_simulation_camera.cpp.i
+.PHONY : advanced_simulation_camera.i
+
+# target to preprocess a source file
+advanced_simulation_camera.cpp.i:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/advanced_simulation_camera.dir/build.make src/apps/CMakeFiles/advanced_simulation_camera.dir/advanced_simulation_camera.cpp.i
+.PHONY : advanced_simulation_camera.cpp.i
+
+advanced_simulation_camera.s: advanced_simulation_camera.cpp.s
+.PHONY : advanced_simulation_camera.s
+
+# target to generate assembly for a file
+advanced_simulation_camera.cpp.s:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/advanced_simulation_camera.dir/build.make src/apps/CMakeFiles/advanced_simulation_camera.dir/advanced_simulation_camera.cpp.s
+.PHONY : advanced_simulation_camera.cpp.s
+
+pentagon_3d_perspective.o: pentagon_3d_perspective.cpp.o
+.PHONY : pentagon_3d_perspective.o
+
+# target to build an object file
+pentagon_3d_perspective.cpp.o:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/pentagon_3d_perspective.dir/build.make src/apps/CMakeFiles/pentagon_3d_perspective.dir/pentagon_3d_perspective.cpp.o
+.PHONY : pentagon_3d_perspective.cpp.o
+
+pentagon_3d_perspective.i: pentagon_3d_perspective.cpp.i
+.PHONY : pentagon_3d_perspective.i
+
+# target to preprocess a source file
+pentagon_3d_perspective.cpp.i:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/pentagon_3d_perspective.dir/build.make src/apps/CMakeFiles/pentagon_3d_perspective.dir/pentagon_3d_perspective.cpp.i
+.PHONY : pentagon_3d_perspective.cpp.i
+
+pentagon_3d_perspective.s: pentagon_3d_perspective.cpp.s
+.PHONY : pentagon_3d_perspective.s
+
+# target to generate assembly for a file
+pentagon_3d_perspective.cpp.s:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/pentagon_3d_perspective.dir/build.make src/apps/CMakeFiles/pentagon_3d_perspective.dir/pentagon_3d_perspective.cpp.s
+.PHONY : pentagon_3d_perspective.cpp.s
 
 test_basic.o: test_basic.cpp.o
 .PHONY : test_basic.o
@@ -243,6 +333,30 @@ test_simple_training.s: test_simple_training.cpp.s
 test_simple_training.cpp.s:
 	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_training.dir/build.make src/apps/CMakeFiles/test_training.dir/test_simple_training.cpp.s
 .PHONY : test_simple_training.cpp.s
+
+test_simulation_camera.o: test_simulation_camera.cpp.o
+.PHONY : test_simulation_camera.o
+
+# target to build an object file
+test_simulation_camera.cpp.o:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_simulation_camera.dir/build.make src/apps/CMakeFiles/test_simulation_camera.dir/test_simulation_camera.cpp.o
+.PHONY : test_simulation_camera.cpp.o
+
+test_simulation_camera.i: test_simulation_camera.cpp.i
+.PHONY : test_simulation_camera.i
+
+# target to preprocess a source file
+test_simulation_camera.cpp.i:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_simulation_camera.dir/build.make src/apps/CMakeFiles/test_simulation_camera.dir/test_simulation_camera.cpp.i
+.PHONY : test_simulation_camera.cpp.i
+
+test_simulation_camera.s: test_simulation_camera.cpp.s
+.PHONY : test_simulation_camera.s
+
+# target to generate assembly for a file
+test_simulation_camera.cpp.s:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_simulation_camera.dir/build.make src/apps/CMakeFiles/test_simulation_camera.dir/test_simulation_camera.cpp.s
+.PHONY : test_simulation_camera.cpp.s
 
 test_single_image.o: test_single_image.cpp.o
 .PHONY : test_single_image.o
@@ -300,19 +414,31 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
+	@echo "... advanced_simulation_camera"
+	@echo "... pentagon_3d_perspective"
 	@echo "... test_basic"
+	@echo "... test_simulation_camera"
 	@echo "... test_single_image"
 	@echo "... test_threshold_tuner"
 	@echo "... test_training"
 	@echo "... TestUtils.o"
 	@echo "... TestUtils.i"
 	@echo "... TestUtils.s"
+	@echo "... advanced_simulation_camera.o"
+	@echo "... advanced_simulation_camera.i"
+	@echo "... advanced_simulation_camera.s"
+	@echo "... pentagon_3d_perspective.o"
+	@echo "... pentagon_3d_perspective.i"
+	@echo "... pentagon_3d_perspective.s"
 	@echo "... test_basic.o"
 	@echo "... test_basic.i"
 	@echo "... test_basic.s"
 	@echo "... test_simple_training.o"
 	@echo "... test_simple_training.i"
 	@echo "... test_simple_training.s"
+	@echo "... test_simulation_camera.o"
+	@echo "... test_simulation_camera.i"
+	@echo "... test_simulation_camera.s"
 	@echo "... test_single_image.o"
 	@echo "... test_single_image.i"
 	@echo "... test_single_image.s"

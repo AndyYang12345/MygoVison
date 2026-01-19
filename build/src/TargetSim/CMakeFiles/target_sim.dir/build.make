@@ -111,11 +111,26 @@ src/TargetSim/CMakeFiles/target_sim.dir/PerformanceMonitor.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/target_sim.dir/PerformanceMonitor.cpp.s"
 	cd /home/harekasa/Mygo/build/src/TargetSim && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/harekasa/Mygo/src/TargetSim/PerformanceMonitor.cpp -o CMakeFiles/target_sim.dir/PerformanceMonitor.cpp.s
 
+src/TargetSim/CMakeFiles/target_sim.dir/SimulationCamera.cpp.o: src/TargetSim/CMakeFiles/target_sim.dir/flags.make
+src/TargetSim/CMakeFiles/target_sim.dir/SimulationCamera.cpp.o: /home/harekasa/Mygo/src/TargetSim/SimulationCamera.cpp
+src/TargetSim/CMakeFiles/target_sim.dir/SimulationCamera.cpp.o: src/TargetSim/CMakeFiles/target_sim.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object src/TargetSim/CMakeFiles/target_sim.dir/SimulationCamera.cpp.o"
+	cd /home/harekasa/Mygo/build/src/TargetSim && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/TargetSim/CMakeFiles/target_sim.dir/SimulationCamera.cpp.o -MF CMakeFiles/target_sim.dir/SimulationCamera.cpp.o.d -o CMakeFiles/target_sim.dir/SimulationCamera.cpp.o -c /home/harekasa/Mygo/src/TargetSim/SimulationCamera.cpp
+
+src/TargetSim/CMakeFiles/target_sim.dir/SimulationCamera.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/target_sim.dir/SimulationCamera.cpp.i"
+	cd /home/harekasa/Mygo/build/src/TargetSim && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/harekasa/Mygo/src/TargetSim/SimulationCamera.cpp > CMakeFiles/target_sim.dir/SimulationCamera.cpp.i
+
+src/TargetSim/CMakeFiles/target_sim.dir/SimulationCamera.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/target_sim.dir/SimulationCamera.cpp.s"
+	cd /home/harekasa/Mygo/build/src/TargetSim && /usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/harekasa/Mygo/src/TargetSim/SimulationCamera.cpp -o CMakeFiles/target_sim.dir/SimulationCamera.cpp.s
+
 # Object files for target target_sim
 target_sim_OBJECTS = \
 "CMakeFiles/target_sim.dir/TargetSim.cpp.o" \
 "CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.o" \
-"CMakeFiles/target_sim.dir/PerformanceMonitor.cpp.o"
+"CMakeFiles/target_sim.dir/PerformanceMonitor.cpp.o" \
+"CMakeFiles/target_sim.dir/SimulationCamera.cpp.o"
 
 # External object files for target target_sim
 target_sim_EXTERNAL_OBJECTS =
@@ -123,9 +138,10 @@ target_sim_EXTERNAL_OBJECTS =
 src/TargetSim/libtarget_sim.a: src/TargetSim/CMakeFiles/target_sim.dir/TargetSim.cpp.o
 src/TargetSim/libtarget_sim.a: src/TargetSim/CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.o
 src/TargetSim/libtarget_sim.a: src/TargetSim/CMakeFiles/target_sim.dir/PerformanceMonitor.cpp.o
+src/TargetSim/libtarget_sim.a: src/TargetSim/CMakeFiles/target_sim.dir/SimulationCamera.cpp.o
 src/TargetSim/libtarget_sim.a: src/TargetSim/CMakeFiles/target_sim.dir/build.make
 src/TargetSim/libtarget_sim.a: src/TargetSim/CMakeFiles/target_sim.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Linking CXX static library libtarget_sim.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Linking CXX static library libtarget_sim.a"
 	cd /home/harekasa/Mygo/build/src/TargetSim && $(CMAKE_COMMAND) -P CMakeFiles/target_sim.dir/cmake_clean_target.cmake
 	cd /home/harekasa/Mygo/build/src/TargetSim && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/target_sim.dir/link.txt --verbose=$(VERBOSE)
 

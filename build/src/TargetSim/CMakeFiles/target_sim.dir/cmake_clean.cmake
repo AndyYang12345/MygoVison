@@ -1,6 +1,8 @@
 file(REMOVE_RECURSE
   "CMakeFiles/target_sim.dir/PerformanceMonitor.cpp.o"
   "CMakeFiles/target_sim.dir/PerformanceMonitor.cpp.o.d"
+  "CMakeFiles/target_sim.dir/SimulationCamera.cpp.o"
+  "CMakeFiles/target_sim.dir/SimulationCamera.cpp.o.d"
   "CMakeFiles/target_sim.dir/TargetSim.cpp.o"
   "CMakeFiles/target_sim.dir/TargetSim.cpp.o.d"
   "CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.o"
