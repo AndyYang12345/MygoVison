@@ -8,7 +8,6 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/harekasa/Mygo/src/apps/TestUtils.cpp" "src/apps/CMakeFiles/test_single_image.dir/TestUtils.cpp.o" "gcc" "src/apps/CMakeFiles/test_single_image.dir/TestUtils.cpp.o.d"
   "/home/harekasa/Mygo/src/apps/test_single_image.cpp" "src/apps/CMakeFiles/test_single_image.dir/test_single_image.cpp.o" "gcc" "src/apps/CMakeFiles/test_single_image.dir/test_single_image.cpp.o.d"
   )
 

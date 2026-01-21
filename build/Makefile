@@ -195,32 +195,6 @@ test_single_image/fast:
 .PHONY : test_single_image/fast
 
 #=============================================================================
-# Target rules for targets named test_simulation_camera
-
-# Build rule for target.
-test_simulation_camera: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_simulation_camera
-.PHONY : test_simulation_camera
-
-# fast build rule for target.
-test_simulation_camera/fast:
-	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_simulation_camera.dir/build.make src/apps/CMakeFiles/test_simulation_camera.dir/build
-.PHONY : test_simulation_camera/fast
-
-#=============================================================================
-# Target rules for targets named advanced_simulation_camera
-
-# Build rule for target.
-advanced_simulation_camera: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 advanced_simulation_camera
-.PHONY : advanced_simulation_camera
-
-# fast build rule for target.
-advanced_simulation_camera/fast:
-	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/advanced_simulation_camera.dir/build.make src/apps/CMakeFiles/advanced_simulation_camera.dir/build
-.PHONY : advanced_simulation_camera/fast
-
-#=============================================================================
 # Target rules for targets named pentagon_3d_perspective
 
 # Build rule for target.
@@ -254,13 +228,11 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... advanced_simulation_camera"
 	@echo "... pentagon_3d_perspective"
 	@echo "... pentagon_simulator_app"
 	@echo "... target_sim"
 	@echo "... target_tracker"
 	@echo "... test_basic"
-	@echo "... test_simulation_camera"
 	@echo "... test_single_image"
 	@echo "... test_threshold_tuner"
 	@echo "... test_training"
