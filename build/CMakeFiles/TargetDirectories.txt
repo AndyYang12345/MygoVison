@@ -13,5 +13,6 @@
 /home/harekasa/Mygo/build/src/apps/CMakeFiles/test_simulation_camera.dir
 /home/harekasa/Mygo/build/src/apps/CMakeFiles/advanced_simulation_camera.dir
 /home/harekasa/Mygo/build/src/apps/CMakeFiles/pentagon_3d_perspective.dir
+/home/harekasa/Mygo/build/src/apps/CMakeFiles/pentagon_simulator_app.dir
 /home/harekasa/Mygo/build/src/apps/CMakeFiles/edit_cache.dir
 /home/harekasa/Mygo/build/src/apps/CMakeFiles/rebuild_cache.dir

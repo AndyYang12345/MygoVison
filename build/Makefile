@@ -233,6 +233,19 @@ pentagon_3d_perspective/fast:
 	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/pentagon_3d_perspective.dir/build.make src/apps/CMakeFiles/pentagon_3d_perspective.dir/build
 .PHONY : pentagon_3d_perspective/fast
 
+#=============================================================================
+# Target rules for targets named pentagon_simulator_app
+
+# Build rule for target.
+pentagon_simulator_app: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 pentagon_simulator_app
+.PHONY : pentagon_simulator_app
+
+# fast build rule for target.
+pentagon_simulator_app/fast:
+	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/pentagon_simulator_app.dir/build.make src/apps/CMakeFiles/pentagon_simulator_app.dir/build
+.PHONY : pentagon_simulator_app/fast
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -243,6 +256,7 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... advanced_simulation_camera"
 	@echo "... pentagon_3d_perspective"
+	@echo "... pentagon_simulator_app"
 	@echo "... target_sim"
 	@echo "... target_tracker"
 	@echo "... test_basic"

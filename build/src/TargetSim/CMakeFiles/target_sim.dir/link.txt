@@ -1,2 +1,2 @@
-/usr/bin/ar qc libtarget_sim.a CMakeFiles/target_sim.dir/TargetSim.cpp.o CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.o CMakeFiles/target_sim.dir/PerformanceMonitor.cpp.o CMakeFiles/target_sim.dir/SimulationCamera.cpp.o
+/usr/bin/ar qc libtarget_sim.a CMakeFiles/target_sim.dir/TargetSim.cpp.o CMakeFiles/target_sim.dir/TrainingFrameGenerator.cpp.o CMakeFiles/target_sim.dir/PerformanceMonitor.cpp.o CMakeFiles/target_sim.dir/SimulationCamera.cpp.o CMakeFiles/target_sim.dir/PentagonSimulator.cpp.o
 /usr/bin/ranlib libtarget_sim.a

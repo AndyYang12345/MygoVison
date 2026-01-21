@@ -1,4 +1,6 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/target_sim.dir/PentagonSimulator.cpp.o"
+  "CMakeFiles/target_sim.dir/PentagonSimulator.cpp.o.d"
   "CMakeFiles/target_sim.dir/PerformanceMonitor.cpp.o"
   "CMakeFiles/target_sim.dir/PerformanceMonitor.cpp.o.d"
   "CMakeFiles/target_sim.dir/SimulationCamera.cpp.o"

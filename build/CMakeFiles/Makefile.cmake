@@ -61,4 +61,5 @@ set(CMAKE_DEPEND_INFO_FILES
   "src/apps/CMakeFiles/test_simulation_camera.dir/DependInfo.cmake"
   "src/apps/CMakeFiles/advanced_simulation_camera.dir/DependInfo.cmake"
   "src/apps/CMakeFiles/pentagon_3d_perspective.dir/DependInfo.cmake"
+  "src/apps/CMakeFiles/pentagon_simulator_app.dir/DependInfo.cmake"
   )

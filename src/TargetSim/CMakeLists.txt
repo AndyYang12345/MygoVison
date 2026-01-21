@@ -4,6 +4,7 @@ set(TARGET_SIM_SOURCES
     TrainingFrameGenerator.cpp
     PerformanceMonitor.cpp
     SimulationCamera.cpp
+    PentagonSimulator.cpp
 )
 
 add_library(target_sim ${TARGET_SIM_SOURCES})

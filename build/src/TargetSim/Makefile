@@ -130,6 +130,30 @@ target_sim/fast:
 	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/TargetSim/CMakeFiles/target_sim.dir/build.make src/TargetSim/CMakeFiles/target_sim.dir/build
 .PHONY : target_sim/fast
 
+PentagonSimulator.o: PentagonSimulator.cpp.o
+.PHONY : PentagonSimulator.o
+
+# target to build an object file
+PentagonSimulator.cpp.o:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/TargetSim/CMakeFiles/target_sim.dir/build.make src/TargetSim/CMakeFiles/target_sim.dir/PentagonSimulator.cpp.o
+.PHONY : PentagonSimulator.cpp.o
+
+PentagonSimulator.i: PentagonSimulator.cpp.i
+.PHONY : PentagonSimulator.i
+
+# target to preprocess a source file
+PentagonSimulator.cpp.i:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/TargetSim/CMakeFiles/target_sim.dir/build.make src/TargetSim/CMakeFiles/target_sim.dir/PentagonSimulator.cpp.i
+.PHONY : PentagonSimulator.cpp.i
+
+PentagonSimulator.s: PentagonSimulator.cpp.s
+.PHONY : PentagonSimulator.s
+
+# target to generate assembly for a file
+PentagonSimulator.cpp.s:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/TargetSim/CMakeFiles/target_sim.dir/build.make src/TargetSim/CMakeFiles/target_sim.dir/PentagonSimulator.cpp.s
+.PHONY : PentagonSimulator.cpp.s
+
 PerformanceMonitor.o: PerformanceMonitor.cpp.o
 .PHONY : PerformanceMonitor.o
 
@@ -235,6 +259,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... target_sim"
+	@echo "... PentagonSimulator.o"
+	@echo "... PentagonSimulator.i"
+	@echo "... PentagonSimulator.s"
 	@echo "... PerformanceMonitor.o"
 	@echo "... PerformanceMonitor.i"
 	@echo "... PerformanceMonitor.s"

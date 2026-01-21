@@ -214,6 +214,20 @@ pentagon_3d_perspective/fast:
 	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/pentagon_3d_perspective.dir/build.make src/apps/CMakeFiles/pentagon_3d_perspective.dir/build
 .PHONY : pentagon_3d_perspective/fast
 
+# Convenience name for target.
+src/apps/CMakeFiles/pentagon_simulator_app.dir/rule:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/apps/CMakeFiles/pentagon_simulator_app.dir/rule
+.PHONY : src/apps/CMakeFiles/pentagon_simulator_app.dir/rule
+
+# Convenience name for target.
+pentagon_simulator_app: src/apps/CMakeFiles/pentagon_simulator_app.dir/rule
+.PHONY : pentagon_simulator_app
+
+# fast build rule for target.
+pentagon_simulator_app/fast:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/pentagon_simulator_app.dir/build.make src/apps/CMakeFiles/pentagon_simulator_app.dir/build
+.PHONY : pentagon_simulator_app/fast
+
 TestUtils.o: TestUtils.cpp.o
 .PHONY : TestUtils.o
 
@@ -285,6 +299,30 @@ pentagon_3d_perspective.s: pentagon_3d_perspective.cpp.s
 pentagon_3d_perspective.cpp.s:
 	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/pentagon_3d_perspective.dir/build.make src/apps/CMakeFiles/pentagon_3d_perspective.dir/pentagon_3d_perspective.cpp.s
 .PHONY : pentagon_3d_perspective.cpp.s
+
+pentagon_simulator_app.o: pentagon_simulator_app.cpp.o
+.PHONY : pentagon_simulator_app.o
+
+# target to build an object file
+pentagon_simulator_app.cpp.o:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/pentagon_simulator_app.dir/build.make src/apps/CMakeFiles/pentagon_simulator_app.dir/pentagon_simulator_app.cpp.o
+.PHONY : pentagon_simulator_app.cpp.o
+
+pentagon_simulator_app.i: pentagon_simulator_app.cpp.i
+.PHONY : pentagon_simulator_app.i
+
+# target to preprocess a source file
+pentagon_simulator_app.cpp.i:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/pentagon_simulator_app.dir/build.make src/apps/CMakeFiles/pentagon_simulator_app.dir/pentagon_simulator_app.cpp.i
+.PHONY : pentagon_simulator_app.cpp.i
+
+pentagon_simulator_app.s: pentagon_simulator_app.cpp.s
+.PHONY : pentagon_simulator_app.s
+
+# target to generate assembly for a file
+pentagon_simulator_app.cpp.s:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/pentagon_simulator_app.dir/build.make src/apps/CMakeFiles/pentagon_simulator_app.dir/pentagon_simulator_app.cpp.s
+.PHONY : pentagon_simulator_app.cpp.s
 
 test_basic.o: test_basic.cpp.o
 .PHONY : test_basic.o
@@ -416,6 +454,7 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... advanced_simulation_camera"
 	@echo "... pentagon_3d_perspective"
+	@echo "... pentagon_simulator_app"
 	@echo "... test_basic"
 	@echo "... test_simulation_camera"
 	@echo "... test_single_image"
@@ -430,6 +469,9 @@ help:
 	@echo "... pentagon_3d_perspective.o"
 	@echo "... pentagon_3d_perspective.i"
 	@echo "... pentagon_3d_perspective.s"
+	@echo "... pentagon_simulator_app.o"
+	@echo "... pentagon_simulator_app.i"
+	@echo "... pentagon_simulator_app.s"
 	@echo "... test_basic.o"
 	@echo "... test_basic.i"
 	@echo "... test_basic.s"

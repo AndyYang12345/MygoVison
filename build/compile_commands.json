@@ -30,20 +30,26 @@
   "output": "src/TargetSim/CMakeFiles/target_sim.dir/SimulationCamera.cpp.o"
 },
 {
+  "directory": "/home/harekasa/Mygo/build/src/TargetSim",
+  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -isystem /usr/local/include/opencv4 -g -std=c++17 -fPIC -o CMakeFiles/target_sim.dir/PentagonSimulator.cpp.o -c /home/harekasa/Mygo/src/TargetSim/PentagonSimulator.cpp",
+  "file": "/home/harekasa/Mygo/src/TargetSim/PentagonSimulator.cpp",
+  "output": "src/TargetSim/CMakeFiles/target_sim.dir/PentagonSimulator.cpp.o"
+},
+{
   "directory": "/home/harekasa/Mygo/build/src/apps",
-  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -isystem /usr/local/include/opencv4 -g -std=c++17 -g -Wall -Wextra -o CMakeFiles/test_basic.dir/test_basic.cpp.o -c /home/harekasa/Mygo/src/apps/test_basic.cpp",
+  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -isystem /usr/local/include/opencv4 -g -std=c++17 -o CMakeFiles/test_basic.dir/test_basic.cpp.o -c /home/harekasa/Mygo/src/apps/test_basic.cpp",
   "file": "/home/harekasa/Mygo/src/apps/test_basic.cpp",
   "output": "src/apps/CMakeFiles/test_basic.dir/test_basic.cpp.o"
 },
 {
   "directory": "/home/harekasa/Mygo/build/src/apps",
-  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -isystem /usr/local/include/opencv4 -g -std=c++17 -g -Wall -Wextra -o CMakeFiles/test_training.dir/test_simple_training.cpp.o -c /home/harekasa/Mygo/src/apps/test_simple_training.cpp",
+  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -isystem /usr/local/include/opencv4 -g -std=c++17 -o CMakeFiles/test_training.dir/test_simple_training.cpp.o -c /home/harekasa/Mygo/src/apps/test_simple_training.cpp",
   "file": "/home/harekasa/Mygo/src/apps/test_simple_training.cpp",
   "output": "src/apps/CMakeFiles/test_training.dir/test_simple_training.cpp.o"
 },
 {
   "directory": "/home/harekasa/Mygo/build/src/apps",
-  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -isystem /usr/local/include/opencv4 -g -std=c++17 -g -Wall -Wextra -o CMakeFiles/test_threshold_tuner.dir/test_threshold_tuner.cpp.o -c /home/harekasa/Mygo/src/apps/test_threshold_tuner.cpp",
+  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -isystem /usr/local/include/opencv4 -g -std=c++17 -o CMakeFiles/test_threshold_tuner.dir/test_threshold_tuner.cpp.o -c /home/harekasa/Mygo/src/apps/test_threshold_tuner.cpp",
   "file": "/home/harekasa/Mygo/src/apps/test_threshold_tuner.cpp",
   "output": "src/apps/CMakeFiles/test_threshold_tuner.dir/test_threshold_tuner.cpp.o"
 },
@@ -61,20 +67,26 @@
 },
 {
   "directory": "/home/harekasa/Mygo/build/src/apps",
-  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -isystem /usr/local/include/opencv4 -g -std=c++17 -g -Wall -Wextra -o CMakeFiles/test_simulation_camera.dir/test_simulation_camera.cpp.o -c /home/harekasa/Mygo/src/apps/test_simulation_camera.cpp",
+  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -isystem /usr/local/include/opencv4 -g -std=c++17 -o CMakeFiles/test_simulation_camera.dir/test_simulation_camera.cpp.o -c /home/harekasa/Mygo/src/apps/test_simulation_camera.cpp",
   "file": "/home/harekasa/Mygo/src/apps/test_simulation_camera.cpp",
   "output": "src/apps/CMakeFiles/test_simulation_camera.dir/test_simulation_camera.cpp.o"
 },
 {
   "directory": "/home/harekasa/Mygo/build/src/apps",
-  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -isystem /usr/local/include/opencv4 -g -std=c++17 -g -Wall -Wextra -o CMakeFiles/advanced_simulation_camera.dir/advanced_simulation_camera.cpp.o -c /home/harekasa/Mygo/src/apps/advanced_simulation_camera.cpp",
+  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -isystem /usr/local/include/opencv4 -g -std=c++17 -o CMakeFiles/advanced_simulation_camera.dir/advanced_simulation_camera.cpp.o -c /home/harekasa/Mygo/src/apps/advanced_simulation_camera.cpp",
   "file": "/home/harekasa/Mygo/src/apps/advanced_simulation_camera.cpp",
   "output": "src/apps/CMakeFiles/advanced_simulation_camera.dir/advanced_simulation_camera.cpp.o"
 },
 {
   "directory": "/home/harekasa/Mygo/build/src/apps",
-  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -isystem /usr/local/include/opencv4 -g -std=c++17 -g -Wall -Wextra -o CMakeFiles/pentagon_3d_perspective.dir/pentagon_3d_perspective.cpp.o -c /home/harekasa/Mygo/src/apps/pentagon_3d_perspective.cpp",
+  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -isystem /usr/local/include/opencv4 -g -std=c++17 -o CMakeFiles/pentagon_3d_perspective.dir/pentagon_3d_perspective.cpp.o -c /home/harekasa/Mygo/src/apps/pentagon_3d_perspective.cpp",
   "file": "/home/harekasa/Mygo/src/apps/pentagon_3d_perspective.cpp",
   "output": "src/apps/CMakeFiles/pentagon_3d_perspective.dir/pentagon_3d_perspective.cpp.o"
+},
+{
+  "directory": "/home/harekasa/Mygo/build/src/apps",
+  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -isystem /usr/local/include/opencv4 -g -std=c++17 -o CMakeFiles/pentagon_simulator_app.dir/pentagon_simulator_app.cpp.o -c /home/harekasa/Mygo/src/apps/pentagon_simulator_app.cpp",
+  "file": "/home/harekasa/Mygo/src/apps/pentagon_simulator_app.cpp",
+  "output": "src/apps/CMakeFiles/pentagon_simulator_app.dir/pentagon_simulator_app.cpp.o"
 }
 ]

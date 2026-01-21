@@ -1,2 +1,0 @@
-/usr/bin/ar qc ../../lib/libtarget_stream_sim.a CMakeFiles/target_stream_sim.dir/targetStreamSimulator.cpp.o
-/usr/bin/ranlib ../../lib/libtarget_stream_sim.a

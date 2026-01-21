@@ -31,10 +31,6 @@ add_executable(pentagon_3d_perspective pentagon_3d_perspective.cpp)
 target_link_libraries(pentagon_3d_perspective PRIVATE target_tracker target_sim ${OpenCV_LIBS})
 set_target_properties(pentagon_3d_perspective PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
-# 编译选项
-target_compile_options(test_basic PRIVATE -g -Wall -Wextra)
-target_compile_options(test_training PRIVATE -g -Wall -Wextra)
-target_compile_options(test_threshold_tuner PRIVATE -g -Wall -Wextra)
-target_compile_options(test_simulation_camera PRIVATE -g -Wall -Wextra)
-target_compile_options(advanced_simulation_camera PRIVATE -g -Wall -Wextra)
-target_compile_options(pentagon_3d_perspective PRIVATE -g -Wall -Wextra)
+add_executable(pentagon_simulator_app pentagon_simulator_app.cpp)
+target_link_libraries(pentagon_simulator_app PRIVATE target_tracker target_sim ${OpenCV_LIBS})
+set_target_properties(pentagon_simulator_app PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")

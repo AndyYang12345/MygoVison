@@ -105,17 +105,17 @@ int main() {
     std::cout << "╚════════════════════════════════════════════════════════════╝\n" << std::endl;
     
     // 创建靶子生成器 - 自动生成旋转的靶子（使用能量机制变速旋转）
-    TrainingFrameGenerator generator(800, 600, 30.0f);
+    TrainingFrameGenerator generator(640, 640, 30.0f);
     auto velocity_func = energy_mechanism_velocity_generator();
     generator.set_training_mode(TrainingFrameGenerator::MODE_PENTAGON_ROTATION, 1.0f, 1.0f, velocity_func);
     
     // 源相机（生成靶子的相机 - 俯视）
-    SimulationCamera src_camera(800, 600, 30.0f);
+    SimulationCamera src_camera(640, 640, 30.0f);
     SimulationCamera::CameraIntrinsics intrinsics;
-    intrinsics.fx = 600.0f;
-    intrinsics.fy = 600.0f;
-    intrinsics.cx = 400.0f;
-    intrinsics.cy = 300.0f;
+    intrinsics.fx = 381.625f;
+    intrinsics.fy = 381.625f;
+    intrinsics.cx = 320.0f;
+    intrinsics.cy = 320.0f;
     src_camera.set_intrinsics(intrinsics);
     
     SimulationCamera::CameraPose src_pose;
@@ -125,13 +125,13 @@ int main() {
     src_camera.set_pose(src_pose);
     
     // 观察相机（靶子前方1m，视角向下）
-    SimulationCamera dst_camera(800, 600, 30.0f);
+    SimulationCamera dst_camera(640, 640, 30.0f);
     dst_camera.set_intrinsics(intrinsics);
     
     // 相机交互参数
     float camera_pitch = 0.35f;  // 俯仰角（绕X轴）
     float camera_yaw = 0.0f;     // 偏航角（绕Y轴）
-    const float rotation_step = 0.05f;  // 旋转步长
+    const float rotation_step = 0.02f;  // 旋转步长
     
     SimulationCamera::CameraPose dst_pose;
     dst_pose.position = cv::Point3f(0, -100, 1000);  // 前方1m
