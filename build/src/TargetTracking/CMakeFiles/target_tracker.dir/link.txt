@@ -1,2 +1,0 @@
-/usr/bin/ar qc libtarget_tracker.a CMakeFiles/target_tracker.dir/TargetTracker.cpp.o
-/usr/bin/ranlib libtarget_tracker.a

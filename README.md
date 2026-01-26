@@ -21,8 +21,11 @@ ls
 #测试3d仿真：任务四
 ./pentagon_3d_perspective
 
-#应用识别算法到3d仿真、
+#应用识别算法到3d仿真：任务一
 ./pentagon_simulator_app
+
+#目标坐标到角度的解算：任务三
+./camera_canvas_demo
 ```
 
 ##### 任务二：相机图传
