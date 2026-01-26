@@ -120,6 +120,7 @@ src/apps/all: src/apps/CMakeFiles/test_threshold_tuner.dir/all
 src/apps/all: src/apps/CMakeFiles/test_single_image.dir/all
 src/apps/all: src/apps/CMakeFiles/pentagon_3d_perspective.dir/all
 src/apps/all: src/apps/CMakeFiles/pentagon_simulator_app.dir/all
+src/apps/all: src/apps/CMakeFiles/camera_canvas_demo.dir/all
 .PHONY : src/apps/all
 
 # Recursive "preinstall" directory target.
@@ -133,6 +134,7 @@ src/apps/clean: src/apps/CMakeFiles/test_threshold_tuner.dir/clean
 src/apps/clean: src/apps/CMakeFiles/test_single_image.dir/clean
 src/apps/clean: src/apps/CMakeFiles/pentagon_3d_perspective.dir/clean
 src/apps/clean: src/apps/CMakeFiles/pentagon_simulator_app.dir/clean
+src/apps/clean: src/apps/CMakeFiles/camera_canvas_demo.dir/clean
 .PHONY : src/apps/clean
 
 #=============================================================================
@@ -142,7 +144,7 @@ src/apps/clean: src/apps/CMakeFiles/pentagon_simulator_app.dir/clean
 src/TargetTracking/CMakeFiles/target_tracker.dir/all:
 	$(MAKE) $(MAKESILENT) -f src/TargetTracking/CMakeFiles/target_tracker.dir/build.make src/TargetTracking/CMakeFiles/target_tracker.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/TargetTracking/CMakeFiles/target_tracker.dir/build.make src/TargetTracking/CMakeFiles/target_tracker.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=11,12 "Built target target_tracker"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=13,14 "Built target target_tracker"
 .PHONY : src/TargetTracking/CMakeFiles/target_tracker.dir/all
 
 # Build rule for subdir invocation for target.
@@ -168,7 +170,7 @@ src/TargetTracking/CMakeFiles/target_tracker.dir/clean:
 src/TargetSim/CMakeFiles/target_sim.dir/all:
 	$(MAKE) $(MAKESILENT) -f src/TargetSim/CMakeFiles/target_sim.dir/build.make src/TargetSim/CMakeFiles/target_sim.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/TargetSim/CMakeFiles/target_sim.dir/build.make src/TargetSim/CMakeFiles/target_sim.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=5,6,7,8,9,10 "Built target target_sim"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=7,8,9,10,11,12 "Built target target_sim"
 .PHONY : src/TargetSim/CMakeFiles/target_sim.dir/all
 
 # Build rule for subdir invocation for target.
@@ -195,7 +197,7 @@ src/apps/CMakeFiles/test_basic.dir/all: src/TargetTracking/CMakeFiles/target_tra
 src/apps/CMakeFiles/test_basic.dir/all: src/TargetSim/CMakeFiles/target_sim.dir/all
 	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_basic.dir/build.make src/apps/CMakeFiles/test_basic.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_basic.dir/build.make src/apps/CMakeFiles/test_basic.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=13,14 "Built target test_basic"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=15,16 "Built target test_basic"
 .PHONY : src/apps/CMakeFiles/test_basic.dir/all
 
 # Build rule for subdir invocation for target.
@@ -222,7 +224,7 @@ src/apps/CMakeFiles/test_training.dir/all: src/TargetTracking/CMakeFiles/target_
 src/apps/CMakeFiles/test_training.dir/all: src/TargetSim/CMakeFiles/target_sim.dir/all
 	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_training.dir/build.make src/apps/CMakeFiles/test_training.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_training.dir/build.make src/apps/CMakeFiles/test_training.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=19,20 "Built target test_training"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=21,22 "Built target test_training"
 .PHONY : src/apps/CMakeFiles/test_training.dir/all
 
 # Build rule for subdir invocation for target.
@@ -249,7 +251,7 @@ src/apps/CMakeFiles/test_threshold_tuner.dir/all: src/TargetTracking/CMakeFiles/
 src/apps/CMakeFiles/test_threshold_tuner.dir/all: src/TargetSim/CMakeFiles/target_sim.dir/all
 	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_threshold_tuner.dir/build.make src/apps/CMakeFiles/test_threshold_tuner.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_threshold_tuner.dir/build.make src/apps/CMakeFiles/test_threshold_tuner.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=17,18 "Built target test_threshold_tuner"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=19,20 "Built target test_threshold_tuner"
 .PHONY : src/apps/CMakeFiles/test_threshold_tuner.dir/all
 
 # Build rule for subdir invocation for target.
@@ -275,7 +277,7 @@ src/apps/CMakeFiles/test_threshold_tuner.dir/clean:
 src/apps/CMakeFiles/test_single_image.dir/all: src/TargetTracking/CMakeFiles/target_tracker.dir/all
 	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_single_image.dir/build.make src/apps/CMakeFiles/test_single_image.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/test_single_image.dir/build.make src/apps/CMakeFiles/test_single_image.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=15,16 "Built target test_single_image"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=17,18 "Built target test_single_image"
 .PHONY : src/apps/CMakeFiles/test_single_image.dir/all
 
 # Build rule for subdir invocation for target.
@@ -302,7 +304,7 @@ src/apps/CMakeFiles/pentagon_3d_perspective.dir/all: src/TargetTracking/CMakeFil
 src/apps/CMakeFiles/pentagon_3d_perspective.dir/all: src/TargetSim/CMakeFiles/target_sim.dir/all
 	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/pentagon_3d_perspective.dir/build.make src/apps/CMakeFiles/pentagon_3d_perspective.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/pentagon_3d_perspective.dir/build.make src/apps/CMakeFiles/pentagon_3d_perspective.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=1,2 "Built target pentagon_3d_perspective"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=3,4 "Built target pentagon_3d_perspective"
 .PHONY : src/apps/CMakeFiles/pentagon_3d_perspective.dir/all
 
 # Build rule for subdir invocation for target.
@@ -329,7 +331,7 @@ src/apps/CMakeFiles/pentagon_simulator_app.dir/all: src/TargetTracking/CMakeFile
 src/apps/CMakeFiles/pentagon_simulator_app.dir/all: src/TargetSim/CMakeFiles/target_sim.dir/all
 	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/pentagon_simulator_app.dir/build.make src/apps/CMakeFiles/pentagon_simulator_app.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/pentagon_simulator_app.dir/build.make src/apps/CMakeFiles/pentagon_simulator_app.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=3,4 "Built target pentagon_simulator_app"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=5,6 "Built target pentagon_simulator_app"
 .PHONY : src/apps/CMakeFiles/pentagon_simulator_app.dir/all
 
 # Build rule for subdir invocation for target.
@@ -347,6 +349,32 @@ pentagon_simulator_app: src/apps/CMakeFiles/pentagon_simulator_app.dir/rule
 src/apps/CMakeFiles/pentagon_simulator_app.dir/clean:
 	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/pentagon_simulator_app.dir/build.make src/apps/CMakeFiles/pentagon_simulator_app.dir/clean
 .PHONY : src/apps/CMakeFiles/pentagon_simulator_app.dir/clean
+
+#=============================================================================
+# Target rules for target src/apps/CMakeFiles/camera_canvas_demo.dir
+
+# All Build rule for target.
+src/apps/CMakeFiles/camera_canvas_demo.dir/all: src/TargetSim/CMakeFiles/target_sim.dir/all
+	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/camera_canvas_demo.dir/build.make src/apps/CMakeFiles/camera_canvas_demo.dir/depend
+	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/camera_canvas_demo.dir/build.make src/apps/CMakeFiles/camera_canvas_demo.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/harekasa/Mygo/build/CMakeFiles --progress-num=1,2 "Built target camera_canvas_demo"
+.PHONY : src/apps/CMakeFiles/camera_canvas_demo.dir/all
+
+# Build rule for subdir invocation for target.
+src/apps/CMakeFiles/camera_canvas_demo.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/harekasa/Mygo/build/CMakeFiles 8
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/apps/CMakeFiles/camera_canvas_demo.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/harekasa/Mygo/build/CMakeFiles 0
+.PHONY : src/apps/CMakeFiles/camera_canvas_demo.dir/rule
+
+# Convenience name for target.
+camera_canvas_demo: src/apps/CMakeFiles/camera_canvas_demo.dir/rule
+.PHONY : camera_canvas_demo
+
+# clean rule for target.
+src/apps/CMakeFiles/camera_canvas_demo.dir/clean:
+	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/camera_canvas_demo.dir/build.make src/apps/CMakeFiles/camera_canvas_demo.dir/clean
+.PHONY : src/apps/CMakeFiles/camera_canvas_demo.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

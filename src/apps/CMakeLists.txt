@@ -26,3 +26,7 @@ set_target_properties(pentagon_3d_perspective PROPERTIES RUNTIME_OUTPUT_DIRECTOR
 add_executable(pentagon_simulator_app pentagon_simulator_app.cpp)
 target_link_libraries(pentagon_simulator_app PRIVATE target_tracker target_sim ${OpenCV_LIBS})
 set_target_properties(pentagon_simulator_app PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+
+add_executable(camera_canvas_demo camera_canvas_demo.cpp)
+target_link_libraries(camera_canvas_demo PRIVATE target_sim ${OpenCV_LIBS})
+set_target_properties(camera_canvas_demo PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")

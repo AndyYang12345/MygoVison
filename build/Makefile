@@ -220,6 +220,19 @@ pentagon_simulator_app/fast:
 	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/pentagon_simulator_app.dir/build.make src/apps/CMakeFiles/pentagon_simulator_app.dir/build
 .PHONY : pentagon_simulator_app/fast
 
+#=============================================================================
+# Target rules for targets named camera_canvas_demo
+
+# Build rule for target.
+camera_canvas_demo: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 camera_canvas_demo
+.PHONY : camera_canvas_demo
+
+# fast build rule for target.
+camera_canvas_demo/fast:
+	$(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/camera_canvas_demo.dir/build.make src/apps/CMakeFiles/camera_canvas_demo.dir/build
+.PHONY : camera_canvas_demo/fast
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -228,6 +241,7 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
+	@echo "... camera_canvas_demo"
 	@echo "... pentagon_3d_perspective"
 	@echo "... pentagon_simulator_app"
 	@echo "... target_sim"

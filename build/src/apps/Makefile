@@ -200,6 +200,44 @@ pentagon_simulator_app/fast:
 	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/pentagon_simulator_app.dir/build.make src/apps/CMakeFiles/pentagon_simulator_app.dir/build
 .PHONY : pentagon_simulator_app/fast
 
+# Convenience name for target.
+src/apps/CMakeFiles/camera_canvas_demo.dir/rule:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/apps/CMakeFiles/camera_canvas_demo.dir/rule
+.PHONY : src/apps/CMakeFiles/camera_canvas_demo.dir/rule
+
+# Convenience name for target.
+camera_canvas_demo: src/apps/CMakeFiles/camera_canvas_demo.dir/rule
+.PHONY : camera_canvas_demo
+
+# fast build rule for target.
+camera_canvas_demo/fast:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/camera_canvas_demo.dir/build.make src/apps/CMakeFiles/camera_canvas_demo.dir/build
+.PHONY : camera_canvas_demo/fast
+
+camera_canvas_demo.o: camera_canvas_demo.cpp.o
+.PHONY : camera_canvas_demo.o
+
+# target to build an object file
+camera_canvas_demo.cpp.o:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/camera_canvas_demo.dir/build.make src/apps/CMakeFiles/camera_canvas_demo.dir/camera_canvas_demo.cpp.o
+.PHONY : camera_canvas_demo.cpp.o
+
+camera_canvas_demo.i: camera_canvas_demo.cpp.i
+.PHONY : camera_canvas_demo.i
+
+# target to preprocess a source file
+camera_canvas_demo.cpp.i:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/camera_canvas_demo.dir/build.make src/apps/CMakeFiles/camera_canvas_demo.dir/camera_canvas_demo.cpp.i
+.PHONY : camera_canvas_demo.cpp.i
+
+camera_canvas_demo.s: camera_canvas_demo.cpp.s
+.PHONY : camera_canvas_demo.s
+
+# target to generate assembly for a file
+camera_canvas_demo.cpp.s:
+	cd /home/harekasa/Mygo/build && $(MAKE) $(MAKESILENT) -f src/apps/CMakeFiles/camera_canvas_demo.dir/build.make src/apps/CMakeFiles/camera_canvas_demo.dir/camera_canvas_demo.cpp.s
+.PHONY : camera_canvas_demo.cpp.s
+
 pentagon_3d_perspective.o: pentagon_3d_perspective.cpp.o
 .PHONY : pentagon_3d_perspective.o
 
@@ -352,12 +390,16 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
+	@echo "... camera_canvas_demo"
 	@echo "... pentagon_3d_perspective"
 	@echo "... pentagon_simulator_app"
 	@echo "... test_basic"
 	@echo "... test_single_image"
 	@echo "... test_threshold_tuner"
 	@echo "... test_training"
+	@echo "... camera_canvas_demo.o"
+	@echo "... camera_canvas_demo.i"
+	@echo "... camera_canvas_demo.s"
 	@echo "... pentagon_3d_perspective.o"
 	@echo "... pentagon_3d_perspective.i"
 	@echo "... pentagon_3d_perspective.s"

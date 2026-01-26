@@ -70,5 +70,11 @@
   "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -isystem /usr/local/include/opencv4 -g -std=c++17 -o CMakeFiles/pentagon_simulator_app.dir/pentagon_simulator_app.cpp.o -c /home/harekasa/Mygo/src/apps/pentagon_simulator_app.cpp",
   "file": "/home/harekasa/Mygo/src/apps/pentagon_simulator_app.cpp",
   "output": "src/apps/CMakeFiles/pentagon_simulator_app.dir/pentagon_simulator_app.cpp.o"
+},
+{
+  "directory": "/home/harekasa/Mygo/build/src/apps",
+  "command": "/usr/bin/g++  -I/home/harekasa/Mygo/include -isystem /usr/local/include/opencv4 -g -std=c++17 -o CMakeFiles/camera_canvas_demo.dir/camera_canvas_demo.cpp.o -c /home/harekasa/Mygo/src/apps/camera_canvas_demo.cpp",
+  "file": "/home/harekasa/Mygo/src/apps/camera_canvas_demo.cpp",
+  "output": "src/apps/CMakeFiles/camera_canvas_demo.dir/camera_canvas_demo.cpp.o"
 }
 ]
