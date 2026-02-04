@@ -76,34 +76,14 @@ int main() {
 
 
 // ==================== 测试函数实现 ====================
-/**
- * @brief 带颜色信息的故障记录函数（增强版，记录所有色块信息）
- */
 void record_failure_info_with_colors(TargetSim& target_sim, int target_id, float timestamp,
                                    float accuracy, float test_time, int total_frames, int success_frames,
                                    std::ofstream& failure_log, std::ofstream& color_log,
                                    std::ofstream& detailed_log) {
-    
-    // 获取颜色信息
-    cv::Scalar center_color = target_sim.get_center_color();
-    cv::Scalar target_color = target_sim.get_target_color();
     int target_index = target_sim.get_target_index();
+    cv::Scalar center_color = target_sim.get_center_color();
     std::vector<cv::Scalar> surround_colors = target_sim.get_surround_colors();
-    
-    // 获取当前时间
-    time_t now = time(nullptr);
-    std::string time_str = std::ctime(&now);
-    time_str = time_str.substr(0, time_str.length() - 1);
-    
-    // 1. 记录到failure_log.txt
-    failure_log << "\n=== 故障记录 (带颜色信息) ===" << std::endl;
-    failure_log << "记录时间: " << time_str << std::endl;
-    failure_log << "靶子ID: " << target_id << std::endl;
-    failure_log << "时间戳: " << timestamp << "s" << std::endl;
-    failure_log << "准确率: " << accuracy << "%" << std::endl;
-    failure_log << "测试时间: " << test_time << "s" << std::endl;
-    failure_log << "总帧数: " << total_frames << std::endl;
-    failure_log << "成功帧数: " << success_frames << std::endl;
+
     failure_log << "目标索引: " << target_index << std::endl;
     
     // 2. 详细颜色信息记录到color_log.txt
@@ -297,9 +277,11 @@ void record_failure_info_with_colors(TargetSim& target_sim, int target_id, float
     
     bool has_potential_issues = false;
     
+    cv::Scalar target_color = target_sim.get_target_color();
+    bool has_target_color = target_index >= 0 && target_index < (int)surround_colors.size();
+
     // 检查是否有多个色块与目标色块颜色相似
-    if (target_index >= 0 && target_index < (int)surround_colors.size()) {
-        cv::Scalar target_color = surround_colors[target_index];
+    if (has_target_color) {
         int similar_count = 0;
         
         for (size_t i = 0; i < surround_colors.size(); i++) {
@@ -322,10 +304,12 @@ void record_failure_info_with_colors(TargetSim& target_sim, int target_id, float
     }
     
     // 检查中心与目标是否太相似
-    float center_target_dist = cv::norm(center_color - target_color);
-    if (center_target_dist < 10.0f) {
-        has_potential_issues = true;
-        color_log << "⚠️  中心颜色与目标颜色过于相似 (BGR距离=" << center_target_dist << ")" << std::endl;
+    if (has_target_color) {
+        float center_target_dist = cv::norm(center_color - target_color);
+        if (center_target_dist < 10.0f) {
+            has_potential_issues = true;
+            color_log << "⚠️  中心颜色与目标颜色过于相似 (BGR距离=" << center_target_dist << ")" << std::endl;
+        }
     }
     
     // 检查低亮度问题
@@ -599,9 +583,6 @@ bool calculate_position_error(const cv::Point2f& detected, const cv::Point2f& ac
    
     } else {
         std::cout << "Match failed" << std::endl;
-        // TrackerConfig config;
-        // config.color_similarity_threshold = 30.0f; // 放宽颜色阈值
-        // set_config(config);
         return false;
     }
 }
@@ -613,9 +594,6 @@ bool calculate_position_error(const float& detected, float& actual) {
         return true;
     } else {
         std::cout << "Match failed" << std::endl;
-        // TrackerConfig config;
-        // config.color_similarity_threshold = 30.0f; // 放宽颜色阈值
-        // set_config(config);
         return false;
     }
 }
@@ -655,7 +633,6 @@ void test_pentagon_rotation(TrainingFrameGenerator& generator) {
     std::cout << "  value_threshold: " << config.value_threshold << std::endl;
     std::cout << "  min_blob_area: " << config.min_blob_area << std::endl;
     std::cout << "  max_blob_area: " << config.max_blob_area << std::endl;
-    std::cout << "  hue_similarity_threshold: " << config.hue_similarity_threshold << std::endl;
 
     // 控制变量
     bool show_ground_truth = true;   // 显示 GT 用于对比
@@ -975,23 +952,13 @@ void debug_specific_frame(const std::string& image_path) {
         return;
     }
     
-    // 使用不同参数测试同一帧
-    std::vector<float> test_thresholds = {5.0f, 10.0f, 15.0f, 20.0f, 25.0f, 30.0f};
-    
-    for (float threshold : test_thresholds) {
-        TargetTracker tracker;
-        TrackerConfig config = tracker.get_config();
-        config.hue_similarity_threshold = threshold;
-        tracker.set_config(config);
-        
-        auto result = tracker.process_frame(img);
-        std::cout << "Hue threshold " << threshold << ": ";
-        std::cout << (result.found ? "FOUND" : "NOT FOUND");
-        if (result.found) {
-            std::cout << " at (" << result.target_center.x << ", " << result.target_center.y << ")";
-        }
-        std::cout << std::endl;
+    TargetTracker tracker;
+    auto result = tracker.process_frame(img);
+    std::cout << "Result: " << (result.found ? "FOUND" : "NOT FOUND");
+    if (result.found) {
+        std::cout << " at (" << result.target_center.x << ", " << result.target_center.y << ")";
     }
+    std::cout << std::endl;
 }
 
 /**
@@ -1015,37 +982,18 @@ void analyze_color_similarity_issue(TrainingFrameGenerator& generator) {
         
         std::cout << "\nAngle " << angle << " degrees:" << std::endl;
         
-        // 使用不同参数测试
-        TargetTracker tracker1, tracker2;
+        TargetTracker tracker;
+        auto result = tracker.process_frame(frame_data.frame);
         
-        // 宽松参数
-        TrackerConfig config1 = tracker1.get_config();
-        config1.hue_similarity_threshold = 30.0f;
-        tracker1.set_config(config1);
-        
-        // 严格参数
-        TrackerConfig config2 = tracker2.get_config();
-        config2.hue_similarity_threshold = 10.0f;
-        tracker2.set_config(config2);
-        
-        auto result1 = tracker1.process_frame(frame_data.frame);
-        auto result2 = tracker2.process_frame(frame_data.frame);
-        
-        std::cout << "  Loose (30°): " << (result1.found ? "FOUND" : "NOT FOUND");
-        if (result1.found) {
-            float error = cv::norm(result1.target_center - frame_data.target_position);
-            std::cout << " (error: " << error << ")";
-        }
-        
-        std::cout << "\n  Strict (10°): " << (result2.found ? "FOUND" : "NOT FOUND");
-        if (result2.found) {
-            float error = cv::norm(result2.target_center - frame_data.target_position);
+        std::cout << "  Result: " << (result.found ? "FOUND" : "NOT FOUND");
+        if (result.found) {
+            float error = cv::norm(result.target_center - frame_data.target_position);
             std::cout << " (error: " << error << ")";
         }
         std::cout << std::endl;
         
         // 保存有问题的帧
-        if (result1.found != result2.found) {
+        if (!result.found) {
             std::string filename = "issue_angle_" + std::to_string((int)angle) + ".jpg";
             cv::imwrite(filename, frame_data.frame);
             std::cout << "  Frame saved to " << filename << std::endl;
@@ -1184,18 +1132,12 @@ void auto_adjust_parameters(cv::Mat& test_image) {
     // }
     TargetTracker tracker;
     auto result = tracker.process_frame(test_image);
-    TrackerConfig config;
-    while(result.found) {
+    if (result.found) {
         float temp = -167.7f;
-        if(result.angle - temp < 5.0f && result.angle - temp > -5.0f) {
+        if (result.angle - temp < 5.0f && result.angle - temp > -5.0f) {
             std::cout << "Tracker parameters seem OK." << std::endl;
-            break;
         } else {
             std::cout << "Tracker parameters may need adjustment." << std::endl;
-            config.hue_similarity_threshold +=0.1f;
-            std::cout << "Adjusting HUE_COLOR_SIMILARITY_THRESHOLD to " << config.hue_similarity_threshold << std::endl;
-            tracker.set_config(config);
-            result = tracker.process_frame(test_image);
         }
     }
 }

@@ -26,8 +26,6 @@ int main() {
     config.min_circularity = 0.3f;
     config.min_distance_to_center = 80.0f;
     config.max_distance_to_center = 200.0f;
-    config.hue_similarity_threshold = 18.0f;
-    config.bgr_distance_threshold = 60.0f;
     config.dark_brightness_threshold = 120;
     
     // 启用调试输出，但禁用图形显示（避免hconcat错误）
@@ -133,8 +131,6 @@ int main() {
     std::cout << "    config_.min_circularity = 0.3f;" << std::endl;
     std::cout << "    config_.min_distance_to_center = 80.0f;" << std::endl;
     std::cout << "    config_.max_distance_to_center = 200.0f;" << std::endl;
-    std::cout << "    config_.hue_similarity_threshold = 18.0f;" << std::endl;
-    std::cout << "    config_.bgr_distance_threshold = 60.0f;" << std::endl;
     std::cout << "    config_.dark_brightness_threshold = 120;" << std::endl;
     std::cout << "    " << std::endl;
     std::cout << "    // 初始化其他成员变量" << std::endl;

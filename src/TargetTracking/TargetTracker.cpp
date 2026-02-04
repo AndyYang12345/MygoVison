@@ -1,6 +1,5 @@
 #include "TargetTracking/TargetTracker.hpp"
 #include <iostream>
-#include <fstream>
 #include <cmath>
 #include <algorithm>
 #include <limits>
@@ -13,8 +12,6 @@ using namespace std;
 TargetTracker::TargetTracker() 
     : frames_processed_(0), 
       successful_tracks_(0),
-      has_previous_target_(false),
-      debug_enabled_(true),
       frame_size_(cv::Size(640, 480)) {
     // 默认配置
     config_ = TrackerConfig();
@@ -107,10 +104,6 @@ TargetInfo TargetTracker::process_frame(const Mat& frame) {
     
     // 更新统计信息
     successful_tracks_++;
-    last_target_position_ = target_blob->center;
-    last_board_position_ = center_blob->center;
-    has_previous_target_ = true;
-    
     if (config_.print_debug_info) {
         cout << "SUCCESS: Target found!" << endl;
         cout << "  Target position: (" << target_blob->center.x 
@@ -576,7 +569,6 @@ TargetTracker::ColorSimilarity TargetTracker::calculate_multi_space_similarity(c
     
     // 4. 颜色类型感知的加权组合
     int color_type1 = classify_color_type(hsv1);
-    int color_type2 = classify_color_type(hsv2);
     
     // 根据颜色类型调整权重
     double w_bgr = 0.3, w_hsv = 0.4, w_lab = 0.3;  // 默认权重
@@ -609,45 +601,6 @@ TargetTracker::ColorSimilarity TargetTracker::calculate_multi_space_similarity(c
 // ============ 辅助函数 ============
 
 // 在TargetTracker.cpp中实现
-std::vector<double> TargetTracker::normalize_similarities(const std::vector<double>& similarities) {
-    std::vector<double> normalized;
-    
-    if (similarities.empty()) {
-        return normalized;
-    }
-    
-    // 找到最小值和最大值
-    double min_val = std::numeric_limits<double>::max();
-    double max_val = std::numeric_limits<double>::lowest();
-    
-    for (double val : similarities) {
-        if (val < min_val) min_val = val;
-        if (val > max_val) max_val = val;
-    }
-    
-    // 容差判断
-    const double EPSILON = 1e-6;
-    if (max_val - min_val < EPSILON) {
-        // 所有值几乎相等，返回均匀分布
-        normalized.assign(similarities.size(), 1.0 / similarities.size());
-    } else {
-        // 正常归一化，添加一点平滑
-        double range = max_val - min_val;
-        // 添加一个小偏移，避免边界问题
-        double offset = range * 0.01;  // 1%的偏移
-        
-        for (double val : similarities) {
-            double norm_val = (val - min_val + offset) / (range + 2 * offset);
-            // 数值稳定性处理
-            if (norm_val < 0.0) norm_val = 0.0;
-            if (norm_val > 1.0) norm_val = 1.0;
-            normalized.push_back(norm_val);
-        }
-    }
-    
-    return normalized;
-}
-
 double TargetTracker::calculate_circularity(const vector<Point>& contour) {
     double area = contourArea(contour);
     double perimeter = arcLength(contour, true);
@@ -695,13 +648,6 @@ Scalar TargetTracker::bgr_to_lab(const Scalar& bgr) {
     // b: -127 to 128 (蓝到黄) -> 映射到0-255
     
     return Scalar(lab_values[0], lab_values[1], lab_values[2]);
-}
-
-float TargetTracker::color_distance_bgr(const Scalar& c1, const Scalar& c2) {
-    float db = c1[0] - c2[0];
-    float dg = c1[1] - c2[1];
-    float dr = c1[2] - c2[2];
-    return sqrt(db * db + dg * dg + dr * dr);
 }
 
 bool TargetTracker::is_dark_color(const Scalar& bgr, int threshold) {
@@ -768,7 +714,6 @@ void TargetTracker::draw_debug_info(Mat& frame,
 
 
 void TargetTracker::enable_debug(bool enabled) {
-    debug_enabled_ = enabled;
     config_.show_debug_windows = enabled;
     config_.print_debug_info = enabled;
 }
@@ -776,7 +721,6 @@ void TargetTracker::enable_debug(bool enabled) {
 void TargetTracker::reset_statistics() {
     frames_processed_ = 0;
     successful_tracks_ = 0;
-    has_previous_target_ = false;
 }
 
 void TargetTracker::print_statistics() const {
