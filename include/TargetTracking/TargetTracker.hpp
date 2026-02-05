@@ -25,6 +25,16 @@ struct TrackerConfig {
     float min_distance_to_center = 50.0f;
     float max_distance_to_center = 250.0f;
     
+    // 颜色匹配参数
+    float color_similarity_threshold = 0.6f;  // 颜色相似度阈值
+    float bgr_distance_threshold = 150.0f;    // BGR距离阈值
+    float hue_similarity_threshold = 30.0f;   // 色调相似度阈值
+    
+    // 新增：归一化匹配参数
+    bool use_softmax_normalization = true;      // 是否使用softmax归一化
+    float min_confidence_ratio = 1.5f;          // 最小置信度比值（最高/第二高）
+    float min_absolute_similarity = 0.2f;       // 最小绝对相似度（避免所有都不像）
+    
     // 调试选项
     bool show_debug_windows = false;
     bool print_debug_info = false;
@@ -81,7 +91,9 @@ private:
     bool is_valid_surrounding_blob(const ColorBlob& blob, const ColorBlob& center);
     cv::Scalar bgr_to_hsv(const cv::Scalar& bgr);
     cv::Scalar bgr_to_lab(const cv::Scalar& bgr);
+    float color_distance_bgr(const cv::Scalar& c1, const cv::Scalar& c2);
     bool is_dark_color(const cv::Scalar& bgr, int threshold);
+    std::vector<double> normalize_similarities(const std::vector<double>& similarities);
     // 调试功能
     void draw_debug_info(cv::Mat& frame, 
                         const std::vector<ColorBlob>& blobs,
@@ -93,6 +105,10 @@ private:
     cv::Size frame_size_;
     int frames_processed_;
     int successful_tracks_;
+    bool has_previous_target_;
+    cv::Point2f last_target_position_;
+    cv::Point2f last_board_position_;
+    bool debug_enabled_;
     struct ColorSimilarity {
         double bgr_sim;
         double hsv_sim;

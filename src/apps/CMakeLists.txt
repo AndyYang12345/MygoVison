@@ -30,3 +30,7 @@ set_target_properties(pentagon_simulator_app PROPERTIES RUNTIME_OUTPUT_DIRECTORY
 add_executable(camera_canvas_demo camera_canvas_demo.cpp)
 target_link_libraries(camera_canvas_demo PRIVATE target_sim ${OpenCV_LIBS})
 set_target_properties(camera_canvas_demo PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+
+add_executable(test_tracker_sim test_tracker_sim.cpp)
+target_link_libraries(test_tracker_sim PRIVATE target_tracker target_sim ${OpenCV_LIBS})
+set_target_properties(test_tracker_sim PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")

@@ -13,6 +13,11 @@ target_include_directories(target_tracker PUBLIC
 # ✅ 直接使用主项目找到的 OpenCV 库
 target_link_libraries(target_tracker PRIVATE ${OpenCV_LIBS})
 
+# 连接 MaixCDK Vision（若存在）
+if(TARGET maixcdk_vision)
+    target_link_libraries(target_tracker PRIVATE maixcdk_vision)
+endif()
+
 set_target_properties(target_tracker PROPERTIES
     OUTPUT_NAME "target_tracker"
     POSITION_INDEPENDENT_CODE ON
