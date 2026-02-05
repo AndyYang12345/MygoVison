@@ -1,4 +1,5 @@
-#pragma once
+#ifndef PENTAGON_SIMULATOR_HPP
+#define PENTAGON_SIMULATOR_HPP
 
 #include "SimulationCamera.hpp"
 #include "TrainingFrameGenerator.hpp"
@@ -171,3 +172,5 @@ private:
     bool paused_;
     int frame_count_;
 };
+
+#endif // PENTAGON_SIMULATOR_HPP

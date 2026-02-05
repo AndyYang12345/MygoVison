@@ -1,4 +1,4 @@
-#include "TargetTracking/TargetTracker.hpp"
+#include "maix_target_tracker.hpp"
 #include "TargetSim/TrainingFrameGenerator.hpp"
 #include "TargetSim/PerformanceMonitor.hpp"
 #include <opencv2/opencv.hpp>
@@ -32,10 +32,11 @@ int main(int argc, char **argv)
     };
     generator.set_training_mode(TrainingFrameGenerator::MODE_PENTAGON_ROTATION, 1.0f, 0.0f, angular_velocity_func);
 
-    TargetTracker tracker;
-    TrackerConfig config = tracker.get_config();
+    maix::vision::TargetTracker tracker;
+    maix::vision::TrackerConfig config = tracker.get_config();
     if (use_maix) {
-        std::cout << "[WARN] TrackerConfig has no use_maix_find_blobs in this project. Ignored." << std::endl;
+        std::cout << "[WARN] 当前构建为 OpenCV-only，--maix 将被忽略。" << std::endl;
+        config.use_maix_find_blobs = false;
     }
     config.print_debug_info = false;
     config.show_debug_windows = false;
@@ -56,7 +57,7 @@ int main(int argc, char **argv)
         auto start_time = std::chrono::high_resolution_clock::now();
         auto frame_data = generator.get_next_frame();
         cv::Mat frame = frame_data.frame;
-        TargetInfo result = tracker.process_frame(frame);
+        maix::vision::TargetInfo result = tracker.process_frame(frame);
         auto end_time = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
         float processing_time_ms = duration.count() / 1000.0f;
