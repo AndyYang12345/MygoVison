@@ -1,6 +1,7 @@
 #include "TargetSim/SimulationCamera.hpp"
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <vector>
@@ -31,6 +32,16 @@ struct AppState {
     float base_yaw = 0.0f;
     float max_pitch = 0.0f;
     float max_yaw = 0.0f;
+};
+
+struct PIDState {
+    float kp = 0.8f;
+    float ki = 0.0f;
+    float kd = 0.15f;
+    float integral = 0.0f;
+    float prev_error = 0.0f;
+    bool has_prev = false;
+    float integral_limit = 1.5f;
 };
 
 cv::Point3f add(const cv::Point3f& a, const cv::Point3f& b) {
@@ -227,6 +238,23 @@ void direction_to_pitch_yaw(const cv::Point3f& dir, float& pitch, float& yaw) {
 float wrap_angle(float angle) {
     return std::atan2(std::sin(angle), std::cos(angle));
 }
+
+float pid_step(float target, float current, float dt, PIDState& pid, float max_rate_rad) {
+    float error = wrap_angle(target - current);
+    pid.integral += error * dt;
+    pid.integral = std::max(std::min(pid.integral, pid.integral_limit), -pid.integral_limit);
+
+    float derivative = 0.0f;
+    if (pid.has_prev && dt > 1e-6f) {
+        derivative = (error - pid.prev_error) / dt;
+    }
+    pid.prev_error = error;
+    pid.has_prev = true;
+
+    float output = pid.kp * error + pid.ki * pid.integral + pid.kd * derivative;
+    output = std::max(std::min(output, max_rate_rad), -max_rate_rad);
+    return current + output * dt;
+}
 }  // namespace
 
 int main() {
@@ -301,6 +329,7 @@ int main() {
     state.canvas_size = canvas_img.size();
 
     cv::namedWindow("Camera View", cv::WINDOW_AUTOSIZE);
+    cv::namedWindow("PID Tuning", cv::WINDOW_AUTOSIZE);
     cv::setMouseCallback("Camera View", mouse_callback, &state);
 
     bool rotating = false;
@@ -309,23 +338,54 @@ int main() {
     const float rotate_step = 0.005f;
     const float manual_step = 0.02f;
 
+    PIDState pitch_pid;
+    PIDState yaw_pid;
+    int kp_slider = 80;
+    int ki_slider = 0;
+    int kd_slider = 15;
+    int max_rate_slider = 60; // deg/s
+    cv::createTrackbar("Kp x100", "PID Tuning", &kp_slider, 200);
+    cv::createTrackbar("Ki x100", "PID Tuning", &ki_slider, 100);
+    cv::createTrackbar("Kd x100", "PID Tuning", &kd_slider, 200);
+    cv::createTrackbar("MaxRate deg/s", "PID Tuning", &max_rate_slider, 180);
+
+    int64 last_tick = cv::getTickCount();
+
     std::cout << "Left click on Camera View to mark a point." << std::endl;
     std::cout << "Press SPACE to rotate camera to target angle. Press R to reset." << std::endl;
     std::cout << "Press Q or ESC to quit." << std::endl;
 
     while (true) {
-        if (rotating && state.has_target) {
-            float dp = wrap_angle(state.target_pitch - current_pitch);
-            float dy = wrap_angle(state.target_yaw - current_yaw);
+        int64 now_tick = cv::getTickCount();
+        double dt = (now_tick - last_tick) / cv::getTickFrequency();
+        last_tick = now_tick;
+        if (dt <= 0.0) {
+            dt = 1.0 / 60.0;
+        }
+        dt = std::min(std::max(dt, 0.001), 0.05);
 
-            if (std::abs(dp) < rotate_step && std::abs(dy) < rotate_step) {
+        pitch_pid.kp = kp_slider / 100.0f;
+        pitch_pid.ki = ki_slider / 100.0f;
+        pitch_pid.kd = kd_slider / 100.0f;
+        yaw_pid.kp = pitch_pid.kp;
+        yaw_pid.ki = pitch_pid.ki;
+        yaw_pid.kd = pitch_pid.kd;
+        float max_rate_rad = (max_rate_slider * static_cast<float>(CV_PI) / 180.0f);
+
+        if (rotating && state.has_target) {
+            current_pitch = pid_step(state.target_pitch, current_pitch, static_cast<float>(dt),
+                                     pitch_pid, max_rate_rad);
+            current_yaw = pid_step(state.target_yaw, current_yaw, static_cast<float>(dt),
+                                   yaw_pid, max_rate_rad);
+
+            float dp = std::abs(wrap_angle(state.target_pitch - current_pitch));
+            float dy = std::abs(wrap_angle(state.target_yaw - current_yaw));
+            if (dp < rotate_step && dy < rotate_step) {
                 current_pitch = state.target_pitch;
                 current_yaw = state.target_yaw;
                 rotating = false;
-            } else {
-                current_pitch += std::max(std::min(dp, rotate_step), -rotate_step);
-                current_yaw += std::max(std::min(dy, rotate_step), -rotate_step);
             }
+
             SimulationCamera::CameraPose pose = sim_cam.get_pose();
             pose.rotation = cv::Point3f(-current_pitch, -current_yaw, 0.0f);
             sim_cam.set_pose(pose);
@@ -397,12 +457,19 @@ int main() {
                                      std::to_string(static_cast<int>(current_yaw * 180.0f / CV_PI));
             draw_text_shadow(camera_view, angle_text, cv::Point(15, 76), 0.5, cv::Scalar(200, 220, 255));
         }
+        {
+            std::string pid_text = "PID kp/ki/kd: " +
+                                   std::to_string(pitch_pid.kp) + "/" +
+                                   std::to_string(pitch_pid.ki) + "/" +
+                                   std::to_string(pitch_pid.kd);
+            draw_text_shadow(camera_view, pid_text, cv::Point(15, 98), 0.5, cv::Scalar(255, 240, 200));
+        }
         if (state.has_target) {
             std::string angle_text = "Target pitch/yaw: " +
                                      std::to_string(static_cast<int>(state.target_pitch * 180.0f / CV_PI)) +
                                      ", " +
                                      std::to_string(static_cast<int>(state.target_yaw * 180.0f / CV_PI));
-            draw_text_shadow(camera_view, angle_text, cv::Point(15, 98), 0.5, cv::Scalar(200, 255, 200));
+            draw_text_shadow(camera_view, angle_text, cv::Point(15, 120), 0.5, cv::Scalar(200, 255, 200));
 
             float raw_dp = state.target_pitch - current_pitch;
             float raw_dy = state.target_yaw - current_yaw;
@@ -410,7 +477,7 @@ int main() {
                                      std::to_string(static_cast<int>(raw_dp * 180.0f / CV_PI)) +
                                      ", " +
                                      std::to_string(static_cast<int>(raw_dy * 180.0f / CV_PI));
-            draw_text_shadow(camera_view, delta_text, cv::Point(15, 120), 0.5, cv::Scalar(255, 220, 180));
+            draw_text_shadow(camera_view, delta_text, cv::Point(15, 142), 0.5, cv::Scalar(255, 220, 180));
         }
 
         cv::Point3f forward_world = forward_direction_world(sim_cam);
@@ -443,6 +510,8 @@ int main() {
             pose.rotation = cv::Point3f(-current_pitch, -current_yaw, 0.0f);
             sim_cam.set_pose(pose);
             rotating = false;
+            pitch_pid.integral = 0.0f;
+            pitch_pid.has_prev = false;
         }
         if (key == 's' || key == 'S') {
             current_pitch += manual_step;
@@ -450,6 +519,8 @@ int main() {
             pose.rotation = cv::Point3f(-current_pitch, -current_yaw, 0.0f);
             sim_cam.set_pose(pose);
             rotating = false;
+            pitch_pid.integral = 0.0f;
+            pitch_pid.has_prev = false;
         }
         if (key == 'a' || key == 'A') {
             current_yaw += manual_step;
@@ -457,6 +528,8 @@ int main() {
             pose.rotation = cv::Point3f(-current_pitch, -current_yaw, 0.0f);
             sim_cam.set_pose(pose);
             rotating = false;
+            yaw_pid.integral = 0.0f;
+            yaw_pid.has_prev = false;
         }
         if (key == 'd' || key == 'D') {
             current_yaw -= manual_step;
@@ -464,6 +537,8 @@ int main() {
             pose.rotation = cv::Point3f(-current_pitch, -current_yaw, 0.0f);
             sim_cam.set_pose(pose);
             rotating = false;
+            yaw_pid.integral = 0.0f;
+            yaw_pid.has_prev = false;
         }
         if (key == 'r' || key == 'R') {
             current_pitch = base_pitch;
@@ -472,6 +547,10 @@ int main() {
             pose.rotation = cv::Point3f(-base_pitch, -base_yaw, 0.0f);
             sim_cam.set_pose(pose);
             rotating = false;
+            pitch_pid.integral = 0.0f;
+            pitch_pid.has_prev = false;
+            yaw_pid.integral = 0.0f;
+            yaw_pid.has_prev = false;
         }
     }
 

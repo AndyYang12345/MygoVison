@@ -1,6 +1,7 @@
 #ifndef GIMBAL_CONTROL_HPP
 #define GIMBAL_CONTROL_HPP
 #include <iostream>
+#include <iomanip>
 #include <string>
 #include <sstream>
 #include <algorithm>
@@ -11,7 +12,6 @@ public:
     ServoMotor(int id) : _id(id),_angle(0.0f),_speed(0.0f){
         std::cout<<"ServoMotor "<<_id<<" created."<<std::endl;
     };
-    ~ServoMotor();
     void set_angle(float angle){
         _angle = angle;
     }
@@ -38,7 +38,9 @@ public:
         _last_angle = clamped;
 
         std::ostringstream oss;
-        oss << "#" << _id << "P" << _pwm << "T" << _time_ms << "!";
+        oss << "#" << std::setw(3) << std::setfill('0') << _id
+            << "P" << std::setw(4) << std::setfill('0') << _pwm
+            << "T" << std::setw(4) << std::setfill('0') << _time_ms << "!";
         _cmd = oss.str();
     }
     const std::string& get_command_buffer() const{
@@ -64,12 +66,20 @@ private:
 
 class GimbalControl{
 public:
-    GimbalControl();
+    GimbalControl(){
+        std::cout << "Gimbal created." << std::endl;
+    }
     void set_pitch_angle(float angle){
         _pitch_motor.set_angle(angle);
     }
     void set_yaw_angle(float angle){
         _yaw_motor.set_angle(angle);
+    }
+    void set_pitch_speed(float speed){
+        _pitch_motor.set_speed(speed);
+    }
+    void set_yaw_speed(float speed){
+        _yaw_motor.set_speed(speed);
     }
     void get_command(){
         _pitch_motor.generate_command(0.0f, 180.0f);
@@ -78,6 +88,10 @@ public:
     }
     const std::string& get_command_buffer() const{
         return _command_buffer;
+    }
+    void send_command() const{
+        //后续会引入串口通信库，这里先输出命令字符串
+        std::cout << "Sending command: " << get_command_buffer() << std::endl;
     }
 
 private:

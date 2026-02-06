@@ -191,12 +191,19 @@ SimulationCamera::ProjectionResult SimulationCamera::project_training_frame(Trai
     cv::Mat warped_frame;
     cv::warpPerspective(training_frame.frame, warped_frame, perspective_matrix,
                        cv::Size(_width, _height));
-    
+
     result.projected_frame = warped_frame;
-    
+
+    // 计算目标位置的透视投影坐标
+    std::vector<cv::Point2f> src_pts = { original_pos };
+    std::vector<cv::Point2f> dst_pts;
+    cv::perspectiveTransform(src_pts, dst_pts, perspective_matrix);
+
     // 转换目标位置到世界坐标
     result.world_positions.push_back(image_to_world(original_pos));
-    result.projected_positions.push_back(original_pos);
+    if (!dst_pts.empty()) {
+        result.projected_positions.push_back(dst_pts[0]);
+    }
     
     // 计算距离
     cv::Point3f target_3d = result.world_positions[0];
