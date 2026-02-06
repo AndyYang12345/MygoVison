@@ -36,7 +36,7 @@ target_link_libraries(test_tracker_sim PRIVATE maixcdk_target_tracker target_sim
 set_target_properties(test_tracker_sim PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 add_executable(test_gimbal_control test_gimbal_control.cpp)
-target_link_libraries(test_gimbal_control PRIVATE target_tracker ${OpenCV_LIBS})
+target_link_libraries(test_gimbal_control PRIVATE target_tracker target_sim ${OpenCV_LIBS})
 set_target_properties(test_gimbal_control PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 add_executable(test_target3d_generator test_target3d_generator.cpp)

@@ -13,13 +13,13 @@
 #include <vector>
 
 #define POPULATION_SIZE 50
-#define MUTATION_RATE 0.3f
-#define MUTATION_SIGMA 0.2f
-#define MAX_GENERATIONS 1000
+#define MUTATION_RATE 0.5f
+#define MUTATION_SIGMA 0.3f
+#define MAX_GENERATIONS 300
 #define ELITE_COUNT 2
 
 // 修改这里来指定需要展示的代数
-static const std::vector<int> kDisplayGenerations = {1, 50, 500, 999};
+static const std::vector<int> kDisplayGenerations = {299};
 
 struct DisplayMethods {
     int random = 2;
