@@ -53,7 +53,7 @@ int main() {
     cam_cfg.pitch = 0.0f;
     cam_cfg.yaw = 0.0f;
     PentagonSimulator simulator(cam_cfg);
-    simulator.pause();
+    simulator.resume();
 
     TargetTracker tracker;
     TrackerConfig tracker_cfg = tracker.get_config();
@@ -102,7 +102,7 @@ int main() {
             target_pos = info.target_center;
         }
 
-        if (rotating && target_pos.x >= 0.0f) {
+        if (target_pos.x >= 0.0f) {
             float dx = target_pos.x - cam_cfg.cx;
             float dy = target_pos.y - cam_cfg.cy;
             float pitch_error = std::atan2(dy, cam_cfg.fy) * 180.0f / static_cast<float>(CV_PI);
@@ -129,10 +129,7 @@ int main() {
             if (std::abs(pitch_error) < settle_threshold && std::abs(yaw_error) < settle_threshold) {
                 settle_timer += dt;
                 if (settle_timer >= settle_hold) {
-                    rotating = false;
                     settle_timer = 0.0f;
-                    pid_pitch = {};
-                    pid_yaw = {};
                 }
             } else {
                 settle_timer = 0.0f;
@@ -167,7 +164,7 @@ int main() {
         cv::putText(canvas, cmd, {20, 170}, cv::FONT_HERSHEY_SIMPLEX, 0.6,
                 cv::Scalar(255, 255, 0), 2);
 
-        cv::putText(canvas, "Press SPACE to rotate | q/ESC=quit",
+        cv::putText(canvas, "Dynamic tracking | q/ESC=quit",
                     {20, 430}, cv::FONT_HERSHEY_SIMPLEX, 0.5,
                     cv::Scalar(180, 180, 180), 1);
 
@@ -185,11 +182,6 @@ int main() {
         int key = cv::waitKey(30);
         if (key == 27 || key == 'q' || key == 'Q') {
             break;
-        }
-        if (key == ' ') {
-            if (target_pos.x >= 0.0f) {
-                rotating = true;
-            }
         }
 
     }
