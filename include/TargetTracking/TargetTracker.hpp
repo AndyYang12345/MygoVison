@@ -38,6 +38,16 @@ struct TrackerConfig {
     // 调试选项
     bool show_debug_windows = false;
     bool print_debug_info = false;
+
+    // ROI 跟踪参数
+    int roi_padding = 80;
+    int roi_min_blob_area = 200;
+    int roi_max_blob_area = 8000;
+    int roi_hue_threshold = 12;   // 0-180
+    int roi_sat_threshold = 60;   // 0-255
+    int roi_val_threshold = 60;   // 0-255
+    bool use_kalman = true;
+    float kalman_dt = 1.0f / 30.0f;
 };
 
 // 色块信息结构体
@@ -72,6 +82,9 @@ public:
     
     // 主处理函数
     TargetInfo process_frame(const cv::Mat& frame);
+
+    // ROI 跟踪控制
+    void reset_roi_tracking();
     
     // 统计分析
     void reset_statistics();
@@ -109,6 +122,11 @@ private:
     cv::Point2f last_target_position_;
     cv::Point2f last_board_position_;
     bool debug_enabled_;
+    bool roi_tracking_active_ = false;
+    cv::Scalar target_color_bgr_;
+    cv::Scalar target_color_hsv_;
+    cv::KalmanFilter kalman_;
+    bool kalman_initialized_ = false;
     struct ColorSimilarity {
         double bgr_sim;
         double hsv_sim;
@@ -117,6 +135,11 @@ private:
     };
     ColorSimilarity calculate_multi_space_similarity(const cv::Scalar& color1, const cv::Scalar& color2, bool center_is_dark);
     int classify_color_type(const cv::Scalar& hsv);
+
+    // ROI 跟踪实现
+    bool init_roi_tracking(const cv::Mat& frame, const ColorBlob& target_blob);
+    bool update_roi_tracking(const cv::Mat& frame, TargetInfo& result);
+    bool detect_target_in_roi(const cv::Mat& frame, const cv::Rect& roi, cv::Point2f& out_center) const;
 };
 
 #endif // TARGET_TRACKER_HPP

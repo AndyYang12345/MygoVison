@@ -138,6 +138,16 @@ public:
      */
     CameraConfig get_config() const { return config_; }
 
+    /**
+     * @brief 获取当前帧目标色块在投影图像中的位置
+     */
+    cv::Point2f get_last_target_position_projected() const { return last_target_dst_; }
+
+    /**
+     * @brief 是否已有目标位置
+     */
+    bool has_last_target() const { return has_last_target_; }
+
 private:
     /**
      * @brief 能量机制变速旋转函数生成器
@@ -171,6 +181,9 @@ private:
     float camera_yaw_;
     bool paused_;
     int frame_count_;
+    cv::Point2f last_target_src_{-1.0f, -1.0f};
+    cv::Point2f last_target_dst_{-1.0f, -1.0f};
+    bool has_last_target_{false};
 };
 
 #endif // PENTAGON_SIMULATOR_HPP

@@ -21,6 +21,7 @@ void PentagonSimulator::initialize(const CameraConfig& config) {
     camera_yaw_ = config.yaw;
     frame_count_ = 0;
     paused_ = false;
+    has_last_target_ = false;
 
     // 创建靶子生成器
     generator_ = std::make_unique<TrainingFrameGenerator>(config_.width, config_.height, config_.fps);
@@ -128,8 +129,20 @@ cv::Mat PentagonSimulator::get_frame() {
     // 获取靶子图像
     auto training_frame = generator_->get_next_frame(get_timestamp());
 
+    last_target_src_ = training_frame.target_position;
+    has_last_target_ = true;
+
     // 投影图像
     cv::Mat projected = reproject_image_3d(training_frame.frame, *src_camera_, *dst_camera_);
+
+    // 计算目标色块在目标相机中的投影坐标
+    auto src_intrinsics = src_camera_->get_intrinsics();
+    auto src_pose = src_camera_->get_pose();
+    float x_cam = (last_target_src_.x - src_intrinsics.cx) / src_intrinsics.fx;
+    float y_cam = (last_target_src_.y - src_intrinsics.cy) / src_intrinsics.fy;
+    float t = src_pose.position.z;
+    cv::Point3f world_pt(x_cam * t, y_cam * t, 0.0f);
+    last_target_dst_ = dst_camera_->world_to_image(world_pt);
 
     // 更新帧计数
     if (!paused_) {
@@ -170,5 +183,6 @@ void PentagonSimulator::reset() {
     camera_pitch_ = config_.pitch;
     camera_yaw_ = config_.yaw;
     paused_ = false;
+    has_last_target_ = false;
     update_camera_pose();
 }

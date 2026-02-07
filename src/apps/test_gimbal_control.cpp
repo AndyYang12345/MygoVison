@@ -5,8 +5,9 @@
 #include <sstream>
 #include <string>
 
-#include "TargetSim/Target3DGenerator.hpp"
+#include "TargetSim/PentagonSimulator.hpp"
 #include "TargetTracking/GimbalControl.hpp"
+#include "TargetTracking/TargetTracker.hpp"
 
 namespace {
 struct PID {
@@ -42,23 +43,22 @@ int main() {
     GimbalControl gimbal;
 
     const int width = 640;
-    const int height = 480;
-    Target3DGenerator generator(width, height, 30.0f);
+    const int height = 640;
+    PentagonSimulator::CameraConfig cam_cfg(width, height, 30.0f);
+    cam_cfg.fx = 381.625f;
+    cam_cfg.fy = 381.625f;
+    cam_cfg.cx = width * 0.5f;
+    cam_cfg.cy = height * 0.5f;
+    cam_cfg.position = cv::Point3f(0.0f, 0.0f, 1000.0f);
+    cam_cfg.pitch = 0.0f;
+    cam_cfg.yaw = 0.0f;
+    PentagonSimulator simulator(cam_cfg);
 
-    SimulationCamera::CameraIntrinsics intr;
-    intr.fx = width * 0.9f;
-    intr.fy = width * 0.9f;
-    intr.cx = width * 0.5f;
-    intr.cy = height * 0.5f;
-    generator.set_camera_intrinsics(intr);
-
-    SimulationCamera::CameraPose pose;
-    pose.position = cv::Point3f(0.0f, 0.0f, -600.0f);
-    pose.rotation = cv::Point3f(0.0f, 0.0f, 0.0f);
-    generator.set_camera_pose(pose);
-    generator.set_target_plane(cv::Point3f(0.0f, 0.0f, 1.0f), 600.0f);
-    generator.set_random_interval(0.6f);
-    generator.generator().pause();
+    TargetTracker tracker;
+    TrackerConfig tracker_cfg = tracker.get_config();
+    tracker_cfg.show_debug_windows = false;
+    tracker_cfg.print_debug_info = false;
+    tracker.set_config(tracker_cfg);
 
     const std::string main_win = "Gimbal Control";
     cv::namedWindow(main_win, cv::WINDOW_AUTOSIZE);
@@ -77,7 +77,6 @@ int main() {
     const float settle_threshold = 0.8f; // deg
     const float settle_hold = 0.2f; // sec
     float settle_timer = 0.0f;
-    bool request_new_target = true;
 
     std::vector<cv::Point> aim_trail;
     std::vector<cv::Point> target_trail;
@@ -91,25 +90,20 @@ int main() {
         last_tick = now_tick;
         dt = clamp_value(dt, 0.001f, 0.05f);
 
-        cv::Mat canvas(480, 720, CV_8UC3, cv::Scalar(20, 20, 20));
+        cv::Mat frame = simulator.get_frame();
+        cv::Mat canvas = frame.clone();
 
-        if (request_new_target) {
-            float current_time = generator.generator().get_current_time();
-            generator.generator().set_current_time(current_time + 0.61f);
-            request_new_target = false;
-        }
-        auto result = generator.generate_projected_frame();
-
+        TargetInfo info = tracker.process_frame(frame);
         cv::Point2f target_pos(-1.0f, -1.0f);
-        if (!result.projected_positions.empty()) {
-            target_pos = result.projected_positions[0];
+        if (info.found) {
+            target_pos = info.target_center;
         }
 
         if (target_pos.x >= 0.0f) {
-            float dx = target_pos.x - intr.cx;
-            float dy = target_pos.y - intr.cy;
-            float target_yaw_offset = std::atan2(dx, intr.fx) * 180.0f / static_cast<float>(CV_PI);
-            float target_pitch_offset = -std::atan2(dy, intr.fy) * 180.0f / static_cast<float>(CV_PI);
+            float dx = target_pos.x - cam_cfg.cx;
+            float dy = target_pos.y - cam_cfg.cy;
+            float target_yaw_offset = std::atan2(dx, cam_cfg.fx) * 180.0f / static_cast<float>(CV_PI);
+            float target_pitch_offset = std::atan2(dy, cam_cfg.fy) * 180.0f / static_cast<float>(CV_PI);
 
             float target_pitch = 90.0f + target_pitch_offset;
             float target_yaw = 135.0f + target_yaw_offset;
@@ -129,7 +123,6 @@ int main() {
             if (std::abs(pitch_error) < settle_threshold && std::abs(yaw_error) < settle_threshold) {
                 settle_timer += dt;
                 if (settle_timer >= settle_hold) {
-                    request_new_target = true;
                     settle_timer = 0.0f;
                     pid_pitch = {};
                     pid_yaw = {};
@@ -162,11 +155,11 @@ int main() {
 
         const std::string cmd = gimbal.get_command_buffer();
         cv::putText(canvas, "Serial Cmd:", {20, 130}, cv::FONT_HERSHEY_SIMPLEX, 0.7,
-                    cv::Scalar(255, 200, 120), 2);
+                cv::Scalar(255, 255, 0), 2);
         cv::putText(canvas, cmd, {20, 170}, cv::FONT_HERSHEY_SIMPLEX, 0.6,
-                    cv::Scalar(255, 255, 255), 2);
+                cv::Scalar(255, 255, 0), 2);
 
-        cv::putText(canvas, "PID tracking random target | q/ESC=quit",
+        cv::putText(canvas, "Tracking pentagon target | q/ESC=quit",
                     {20, 430}, cv::FONT_HERSHEY_SIMPLEX, 0.5,
                     cv::Scalar(180, 180, 180), 1);
 
@@ -184,8 +177,8 @@ int main() {
 
         float yaw_rad = (yaw_angle - 135.0f) * static_cast<float>(CV_PI) / 180.0f;
         float pitch_rad = (pitch_angle - 90.0f) * static_cast<float>(CV_PI) / 180.0f;
-        float aim_x = intr.cx + std::tan(yaw_rad) * intr.fx;
-        float aim_y = intr.cy - std::tan(pitch_rad) * intr.fy;
+        float aim_x = cam_cfg.cx + std::tan(yaw_rad) * cam_cfg.fx;
+        float aim_y = cam_cfg.cy + std::tan(pitch_rad) * cam_cfg.fy;
         cv::Point aim_point(static_cast<int>(aim_x), static_cast<int>(aim_y));
         aim_trail.push_back(aim_point);
         if (aim_trail.size() > max_trail) {

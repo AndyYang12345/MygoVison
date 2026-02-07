@@ -3,6 +3,7 @@
 #include <cmath>
 #include <algorithm>
 #include <limits>
+#include <opencv2/video/tracking.hpp>
 
 using namespace cv;
 using namespace std;
@@ -15,6 +16,7 @@ TargetTracker::TargetTracker()
       frame_size_(cv::Size(640, 480)) {
     // 默认配置
     config_ = TrackerConfig();
+        reset_roi_tracking();
 }
 
 void TargetTracker::set_config(const TrackerConfig& config) {
@@ -45,6 +47,14 @@ TargetInfo TargetTracker::process_frame(const Mat& frame) {
     if (config_.print_debug_info) {
         cout << "\n=== Processing Frame #" << frames_processed_ << " ===" << endl;
         cout << "Frame size: " << frame.cols << "x" << frame.rows << endl;
+    }
+
+    if (roi_tracking_active_) {
+        if (update_roi_tracking(frame, result)) {
+            return result;
+        }
+        // ROI tracking失败则回退到完整靶面识别
+        roi_tracking_active_ = false;
     }
     
     // Step 1: 提取所有色块（不进行颜色匹配过滤！）
@@ -112,6 +122,9 @@ TargetInfo TargetTracker::process_frame(const Mat& frame) {
         cout << "  Angle: " << result.angle << " degrees" << endl;
     }
     
+    // 初始化ROI跟踪
+    init_roi_tracking(frame, *target_blob);
+
     // Step 5: 调试显示
     if (config_.show_debug_windows) {
         Mat debug_frame = frame.clone();
@@ -131,6 +144,157 @@ TargetInfo TargetTracker::process_frame(const Mat& frame) {
     }
     
     return result;
+}
+
+// ============ ROI 跟踪 ============
+
+void TargetTracker::reset_roi_tracking() {
+    roi_tracking_active_ = false;
+    has_previous_target_ = false;
+    kalman_initialized_ = false;
+    last_target_position_ = cv::Point2f(-1.0f, -1.0f);
+    last_board_position_ = cv::Point2f(-1.0f, -1.0f);
+}
+
+bool TargetTracker::init_roi_tracking(const cv::Mat& frame, const ColorBlob& target_blob) {
+    if (frame.empty()) {
+        return false;
+    }
+
+    target_color_bgr_ = target_blob.mean_color_bgr;
+    target_color_hsv_ = bgr_to_hsv(target_color_bgr_);
+    last_target_position_ = target_blob.center;
+    has_previous_target_ = true;
+    roi_tracking_active_ = true;
+
+    if (config_.use_kalman) {
+        kalman_ = cv::KalmanFilter(4, 2, 0, CV_32F);
+        kalman_.transitionMatrix = (cv::Mat_<float>(4, 4) <<
+            1, 0, config_.kalman_dt, 0,
+            0, 1, 0, config_.kalman_dt,
+            0, 0, 1, 0,
+            0, 0, 0, 1);
+        kalman_.measurementMatrix = (cv::Mat_<float>(2, 4) <<
+            1, 0, 0, 0,
+            0, 1, 0, 0);
+        setIdentity(kalman_.processNoiseCov, cv::Scalar(1e-2));
+        setIdentity(kalman_.measurementNoiseCov, cv::Scalar(1e-1));
+        setIdentity(kalman_.errorCovPost, cv::Scalar(1));
+        kalman_.statePost = (cv::Mat_<float>(4, 1) <<
+            target_blob.center.x, target_blob.center.y, 0.0f, 0.0f);
+        kalman_initialized_ = true;
+    }
+
+    return true;
+}
+
+bool TargetTracker::update_roi_tracking(const cv::Mat& frame, TargetInfo& result) {
+    if (!has_previous_target_) {
+        return false;
+    }
+
+    cv::Point2f predict_point = last_target_position_;
+    if (config_.use_kalman && kalman_initialized_) {
+        cv::Mat prediction = kalman_.predict();
+        predict_point = cv::Point2f(prediction.at<float>(0), prediction.at<float>(1));
+    }
+
+    cv::Rect roi;
+    roi.x = std::max(0, static_cast<int>(predict_point.x) - config_.roi_padding);
+    roi.y = std::max(0, static_cast<int>(predict_point.y) - config_.roi_padding);
+    roi.width = std::min(frame.cols - roi.x, config_.roi_padding * 2);
+    roi.height = std::min(frame.rows - roi.y, config_.roi_padding * 2);
+
+    if (roi.width <= 0 || roi.height <= 0) {
+        return false;
+    }
+
+    cv::Point2f detected_center;
+    bool detected = detect_target_in_roi(frame, roi, detected_center);
+
+    if (detected) {
+        last_target_position_ = detected_center;
+        if (config_.use_kalman && kalman_initialized_) {
+            cv::Mat measurement = (cv::Mat_<float>(2, 1) << detected_center.x, detected_center.y);
+            kalman_.correct(measurement);
+        }
+    } else if (config_.use_kalman && kalman_initialized_) {
+        last_target_position_ = predict_point;
+    } else {
+        return false;
+    }
+
+    result.found = detected;
+    result.target_center = last_target_position_;
+    result.board_center = last_board_position_;
+    if (result.board_center.x >= 0.0f) {
+        cv::Point2f delta = result.target_center - result.board_center;
+        result.distance = norm(delta);
+        result.angle = atan2(delta.y, delta.x) * 180.0f / CV_PI;
+    }
+
+    return detected;
+}
+
+bool TargetTracker::detect_target_in_roi(const cv::Mat& frame, const cv::Rect& roi,
+                                         cv::Point2f& out_center) const {
+    cv::Mat roi_bgr = frame(roi);
+    cv::Mat roi_hsv;
+    cv::cvtColor(roi_bgr, roi_hsv, cv::COLOR_BGR2HSV);
+
+    int hue = static_cast<int>(target_color_hsv_[0]);
+    int sat = static_cast<int>(target_color_hsv_[1]);
+    int val = static_cast<int>(target_color_hsv_[2]);
+
+    int h_low = hue - config_.roi_hue_threshold;
+    int h_high = hue + config_.roi_hue_threshold;
+    int s_low = std::max(0, sat - config_.roi_sat_threshold);
+    int s_high = std::min(255, sat + config_.roi_sat_threshold);
+    int v_low = std::max(0, val - config_.roi_val_threshold);
+    int v_high = std::min(255, val + config_.roi_val_threshold);
+
+    cv::Mat mask, mask1, mask2;
+    if (h_low < 0 || h_high > 179) {
+        int h_low_wrap = (h_low + 180) % 180;
+        int h_high_wrap = h_high % 180;
+        cv::inRange(roi_hsv, cv::Scalar(0, s_low, v_low), cv::Scalar(h_high_wrap, s_high, v_high), mask1);
+        cv::inRange(roi_hsv, cv::Scalar(h_low_wrap, s_low, v_low), cv::Scalar(179, s_high, v_high), mask2);
+        mask = mask1 | mask2;
+    } else {
+        cv::inRange(roi_hsv, cv::Scalar(h_low, s_low, v_low), cv::Scalar(h_high, s_high, v_high), mask);
+    }
+
+    cv::Mat kernel = getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
+    morphologyEx(mask, mask, cv::MORPH_OPEN, kernel);
+    morphologyEx(mask, mask, cv::MORPH_CLOSE, kernel);
+
+    std::vector<std::vector<cv::Point>> contours;
+    cv::findContours(mask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+    double best_area = 0.0;
+    cv::Point2f best_center;
+    for (const auto& contour : contours) {
+        double area = cv::contourArea(contour);
+        if (area < config_.roi_min_blob_area || area > config_.roi_max_blob_area) {
+            continue;
+        }
+        cv::Moments m = cv::moments(contour);
+        if (m.m00 <= 0) {
+            continue;
+        }
+        cv::Point2f center(m.m10 / m.m00, m.m01 / m.m00);
+        if (area > best_area) {
+            best_area = area;
+            best_center = center;
+        }
+    }
+
+    if (best_area <= 0.0) {
+        return false;
+    }
+
+    out_center = cv::Point2f(best_center.x + roi.x, best_center.y + roi.y);
+    return true;
 }
 
 // ============ 核心处理函数 ============
