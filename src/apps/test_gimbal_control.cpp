@@ -53,6 +53,7 @@ int main() {
     cam_cfg.pitch = 0.0f;
     cam_cfg.yaw = 0.0f;
     PentagonSimulator simulator(cam_cfg);
+    simulator.pause();
 
     TargetTracker tracker;
     TrackerConfig tracker_cfg = tracker.get_config();
@@ -77,10 +78,7 @@ int main() {
     const float settle_threshold = 0.8f; // deg
     const float settle_hold = 0.2f; // sec
     float settle_timer = 0.0f;
-
-    std::vector<cv::Point> aim_trail;
-    std::vector<cv::Point> target_trail;
-    const size_t max_trail = 300;
+    bool rotating = false;
 
     auto last_tick = std::chrono::steady_clock::now();
 
@@ -89,6 +87,11 @@ int main() {
         float dt = std::chrono::duration<float>(now_tick - last_tick).count();
         last_tick = now_tick;
         dt = clamp_value(dt, 0.001f, 0.05f);
+
+        float pitch_rad = (pitch_angle - 90.0f) * static_cast<float>(CV_PI) / 180.0f;
+        float yaw_rad = (yaw_angle - 135.0f) * static_cast<float>(CV_PI) / 180.0f;
+        simulator.set_camera_pitch(pitch_rad);
+        simulator.set_camera_yaw(yaw_rad);
 
         cv::Mat frame = simulator.get_frame();
         cv::Mat canvas = frame.clone();
@@ -99,17 +102,20 @@ int main() {
             target_pos = info.target_center;
         }
 
-        if (target_pos.x >= 0.0f) {
+        if (rotating && target_pos.x >= 0.0f) {
             float dx = target_pos.x - cam_cfg.cx;
             float dy = target_pos.y - cam_cfg.cy;
-            float target_yaw_offset = std::atan2(dx, cam_cfg.fx) * 180.0f / static_cast<float>(CV_PI);
-            float target_pitch_offset = std::atan2(dy, cam_cfg.fy) * 180.0f / static_cast<float>(CV_PI);
+            float pitch_error = std::atan2(dy, cam_cfg.fy) * 180.0f / static_cast<float>(CV_PI);
+            float yaw_error = -std::atan2(dx, cam_cfg.fx) * 180.0f / static_cast<float>(CV_PI);
 
-            float target_pitch = 90.0f + target_pitch_offset;
-            float target_yaw = 135.0f + target_yaw_offset;
-
-            float pitch_error = target_pitch - pitch_angle;
-            float yaw_error = target_yaw - yaw_angle;
+            std::cout << std::fixed << std::setprecision(2)
+                      << "Target(px):(" << target_pos.x << "," << target_pos.y << ")"
+                      << " dx,dy:(" << dx << "," << dy << ")"
+                      << " pitch_err:" << pitch_error
+                      << " yaw_err:" << yaw_error
+                      << " cur_pitch:" << pitch_angle
+                      << " cur_yaw:" << yaw_angle
+                      << std::endl;
 
             float pitch_speed_cmd = pid_step(pitch_error, dt, pid_pitch, integral_limit);
             float yaw_speed_cmd = pid_step(yaw_error, dt, pid_yaw, integral_limit);
@@ -123,15 +129,17 @@ int main() {
             if (std::abs(pitch_error) < settle_threshold && std::abs(yaw_error) < settle_threshold) {
                 settle_timer += dt;
                 if (settle_timer >= settle_hold) {
+                    rotating = false;
                     settle_timer = 0.0f;
                     pid_pitch = {};
                     pid_yaw = {};
-                    aim_trail.clear();
-                    target_trail.clear();
                 }
             } else {
                 settle_timer = 0.0f;
             }
+        } else {
+            pitch_speed = 0.0f;
+            yaw_speed = 0.0f;
         }
 
         gimbal.set_pitch_angle(pitch_angle);
@@ -159,41 +167,29 @@ int main() {
         cv::putText(canvas, cmd, {20, 170}, cv::FONT_HERSHEY_SIMPLEX, 0.6,
                 cv::Scalar(255, 255, 0), 2);
 
-        cv::putText(canvas, "Tracking pentagon target | q/ESC=quit",
+        cv::putText(canvas, "Press SPACE to rotate | q/ESC=quit",
                     {20, 430}, cv::FONT_HERSHEY_SIMPLEX, 0.5,
                     cv::Scalar(180, 180, 180), 1);
 
         if (target_pos.x >= 0.0f) {
-            cv::Point target_point(static_cast<int>(target_pos.x), static_cast<int>(target_pos.y));
-            target_trail.push_back(target_point);
-            if (target_trail.size() > max_trail) {
-                target_trail.erase(target_trail.begin());
-            }
-            for (size_t i = 1; i < target_trail.size(); ++i) {
-                cv::line(canvas, target_trail[i - 1], target_trail[i], cv::Scalar(0, 0, 180), 1);
-            }
-            cv::circle(canvas, target_point, 6, cv::Scalar(0, 0, 255), -1);
+            cv::circle(canvas, cv::Point(static_cast<int>(target_pos.x), static_cast<int>(target_pos.y)),
+                       6, cv::Scalar(0, 0, 255), -1);
         }
 
-        float yaw_rad = (yaw_angle - 135.0f) * static_cast<float>(CV_PI) / 180.0f;
-        float pitch_rad = (pitch_angle - 90.0f) * static_cast<float>(CV_PI) / 180.0f;
-        float aim_x = cam_cfg.cx + std::tan(yaw_rad) * cam_cfg.fx;
-        float aim_y = cam_cfg.cy + std::tan(pitch_rad) * cam_cfg.fy;
-        cv::Point aim_point(static_cast<int>(aim_x), static_cast<int>(aim_y));
-        aim_trail.push_back(aim_point);
-        if (aim_trail.size() > max_trail) {
-            aim_trail.erase(aim_trail.begin());
-        }
-        for (size_t i = 1; i < aim_trail.size(); ++i) {
-            cv::line(canvas, aim_trail[i - 1], aim_trail[i], cv::Scalar(0, 200, 0), 1);
-        }
-        cv::drawMarker(canvas, aim_point, cv::Scalar(0, 255, 0), cv::MARKER_CROSS, 14, 2);
+        cv::drawMarker(canvas,
+                       cv::Point(static_cast<int>(cam_cfg.cx), static_cast<int>(cam_cfg.cy)),
+                       cv::Scalar(0, 255, 0), cv::MARKER_CROSS, 14, 2);
 
         cv::imshow(main_win, canvas);
 
         int key = cv::waitKey(30);
         if (key == 27 || key == 'q' || key == 'Q') {
             break;
+        }
+        if (key == ' ') {
+            if (target_pos.x >= 0.0f) {
+                rotating = true;
+            }
         }
 
     }
