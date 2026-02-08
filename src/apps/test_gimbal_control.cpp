@@ -7,6 +7,7 @@
 
 #include "TargetSim/PentagonSimulator.hpp"
 #include "TargetTracking/GimbalControl.hpp"
+#include "TargetTracking/SerialPort.hpp"
 #include "TargetTracking/TargetTracker.hpp"
 
 namespace {
@@ -41,6 +42,11 @@ float pid_step(float error, float dt, PID& pid, float integral_limit) {
 
 int main() {
     GimbalControl gimbal;
+
+    SerialPort serial;
+    if (!serial.open("/dev/ttyUSB0", 115200)) {
+        std::cerr << "Failed to open /dev/ttyUSB0 at 115200." << std::endl;
+    }
 
     const int width = 640;
     const int height = 640;
@@ -159,6 +165,9 @@ int main() {
                     cv::Scalar(180, 220, 255), 2);
 
         const std::string cmd = gimbal.get_command_buffer();
+        if (serial.is_open()) {
+            serial.write_string(cmd);
+        }
         cv::putText(canvas, "Serial Cmd:", {20, 130}, cv::FONT_HERSHEY_SIMPLEX, 0.7,
                 cv::Scalar(255, 255, 0), 2);
         cv::putText(canvas, cmd, {20, 170}, cv::FONT_HERSHEY_SIMPLEX, 0.6,
