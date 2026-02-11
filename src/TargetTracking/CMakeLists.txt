@@ -2,6 +2,7 @@
 set(TARGET_TRACKER_SOURCES
     TargetTracker.cpp
     SerialPort.cpp
+    TargetTrackingPipeline.cpp
 )
 
 add_library(target_tracker ${TARGET_TRACKER_SOURCES})
