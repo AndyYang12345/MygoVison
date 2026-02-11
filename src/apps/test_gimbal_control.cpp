@@ -38,6 +38,12 @@ float pid_step(float error, float dt, PID& pid, float integral_limit) {
     return pid.kp * error + pid.ki * pid.integral + pid.kd * derivative;
 }
 
+void reset_pid(PID& pid) {
+    pid.integral = 0.0f;
+    pid.prev_error = 0.0f;
+    pid.has_prev = false;
+}
+
 } // namespace
 
 int main() {
@@ -70,14 +76,31 @@ int main() {
     const std::string main_win = "Gimbal Control";
     cv::namedWindow(main_win, cv::WINDOW_AUTOSIZE);
 
-    float pitch_angle = 90.0f;
-    float yaw_angle = 135.0f;
+    const float pitch_home = 60.0f;  // 向下旋转30度（90-30）
+    const float yaw_home = 135.0f;
+    float pitch_angle = pitch_home;
+    float yaw_angle = yaw_home;
 
     float pitch_speed = 0.0f;
     float yaw_speed = 0.0f;
 
     PID pid_pitch;
     PID pid_yaw;
+
+    enum class TrackState { Waiting, Searching, Locked, Tracking };
+    TrackState state = TrackState::Waiting;
+
+    const float scan_yaw_amp = 30.0f;
+    const float scan_pitch_amp = 15.0f;
+    const float scan_yaw_freq = 0.15f;   // Hz
+    const float scan_pitch_freq = 0.10f; // Hz
+    const float scan_phase = static_cast<float>(CV_PI) * 0.5f;
+    float scan_time = 0.0f;
+
+    const int lock_required = 30;
+    const int lost_required = 10;
+    int lock_count = 0;
+    int lost_count = 0;
 
     const float max_speed = 180.0f; // deg/s
     const float integral_limit = 30.0f;
@@ -103,12 +126,38 @@ int main() {
         cv::Mat canvas = frame.clone();
 
         TargetInfo info = tracker.process_frame(frame);
+        const bool has_target = info.found;
         cv::Point2f target_pos(-1.0f, -1.0f);
-        if (info.found) {
+        if (has_target) {
             target_pos = info.target_center;
         }
 
-        if (target_pos.x >= 0.0f) {
+        if (state == TrackState::Waiting) {
+            pitch_angle = pitch_home;
+            yaw_angle = yaw_home;
+            pitch_speed = 0.0f;
+            yaw_speed = 0.0f;
+        } else if (state == TrackState::Searching) {
+            scan_time += dt;
+            float yaw_phase = 2.0f * static_cast<float>(CV_PI) * scan_yaw_freq * scan_time;
+            float pitch_phase = 2.0f * static_cast<float>(CV_PI) * scan_pitch_freq * scan_time + scan_phase;
+            yaw_angle = 135.0f + scan_yaw_amp * std::sin(yaw_phase);
+            pitch_angle = 90.0f + scan_pitch_amp * std::sin(pitch_phase);
+            yaw_speed = scan_yaw_amp * 2.0f * static_cast<float>(CV_PI) * scan_yaw_freq * std::cos(yaw_phase);
+            pitch_speed = scan_pitch_amp * 2.0f * static_cast<float>(CV_PI) * scan_pitch_freq * std::cos(pitch_phase);
+
+            if (has_target) {
+                lock_count++;
+            } else {
+                lock_count = 0;
+            }
+
+            if (lock_count >= lock_required) {
+                state = TrackState::Locked;
+                lock_count = 0;
+                lost_count = 0;
+            }
+        } else if (has_target && state == TrackState::Tracking) {
             float dx = target_pos.x - cam_cfg.cx;
             float dy = target_pos.y - cam_cfg.cy;
             float pitch_error = std::atan2(dy, cam_cfg.fy) * 180.0f / static_cast<float>(CV_PI);
@@ -143,6 +192,16 @@ int main() {
         } else {
             pitch_speed = 0.0f;
             yaw_speed = 0.0f;
+
+            if (state == TrackState::Tracking) {
+                lost_count++;
+                if (lost_count >= lost_required) {
+                    state = TrackState::Searching;
+                    lost_count = 0;
+                    lock_count = 0;
+                    scan_time = 0.0f;
+                }
+            }
         }
 
         gimbal.set_pitch_angle(pitch_angle);
@@ -173,7 +232,23 @@ int main() {
         cv::putText(canvas, cmd, {20, 170}, cv::FONT_HERSHEY_SIMPLEX, 0.6,
                 cv::Scalar(255, 255, 0), 2);
 
-        cv::putText(canvas, "Dynamic tracking | q/ESC=quit",
+        std::ostringstream mode_line;
+        switch (state) {
+            case TrackState::Waiting:
+                mode_line << "Waiting | press SPACE to start scanning";
+                break;
+            case TrackState::Searching:
+                mode_line << "Searching | lock:" << lock_count << "/" << lock_required;
+                break;
+            case TrackState::Locked:
+                mode_line << "Target locked | press SPACE to start tracking";
+                break;
+            case TrackState::Tracking:
+                mode_line << "Tracking | lost:" << lost_count << "/" << lost_required;
+                break;
+        }
+        mode_line << " | q/ESC=quit";
+        cv::putText(canvas, mode_line.str(),
                     {20, 430}, cv::FONT_HERSHEY_SIMPLEX, 0.5,
                     cv::Scalar(180, 180, 180), 1);
 
@@ -191,6 +266,20 @@ int main() {
         int key = cv::waitKey(30);
         if (key == 27 || key == 'q' || key == 'Q') {
             break;
+        }
+
+        if (key == ' ') {
+            if (state == TrackState::Waiting) {
+                state = TrackState::Searching;
+                scan_time = 0.0f;
+                lock_count = 0;
+                lost_count = 0;
+            } else if (state == TrackState::Locked) {
+                state = TrackState::Tracking;
+                reset_pid(pid_pitch);
+                reset_pid(pid_yaw);
+                lost_count = 0;
+            }
         }
 
     }
