@@ -2,6 +2,7 @@
 set(TARGET_TRACKER_SOURCES
     TargetTracker.cpp
     SerialPort.cpp
+    GimbalControl.cpp
     TargetTrackingPipeline.cpp
 )
 

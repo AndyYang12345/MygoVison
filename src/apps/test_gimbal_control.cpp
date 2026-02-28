@@ -7,6 +7,7 @@
 #include "TargetTracking/TargetTrackingPipeline.hpp"
 
 int main() {
+    // 模拟器配置
     const int width = 640;
     const int height = 640;
     PentagonSimulator::CameraConfig cam_cfg(width, height, 30.0f);
@@ -20,6 +21,7 @@ int main() {
     PentagonSimulator simulator(cam_cfg);
     simulator.resume();
 
+    // 跟踪管线配置
     TargetTrackingPipeline pipeline;
     PipelineConfig pipeline_cfg = pipeline.get_config();
     pipeline_cfg.fx = cam_cfg.fx;
@@ -32,7 +34,7 @@ int main() {
     pipeline_cfg.serial_device = "/dev/ttyUSB0";
     pipeline_cfg.serial_baud = 115200;
     pipeline.set_config(pipeline_cfg);
-
+    // 关闭跟踪器的调试输出
     TrackerConfig tracker_cfg = pipeline.get_tracker_config();
     tracker_cfg.show_debug_windows = false;
     tracker_cfg.print_debug_info = false;

@@ -1,3 +1,4 @@
+//仿真器中使用遗传算法优化PID参数的训练程序
 #include "TargetTracking/GeneticAlgorithm.hpp"
 #include "TargetSim/Target3DGenerator.hpp"
 #include <opencv2/highgui.hpp>
@@ -86,8 +87,8 @@ void run_visualization(const Genome& g, int generation_index) {
 
     cv::namedWindow("GA Best Tracking", cv::WINDOW_AUTOSIZE);
 
-    const float max_rate = 600.0f; // pixels/s
-    const float settle_threshold = 5.0f;
+    const float max_rate = 180.0f; // deg/s
+    const float settle_threshold_deg = 1.5f;
     const float settle_hold = 0.2f;
     const float target_interval = 0.6f;
     generator.set_random_interval(target_interval);
@@ -101,8 +102,33 @@ void run_visualization(const Genome& g, int generation_index) {
     const float w_liss_x = 1.1f;
     const float w_liss_y = 1.7f;
 
+    const float fx = intr.fx;
+    const float fy = intr.fy;
+    const float cx = intr.cx;
+    const float cy = intr.cy;
+    const float rad2deg = 180.0f / static_cast<float>(M_PI);
+    const float deg2rad = static_cast<float>(M_PI) / 180.0f;
+
+    auto pixel_to_pitch_deg = [&](float y) {
+        return std::atan2(y - cy, fy) * rad2deg;
+    };
+
+    auto pixel_to_yaw_deg = [&](float x) {
+        return -std::atan2(x - cx, fx) * rad2deg;
+    };
+
+    auto angles_to_pixel = [&](float pitch_deg, float yaw_deg) {
+        float x = cx - fx * std::tan(yaw_deg * deg2rad);
+        float y = cy + fy * std::tan(pitch_deg * deg2rad);
+        x = clamp_value(x, 0.0f, static_cast<float>(width - 1));
+        y = clamp_value(y, 0.0f, static_cast<float>(height - 1));
+        return cv::Point2f(x, y);
+    };
+
     auto run_random_trial = [&](int trial_idx, int total_trials) -> bool {
-        cv::Point2f aim = center;
+        float aim_pitch_deg = 0.0f;
+        float aim_yaw_deg = 0.0f;
+        cv::Point2f aim = angles_to_pixel(aim_pitch_deg, aim_yaw_deg);
         PidState pid_x;
         PidState pid_y;
         bool tracking_active = false;
@@ -132,12 +158,16 @@ void run_visualization(const Genome& g, int generation_index) {
             }
 
             if (tracking_active && target_pos.x >= 0.0f) {
-                aim.x = step_pid(target_pos.x, aim.x, dt, g, pid_x, max_rate);
-                aim.y = step_pid(target_pos.y, aim.y, dt, g, pid_y, max_rate);
+                float target_pitch_deg = pixel_to_pitch_deg(target_pos.y);
+                float target_yaw_deg = pixel_to_yaw_deg(target_pos.x);
 
-                float dx = std::abs(target_pos.x - aim.x);
-                float dy = std::abs(target_pos.y - aim.y);
-                if (dx < settle_threshold && dy < settle_threshold) {
+                aim_pitch_deg = step_pid(target_pitch_deg, aim_pitch_deg, dt, g, pid_x, max_rate);
+                aim_yaw_deg = step_pid(target_yaw_deg, aim_yaw_deg, dt, g, pid_y, max_rate);
+                aim = angles_to_pixel(aim_pitch_deg, aim_yaw_deg);
+
+                float d_pitch = std::abs(target_pitch_deg - aim_pitch_deg);
+                float d_yaw = std::abs(target_yaw_deg - aim_yaw_deg);
+                if (d_pitch < settle_threshold_deg && d_yaw < settle_threshold_deg) {
                     settle_timer += dt;
                     if (settle_timer >= settle_hold) {
                         break;
@@ -157,6 +187,17 @@ void run_visualization(const Genome& g, int generation_index) {
                                 std::to_string(total_trials);
             cv::putText(frame, title, cv::Point(15, 30), cv::FONT_HERSHEY_SIMPLEX,
                         0.7, cv::Scalar(255, 255, 255), 2);
+
+            if (tracking_active && target_pos.x >= 0.0f) {
+                float target_pitch_deg = pixel_to_pitch_deg(target_pos.y);
+                float target_yaw_deg = pixel_to_yaw_deg(target_pos.x);
+                float d_pitch = target_pitch_deg - aim_pitch_deg;
+                float d_yaw = target_yaw_deg - aim_yaw_deg;
+                std::string err = "dPitch: " + std::to_string(d_pitch).substr(0, 6) +
+                                  " deg, dYaw: " + std::to_string(d_yaw).substr(0, 6) + " deg";
+                cv::putText(frame, err, cv::Point(15, 58), cv::FONT_HERSHEY_SIMPLEX,
+                            0.55, cv::Scalar(200, 255, 200), 1);
+            }
             cv::imshow("GA Best Tracking", frame);
 
             int key = cv::waitKey(16);
@@ -171,7 +212,9 @@ void run_visualization(const Genome& g, int generation_index) {
                                 int trial_idx,
                                 int total_trials,
                                 const std::function<cv::Point2f(float)>& target_func) -> bool {
-        cv::Point2f aim = center;
+        float aim_pitch_deg = 0.0f;
+        float aim_yaw_deg = 0.0f;
+        cv::Point2f aim = angles_to_pixel(aim_pitch_deg, aim_yaw_deg);
         PidState pid_x;
         PidState pid_y;
         float elapsed = 0.0f;
@@ -188,8 +231,12 @@ void run_visualization(const Genome& g, int generation_index) {
             target_pos.x = clamp_value(target_pos.x, 5.0f, static_cast<float>(width - 5));
             target_pos.y = clamp_value(target_pos.y, 5.0f, static_cast<float>(height - 5));
 
-            aim.x = step_pid(target_pos.x, aim.x, dt, g, pid_x, max_rate);
-            aim.y = step_pid(target_pos.y, aim.y, dt, g, pid_y, max_rate);
+            float target_pitch_deg = pixel_to_pitch_deg(target_pos.y);
+            float target_yaw_deg = pixel_to_yaw_deg(target_pos.x);
+
+            aim_pitch_deg = step_pid(target_pitch_deg, aim_pitch_deg, dt, g, pid_x, max_rate);
+            aim_yaw_deg = step_pid(target_yaw_deg, aim_yaw_deg, dt, g, pid_y, max_rate);
+            aim = angles_to_pixel(aim_pitch_deg, aim_yaw_deg);
 
             cv::Mat frame(height, width, CV_8UC3, cv::Scalar(30, 30, 30));
             cv::circle(frame, target_pos, 6, cv::Scalar(0, 0, 255), -1);
@@ -200,6 +247,13 @@ void run_visualization(const Genome& g, int generation_index) {
                                 std::to_string(total_trials);
             cv::putText(frame, title, cv::Point(15, 30), cv::FONT_HERSHEY_SIMPLEX,
                         0.7, cv::Scalar(255, 255, 255), 2);
+
+            float d_pitch = target_pitch_deg - aim_pitch_deg;
+            float d_yaw = target_yaw_deg - aim_yaw_deg;
+            std::string err = "dPitch: " + std::to_string(d_pitch).substr(0, 6) +
+                              " deg, dYaw: " + std::to_string(d_yaw).substr(0, 6) + " deg";
+            cv::putText(frame, err, cv::Point(15, 58), cv::FONT_HERSHEY_SIMPLEX,
+                        0.55, cv::Scalar(200, 255, 200), 1);
             cv::imshow("GA Best Tracking", frame);
 
             int key = cv::waitKey(16);

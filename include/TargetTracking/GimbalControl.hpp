@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include "TargetTracking/SerialPort.hpp"
+
 class ServoMotor{
 public:
     ServoMotor(int id) : _id(id),_angle(0.0f),_speed(0.0f){
@@ -89,15 +91,28 @@ public:
     const std::string& get_command_buffer() const{
         return _command_buffer;
     }
-    void send_command() const{
-        //后续会引入串口通信库，这里先输出命令字符串
-        std::cout << "Sending command: " << get_command_buffer() << std::endl;
+    bool open_serial(const std::string& device, int baudrate){
+        return _serial.open(device, baudrate);
+    }
+    void close_serial(){
+        _serial.close();
+    }
+    bool is_serial_open() const{
+        return _serial.is_open();
+    }
+    bool send_command(){
+        if (!_serial.is_open()) {
+            std::cout << "Sending command (serial closed): " << get_command_buffer() << std::endl;
+            return false;
+        }
+        return _serial.write_string(get_command_buffer());
     }
 
 private:
     ServoMotor _pitch_motor{0};
     ServoMotor _yaw_motor{1};
     std::string _command_buffer;
+    SerialPort _serial;
 };
 
 #endif // GIMBAL_CONTROL_HPP

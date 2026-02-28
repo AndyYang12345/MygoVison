@@ -171,8 +171,8 @@ PipelineOutput TargetTrackingPipeline::process_frame(const cv::Mat& frame, float
     gimbal_.get_command();
 
     const std::string cmd = gimbal_.get_command_buffer();
-    if (config_.enable_serial && serial_.is_open()) {
-        serial_.write_string(cmd);
+    if (config_.enable_serial && gimbal_.is_serial_open()) {
+        gimbal_.send_command();
     }
 
     output.state = state_;
@@ -252,15 +252,15 @@ bool TargetTrackingPipeline::open_serial() {
     if (!config_.enable_serial) {
         return false;
     }
-    return serial_.open(config_.serial_device, config_.serial_baud);
+    return gimbal_.open_serial(config_.serial_device, config_.serial_baud);
 }
 
 void TargetTrackingPipeline::close_serial() {
-    serial_.close();
+    gimbal_.close_serial();
 }
 
 bool TargetTrackingPipeline::is_serial_open() const {
-    return serial_.is_open();
+    return gimbal_.is_serial_open();
 }
 
 float TargetTrackingPipeline::clamp_value(float v, float lo, float hi) const {

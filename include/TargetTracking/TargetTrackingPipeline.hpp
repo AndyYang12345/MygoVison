@@ -5,7 +5,6 @@
 #include <string>
 
 #include "TargetTracking/GimbalControl.hpp"
-#include "TargetTracking/SerialPort.hpp"
 #include "TargetTracking/TargetTracker.hpp"
 
 enum class TrackState { Waiting, Searching, Locked, Tracking };
@@ -111,7 +110,6 @@ private:
     PID pid_yaw_;
 
     GimbalControl gimbal_;
-    SerialPort serial_;
     TargetTracker tracker_;
 };
 

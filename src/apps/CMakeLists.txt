@@ -46,3 +46,7 @@ set_target_properties(test_target3d_generator PROPERTIES RUNTIME_OUTPUT_DIRECTOR
 add_executable(ga_training GAtraining.cpp)
 target_link_libraries(ga_training PRIVATE target_sim ${OpenCV_LIBS})
 set_target_properties(ga_training PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+
+add_executable(ga_training_irl ga_training_irl.cpp)
+target_link_libraries(ga_training_irl PRIVATE target_tracker ${OpenCV_LIBS})
+set_target_properties(ga_training_irl PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")

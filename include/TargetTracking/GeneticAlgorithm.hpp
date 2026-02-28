@@ -16,7 +16,7 @@ struct Genome {
     float p_min = 0.0f;
     float p_max = 12.0f;
     float i_min = 0.0f;
-    float i_max = 1.0f;
+    float i_max = 2.0f;
     float d_min = 0.0f;
     float d_max = 2.0f;
 
@@ -73,7 +73,7 @@ public:
 
     struct TrackingFitnessConfig {
         struct Methods {
-            int random = 5;
+            int random = 0;
             int sine = 3;
             int circular = 2;
             int lissajous = 4;
@@ -82,25 +82,27 @@ public:
         int targets_per_individual = 5;
         float dt = 0.01f;
         float max_time = 2.0f;
-        float settle_threshold = 0.01f; // rad
+        float settle_threshold = 1.5f; // deg
         float settle_hold = 0.2f;       // sec
-        float max_rate_rad = 1.5f;      // rad/s
-        float integral_limit = 1.0f;
+        float max_speed_deg = 180.0f;   // deg/s
+        float integral_limit = 30.0f;
         float weight_time = 1.0f;
         float weight_error = 1.0f;
         float weight_smooth = 0.05f;
-        float target_pitch_min = -0.35f;
-        float target_pitch_max = 0.35f;
-        float target_yaw_min = -0.6f;
-        float target_yaw_max = 0.6f;
-        float sine_amp_pitch = 0.2f;
-        float sine_amp_yaw = 0.3f;
+        float pitch_home = 60.0f;
+        float yaw_home = 105.0f;
+        float target_pitch_min = 45.0f;
+        float target_pitch_max = 75.0f;
+        float target_yaw_min = 75.0f;
+        float target_yaw_max = 135.0f;
+        float sine_amp_pitch = 15.0f;
+        float sine_amp_yaw = 30.0f;
         float sine_frequency = 0.5f; // Hz
-        float circular_radius_pitch = 0.2f;
-        float circular_radius_yaw = 0.3f;
+        float circular_radius_pitch = 12.0f;
+        float circular_radius_yaw = 24.0f;
         float circular_frequency = 0.4f; // Hz
-        float lissajous_a = 0.25f;
-        float lissajous_b = 0.35f;
+        float lissajous_a = 12.0f;
+        float lissajous_b = 24.0f;
         float lissajous_wx = 1.0f; // rad/s
         float lissajous_wy = 1.7f; // rad/s
         float lissajous_phase = 0.0f;
@@ -109,7 +111,6 @@ public:
 
     void set_tracking_fitness(const TrackingFitnessConfig& cfg) {
         _tracking_config = cfg;
-        _tracking_rng.seed(cfg.seed);
         _fitness = [this](const Genome& genome) {
             return evaluate_tracking_fitness(genome);
         };
@@ -205,7 +206,6 @@ public:
 
 private:
     std::mt19937 _rng;
-    std::mt19937 _tracking_rng{12345};
     int _size = 0;
     int _generation = 0;
     float _mutation_rate = 0.2f;
@@ -242,12 +242,8 @@ private:
 
     using TargetFunc = std::function<std::pair<float, float>(float)>;
 
-    static float wrap_angle(float angle) {
-        return std::atan2(std::sin(angle), std::cos(angle));
-    }
-
     float step_pid(float target, float current, float dt, const Genome& g, PidState& state) const {
-        float error = wrap_angle(target - current);
+        float error = target - current;
         state.integral += error * dt;
         state.integral = std::max(-_tracking_config.integral_limit,
                                   std::min(state.integral, _tracking_config.integral_limit));
@@ -260,13 +256,13 @@ private:
         state.has_prev = true;
 
         float rate = g.p * error + g.i * state.integral + g.d * derivative;
-        rate = std::max(-_tracking_config.max_rate_rad, std::min(rate, _tracking_config.max_rate_rad));
+        rate = std::max(-_tracking_config.max_speed_deg, std::min(rate, _tracking_config.max_speed_deg));
         return current + rate * dt;
     }
 
     float simulate_trial(const Genome& genome, const TargetFunc& target_func, bool allow_settle) {
-        float current_pitch = 0.0f;
-        float current_yaw = 0.0f;
+        float current_pitch = _tracking_config.pitch_home;
+        float current_yaw = _tracking_config.yaw_home;
         float time_elapsed = 0.0f;
         float settle_timer = 0.0f;
         float error_integral = 0.0f;
@@ -291,8 +287,8 @@ private:
             float rate_pitch = (current_pitch - prev_pitch) / _tracking_config.dt;
             float rate_yaw = (current_yaw - prev_yaw) / _tracking_config.dt;
 
-            float dp = std::abs(wrap_angle(target_pitch - current_pitch));
-            float dy = std::abs(wrap_angle(target_yaw - current_yaw));
+            float dp = std::abs(target_pitch - current_pitch);
+            float dy = std::abs(target_yaw - current_yaw);
             error_integral += (dp + dy) * _tracking_config.dt;
 
             smooth_penalty += (std::abs(rate_pitch - prev_rate_pitch) +
@@ -322,15 +318,20 @@ private:
     }
 
     float evaluate_tracking_fitness(const Genome& genome) {
+        std::mt19937 eval_rng(_tracking_config.seed);
         std::uniform_real_distribution<float> pitch_dist(_tracking_config.target_pitch_min,
                                                          _tracking_config.target_pitch_max);
         std::uniform_real_distribution<float> yaw_dist(_tracking_config.target_yaw_min,
                                                        _tracking_config.target_yaw_max);
 
         float total_cost = 0.0f;
-        for (int t = 0; t < _tracking_config.methods.random; ++t) {
-            float target_pitch = pitch_dist(_tracking_rng);
-            float target_yaw = yaw_dist(_tracking_rng);
+        const int random_trials = std::max(1,
+            (_tracking_config.methods.random > 0) ?
+            _tracking_config.methods.random : _tracking_config.targets_per_individual);
+
+        for (int t = 0; t < random_trials; ++t) {
+            float target_pitch = pitch_dist(eval_rng);
+            float target_yaw = yaw_dist(eval_rng);
             total_cost += simulate_trial(
                 genome,
                 [target_pitch, target_yaw](float) {
@@ -344,8 +345,10 @@ private:
             total_cost += simulate_trial(
                 genome,
                 [this, omega](float time_s) {
-                    float pitch = _tracking_config.sine_amp_pitch * std::sin(omega * time_s);
-                    float yaw = _tracking_config.sine_amp_yaw * std::sin(omega * time_s);
+                    float pitch = _tracking_config.pitch_home +
+                                  _tracking_config.sine_amp_pitch * std::sin(omega * time_s);
+                    float yaw = _tracking_config.yaw_home +
+                                _tracking_config.sine_amp_yaw * std::sin(omega * time_s);
                     return std::make_pair(pitch, yaw);
                 },
                 false);
@@ -356,8 +359,10 @@ private:
             total_cost += simulate_trial(
                 genome,
                 [this, omega](float time_s) {
-                    float pitch = _tracking_config.circular_radius_pitch * std::cos(omega * time_s);
-                    float yaw = _tracking_config.circular_radius_yaw * std::sin(omega * time_s);
+                    float pitch = _tracking_config.pitch_home +
+                                  _tracking_config.circular_radius_pitch * std::cos(omega * time_s);
+                    float yaw = _tracking_config.yaw_home +
+                                _tracking_config.circular_radius_yaw * std::sin(omega * time_s);
                     return std::make_pair(pitch, yaw);
                 },
                 false);
@@ -367,10 +372,10 @@ private:
             total_cost += simulate_trial(
                 genome,
                 [this](float time_s) {
-                    float pitch = _tracking_config.lissajous_a *
+                    float pitch = _tracking_config.pitch_home + _tracking_config.lissajous_a *
                                   std::sin(_tracking_config.lissajous_wx * time_s +
                                            _tracking_config.lissajous_phase);
-                    float yaw = _tracking_config.lissajous_b *
+                    float yaw = _tracking_config.yaw_home + _tracking_config.lissajous_b *
                                 std::sin(_tracking_config.lissajous_wy * time_s);
                     return std::make_pair(pitch, yaw);
                 },
