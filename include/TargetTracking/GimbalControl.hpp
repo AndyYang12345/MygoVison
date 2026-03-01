@@ -40,7 +40,7 @@ public:
         _last_angle = clamped;
 
         std::ostringstream oss;
-        oss << "#" << std::setw(3) << std::setfill('0') << _id
+        oss << "#" << std::setw(1) << _id
             << "P" << std::setw(4) << std::setfill('0') << _pwm
             << "T" << std::setw(4) << std::setfill('0') << _time_ms << "!";
         _cmd = oss.str();
@@ -84,7 +84,7 @@ public:
         _yaw_motor.set_speed(speed);
     }
     void get_command(){
-        _pitch_motor.generate_command(0.0f, 180.0f);
+        _pitch_motor.generate_command(0.0f, 270.0f);
         _yaw_motor.generate_command(0.0f, 270.0f);
         _command_buffer = _pitch_motor.get_command_buffer() + _yaw_motor.get_command_buffer();
     }
