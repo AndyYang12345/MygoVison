@@ -32,12 +32,17 @@ public:
         cv::Point3f position;      // 相机位置
         float pitch;               // 俯仰角（绕X轴）
         float yaw;                 // 偏航角（绕Y轴）
+        bool enable_laser;
+        float laser_offset_left_mm; // 激光器相对镜头中心左偏（相机坐标系X负向）
+        float laser_offset_up_mm;   // 激光器相对镜头中心上偏（相机坐标系Y负向）
+        float laser_dot_radius_px;
         
         // 默认构造函数
         CameraConfig(int w = 640, int h = 640, float f = 30.0f)
             : width(w), height(h), fps(f),
               fx(381.625f), fy(381.625f), cx(320.0f), cy(320.0f),
-              position(0, -100, 1000), pitch(0.35f), yaw(0.0f) {}
+              position(0, -100, 1000), pitch(0.35f), yaw(0.0f),
+              enable_laser(true), laser_offset_left_mm(0.0f), laser_offset_up_mm(20.0f), laser_dot_radius_px(4.0f) {}
     };
 
     /**
@@ -148,6 +153,9 @@ public:
      */
     bool has_last_target() const { return has_last_target_; }
 
+    cv::Point2f get_last_laser_position_projected() const { return last_laser_dst_; }
+    bool has_last_laser() const { return has_last_laser_; }
+
 private:
     /**
      * @brief 能量机制变速旋转函数生成器
@@ -184,6 +192,9 @@ private:
     cv::Point2f last_target_src_{-1.0f, -1.0f};
     cv::Point2f last_target_dst_{-1.0f, -1.0f};
     bool has_last_target_{false};
+    cv::Point3f last_laser_world_{0.0f, 0.0f, 0.0f};
+    cv::Point2f last_laser_dst_{-1.0f, -1.0f};
+    bool has_last_laser_{false};
 };
 
 #endif // PENTAGON_SIMULATOR_HPP
