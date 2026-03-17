@@ -293,6 +293,10 @@ bool TargetTrackingPipeline::is_serial_open() const {
     return gimbal_.is_serial_open();
 }
 
+bool TargetTrackingPipeline::send_raw_serial_command(const std::string& command) {
+    return gimbal_.send_raw_command(command);
+}
+
 float TargetTrackingPipeline::clamp_value(float v, float lo, float hi) const {
     return std::max(lo, std::min(v, hi));
 }

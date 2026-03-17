@@ -83,6 +83,7 @@ public:
     bool open_serial();
     void close_serial();
     bool is_serial_open() const;
+    bool send_raw_serial_command(const std::string& command);
 
 private:
     struct PID {

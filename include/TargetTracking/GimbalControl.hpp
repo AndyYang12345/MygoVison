@@ -40,7 +40,7 @@ public:
         _last_angle = clamped;
 
         std::ostringstream oss;
-        oss << "#" << std::setw(1) << _id
+        oss << "#" << std::setw(3) << std::setfill('0') << _id
             << "P" << std::setw(4) << std::setfill('0') << _pwm
             << "T" << std::setw(4) << std::setfill('0') << _time_ms << "!";
         _cmd = oss.str();
@@ -86,7 +86,7 @@ public:
     void get_command(){
         _pitch_motor.generate_command(0.0f, 270.0f);
         _yaw_motor.generate_command(0.0f, 270.0f);
-        _command_buffer = _pitch_motor.get_command_buffer() + _yaw_motor.get_command_buffer();
+        _command_buffer = "{" + _pitch_motor.get_command_buffer() + _yaw_motor.get_command_buffer() + "}";
     }
     const std::string& get_command_buffer() const{
         return _command_buffer;
@@ -107,10 +107,17 @@ public:
         }
         return _serial.write_string(get_command_buffer());
     }
+    bool send_raw_command(const std::string& command){
+        if (!_serial.is_open()) {
+            std::cout << "Sending raw command (serial closed): " << command << std::endl;
+            return false;
+        }
+        return _serial.write_string(command);
+    }
 
 private:
-    ServoMotor _pitch_motor{0};
-    ServoMotor _yaw_motor{1};
+    ServoMotor _pitch_motor{3};
+    ServoMotor _yaw_motor{0};
     std::string _command_buffer;
     SerialPort _serial;
 };

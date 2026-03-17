@@ -19,6 +19,8 @@ int main() {
     cam_cfg.position = cv::Point3f(0.0f, 0.0f, 1000.0f);
     cam_cfg.pitch = 0.0f;
     cam_cfg.yaw = 0.0f;
+    cam_cfg.pitch_axis_below_optical_center_mm = 100.0f;
+    cam_cfg.yaw_axis_behind_pitch_axis_mm = 70.0f;
     PentagonSimulator simulator(cam_cfg);
     simulator.resume();
 
@@ -31,7 +33,7 @@ int main() {
     pipeline_cfg.cy = cam_cfg.cy;
     pipeline_cfg.pitch_home = 60.0f; // 向下旋转30度（90-30）
     pipeline_cfg.yaw_home = 105.0f;  // 向左旋转30度（135-30）
-    pipeline_cfg.enable_serial = false;
+    pipeline_cfg.enable_serial = true;
     pipeline_cfg.serial_device = "/dev/ttyUSB0";
     pipeline_cfg.serial_baud = 115200;
     pipeline.set_config(pipeline_cfg);
@@ -41,8 +43,17 @@ int main() {
     tracker_cfg.print_debug_info = false;
     pipeline.set_tracker_config(tracker_cfg);
 
-    if (pipeline_cfg.enable_serial && !pipeline.open_serial()) {
-        std::cerr << "Failed to open /dev/ttyUSB0 at 115200." << std::endl;
+    if (pipeline_cfg.enable_serial) {
+        if (!pipeline.open_serial()) {
+            std::cerr << "Failed to open " << pipeline_cfg.serial_device
+                      << " at " << pipeline_cfg.serial_baud << std::endl;
+        } else {
+            std::cout << "Serial opened: " << pipeline_cfg.serial_device
+                      << " @ " << pipeline_cfg.serial_baud << std::endl;
+            const std::string init_cmd = "{#001P1300T0000#002P2300T0000#003P1500T0000}";
+            bool init_ok = pipeline.send_raw_serial_command(init_cmd);
+            std::cout << "Init cmd sent: " << (init_ok ? "true" : "false") << std::endl;
+        }
     }
 
     const std::string main_win = "Gimbal Control";
@@ -55,8 +66,8 @@ int main() {
         float dt = std::chrono::duration<float>(now_tick - last_tick).count();
         last_tick = now_tick;
 
-        float pitch_rad = (pipeline.get_pitch_angle() - 90.0f) * static_cast<float>(CV_PI) / 180.0f;
-        float yaw_rad = (pipeline.get_yaw_angle() - 135.0f) * static_cast<float>(CV_PI) / 180.0f;
+        float pitch_rad = (pipeline.get_pitch_angle() - pipeline_cfg.pitch_home) * static_cast<float>(CV_PI) / 180.0f;
+        float yaw_rad = (pipeline.get_yaw_angle() - pipeline_cfg.yaw_home) * static_cast<float>(CV_PI) / 180.0f;
         simulator.set_camera_pitch(pitch_rad);
         simulator.set_camera_yaw(yaw_rad);
 

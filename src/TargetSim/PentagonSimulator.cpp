@@ -25,6 +25,26 @@ cv::Point3f normalize3(const cv::Point3f& v) {
     return cv::Point3f(v.x / n, v.y / n, v.z / n);
 }
 
+cv::Point3f rotate_x(const cv::Point3f& v, float angle_rad) {
+    const float c = std::cos(angle_rad);
+    const float s = std::sin(angle_rad);
+    return cv::Point3f(
+        v.x,
+        c * v.y - s * v.z,
+        s * v.y + c * v.z
+    );
+}
+
+cv::Point3f rotate_y(const cv::Point3f& v, float angle_rad) {
+    const float c = std::cos(angle_rad);
+    const float s = std::sin(angle_rad);
+    return cv::Point3f(
+        c * v.x + s * v.z,
+        v.y,
+        -s * v.x + c * v.z
+    );
+}
+
 bool intersect_ray_with_plane(const cv::Point3f& ray_origin,
                               const cv::Point3f& ray_dir,
                               const cv::Point3f& plane_normal,
@@ -168,7 +188,30 @@ cv::Mat PentagonSimulator::reproject_image_3d(const cv::Mat& src_image,
 
 void PentagonSimulator::update_camera_pose() {
     SimulationCamera::CameraPose dst_pose;
-    dst_pose.position = config_.position;
+
+    const float pitch_below = config_.pitch_axis_below_optical_center_mm;
+    const float yaw_behind = config_.yaw_axis_behind_pitch_axis_mm;
+
+    const cv::Point3f yaw_to_pitch_local(0.0f, 0.0f, yaw_behind);
+    const cv::Point3f pitch_to_camera_local(0.0f, -pitch_below, 0.0f);
+
+    const cv::Point3f yaw_to_pitch_to_camera =
+        yaw_to_pitch_local + rotate_x(pitch_to_camera_local, camera_pitch_);
+
+    const cv::Point3f yaw_to_camera_world = rotate_y(yaw_to_pitch_to_camera, camera_yaw_);
+
+    const cv::Point3f yaw_to_camera_neutral = yaw_to_pitch_local + pitch_to_camera_local;
+    const cv::Point3f yaw_pivot_world = cv::Point3f(
+        config_.position.x - yaw_to_camera_neutral.x,
+        config_.position.y - yaw_to_camera_neutral.y,
+        config_.position.z - yaw_to_camera_neutral.z
+    );
+
+    dst_pose.position = cv::Point3f(
+        yaw_pivot_world.x + yaw_to_camera_world.x,
+        yaw_pivot_world.y + yaw_to_camera_world.y,
+        yaw_pivot_world.z + yaw_to_camera_world.z
+    );
     dst_pose.rotation = cv::Point3f(camera_pitch_, camera_yaw_, 0);
     dst_pose.target_plane_distance = 0;
     dst_camera_->set_pose(dst_pose);
