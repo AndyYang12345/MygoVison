@@ -2,10 +2,25 @@
 #include <chrono>
 #include <iostream>
 #include <iomanip>
+#include <fstream>
 #include <string>
 
 #include "TargetSim/PentagonSimulator.hpp"
 #include "TargetTracking/TargetTrackingPipeline.hpp"
+
+namespace {
+
+const char* to_state_name(TrackState state) {
+    switch (state) {
+        case TrackState::Waiting: return "Waiting";
+        case TrackState::Searching: return "Searching";
+        case TrackState::Locked: return "Locked";
+        case TrackState::Tracking: return "Tracking";
+        default: return "Unknown";
+    }
+}
+
+} // namespace
 
 int main() {
     // 模拟器配置
@@ -32,9 +47,11 @@ int main() {
     pipeline_cfg.cx = cam_cfg.cx;
     pipeline_cfg.cy = cam_cfg.cy;
     pipeline_cfg.pitch_home = 60.0f; // 向下旋转30度（90-30）
-    pipeline_cfg.yaw_home = 105.0f;  // 向左旋转30度（135-30）
+    pipeline_cfg.yaw_home = 270.0f;  // 初始位设为yaw上限，便于观察边界扫描
+    pipeline_cfg.pitch_pwm_zero_angle = pipeline_cfg.pitch_home;
+    pipeline_cfg.yaw_pwm_zero_angle = pipeline_cfg.yaw_home;
     pipeline_cfg.enable_serial = true;
-    pipeline_cfg.serial_device = "/dev/ttyUSB0";
+    pipeline_cfg.serial_device = "/dev/ttyACM1";
     pipeline_cfg.serial_baud = 115200;
     pipeline.set_config(pipeline_cfg);
     // 关闭跟踪器的调试输出
@@ -43,6 +60,19 @@ int main() {
     tracker_cfg.print_debug_info = false;
     pipeline.set_tracker_config(tracker_cfg);
 
+    const bool auto_start_search = true;
+    const bool auto_start_tracking = true;
+    const std::string debug_log_path = "gimbal_control_debug.csv";
+    std::ofstream debug_log(debug_log_path, std::ios::out | std::ios::trunc);
+    if (!debug_log.is_open()) {
+        std::cerr << "Failed to open debug log file: " << debug_log_path << std::endl;
+    } else {
+        debug_log << "time_sec,frame,state,event,target_x,target_y,roi_active,roi_x,roi_y,roi_w,roi_h,"
+                  << "aim_x,aim_y,aim_source,laser_x,laser_y,pitch_deg,yaw_deg,pitch_speed,yaw_speed,"
+                  << "lock_count,lost_count,command\n";
+        std::cout << "Debug log file: " << debug_log_path << std::endl;
+    }
+
     if (pipeline_cfg.enable_serial) {
         if (!pipeline.open_serial()) {
             std::cerr << "Failed to open " << pipeline_cfg.serial_device
@@ -50,7 +80,7 @@ int main() {
         } else {
             std::cout << "Serial opened: " << pipeline_cfg.serial_device
                       << " @ " << pipeline_cfg.serial_baud << std::endl;
-            const std::string init_cmd = "{#001P1300T0000#002P2300T0000#003P1500T0000}";
+            const std::string init_cmd = "{P1500T1000P1350T1000P2300T1000P1500T1000P1500T1000}";
             bool init_ok = pipeline.send_raw_serial_command(init_cmd);
             std::cout << "Init cmd sent: " << (init_ok ? "true" : "false") << std::endl;
         }
@@ -60,19 +90,77 @@ int main() {
     cv::namedWindow(main_win, cv::WINDOW_AUTOSIZE);
 
     auto last_tick = std::chrono::steady_clock::now();
+    const auto run_start_tick = last_tick;
+    int frame_index = 0;
+    TrackState last_state = TrackState::Waiting;
+
+    const float sim_pitch_neutral_deg = 60.0f;
+    const float sim_yaw_neutral_deg = 105.0f;
+
+    if (auto_start_search) {
+        pipeline.handle_key(' ');
+        std::cout << "[AUTO] Waiting -> Searching (startup)" << std::endl;
+    }
 
     while (true) {
         auto now_tick = std::chrono::steady_clock::now();
         float dt = std::chrono::duration<float>(now_tick - last_tick).count();
         last_tick = now_tick;
 
-        float pitch_rad = (pipeline.get_pitch_angle() - pipeline_cfg.pitch_home) * static_cast<float>(CV_PI) / 180.0f;
-        float yaw_rad = (pipeline.get_yaw_angle() - pipeline_cfg.yaw_home) * static_cast<float>(CV_PI) / 180.0f;
+        float pitch_rad = (pipeline.get_pitch_angle() - sim_pitch_neutral_deg) * static_cast<float>(CV_PI) / 180.0f;
+        float yaw_rad = (pipeline.get_yaw_angle() - sim_yaw_neutral_deg) * static_cast<float>(CV_PI) / 180.0f;
         simulator.set_camera_pitch(pitch_rad);
         simulator.set_camera_yaw(yaw_rad);
 
         cv::Mat frame = simulator.get_frame();
         PipelineOutput output = pipeline.process_frame(frame, dt);
+        frame_index++;
+
+        std::string frame_event;
+        if (output.state != last_state) {
+            frame_event = std::string("STATE_CHANGE:") + to_state_name(last_state) + "->" + to_state_name(output.state);
+            std::cout << "[STATE] " << frame_event << " at frame " << frame_index << std::endl;
+        }
+
+        if (auto_start_tracking && output.state == TrackState::Locked) {
+            pipeline.handle_key(' ');
+            if (!frame_event.empty()) {
+                frame_event += "|";
+            }
+            frame_event += "AUTO_SWITCH:Locked->Tracking";
+            std::cout << "[AUTO] Locked -> Tracking at frame " << frame_index << std::endl;
+        }
+
+        if (debug_log.is_open()) {
+            const float time_sec = std::chrono::duration<float>(now_tick - run_start_tick).count();
+            debug_log << std::fixed << std::setprecision(6)
+                      << time_sec << ","
+                      << frame_index << ","
+                      << to_state_name(output.state) << ","
+                      << (frame_event.empty() ? "-" : frame_event) << ","
+                      << output.target_pos.x << ","
+                      << output.target_pos.y << ","
+                      << (output.roi_active ? 1 : 0) << ","
+                      << output.roi_rect.x << ","
+                      << output.roi_rect.y << ","
+                      << output.roi_rect.width << ","
+                      << output.roi_rect.height << ","
+                      << output.aim_pos.x << ","
+                      << output.aim_pos.y << ","
+                      << (output.aim_from_laser ? "laser" : "center") << ","
+                      << output.laser_pos.x << ","
+                      << output.laser_pos.y << ","
+                      << output.pitch_angle << ","
+                      << output.yaw_angle << ","
+                      << output.pitch_speed << ","
+                      << output.yaw_speed << ","
+                      << output.lock_count << ","
+                      << output.lost_count << ",\""
+                      << output.command << "\"\n";
+            debug_log.flush();
+        }
+
+        last_state = output.state;
 
         cv::Mat canvas = output.canvas.empty() ? frame.clone() : output.canvas.clone();
 
@@ -167,7 +255,14 @@ int main() {
             break;
         }
 
+        if (key == ' ') {
+            std::cout << "[MANUAL] SPACE pressed, request state transition" << std::endl;
+        }
         pipeline.handle_key(key);
+    }
+
+    if (debug_log.is_open()) {
+        debug_log.close();
     }
 
     return 0;

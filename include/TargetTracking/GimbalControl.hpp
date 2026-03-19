@@ -48,6 +48,12 @@ public:
     const std::string& get_command_buffer() const{
         return _cmd;
     }
+    int get_pwm() const{
+        return _pwm;
+    }
+    int get_time_ms() const{
+        return _time_ms;
+    }
 private:
     int _id;
     float _angle;
@@ -71,6 +77,12 @@ public:
     GimbalControl(){
         std::cout << "Gimbal created." << std::endl;
     }
+    void set_pitch_zero_angle_deg(float angle){
+        _pitch_zero_angle_deg = angle;
+    }
+    void set_yaw_zero_angle_deg(float angle){
+        _yaw_zero_angle_deg = angle;
+    }
     void set_pitch_angle(float angle){
         _pitch_motor.set_angle(angle);
     }
@@ -84,9 +96,35 @@ public:
         _yaw_motor.set_speed(speed);
     }
     void get_command(){
-        _pitch_motor.generate_command(0.0f, 270.0f);
         _yaw_motor.generate_command(0.0f, 270.0f);
-        _command_buffer = "{" + _pitch_motor.get_command_buffer() + _yaw_motor.get_command_buffer() + "}";
+        _pitch_motor.generate_command(0.0f, 270.0f);
+
+        constexpr float kPwmPerDeg = 2000.0f / 270.0f;
+        const float yaw_delta_deg = _yaw_motor.get_angle() - _yaw_zero_angle_deg;
+        const float pitch_delta_deg = _pitch_motor.get_angle() - _pitch_zero_angle_deg;
+        const int yaw_pwm = std::clamp(
+            static_cast<int>(std::lround(1500.0f + yaw_delta_deg * kPwmPerDeg)),
+            500,
+            2500);
+        const int pitch_pwm = std::clamp(
+            static_cast<int>(std::lround(1500.0f + pitch_delta_deg * kPwmPerDeg)),
+            500,
+            2500);
+        const int yaw_t = std::clamp(_yaw_motor.get_time_ms(), 0, 9999);
+        const int pitch_t = std::clamp(_pitch_motor.get_time_ms(), 0, 9999);
+
+        std::ostringstream oss;
+        oss << "{"
+            << "P" << std::setw(4) << std::setfill('0') << yaw_pwm
+            << "T" << std::setw(4) << std::setfill('0') << yaw_t
+            << "P1350T1000"
+            << "P2300T1000"
+            << "P" << std::setw(4) << std::setfill('0') << pitch_pwm
+            << "T" << std::setw(4) << std::setfill('0') << pitch_t
+            << "P1500T1000"
+            << "}";
+        _command_buffer = oss.str();
+        std::cout << "Generated command: " << _command_buffer << std::endl;
     }
     const std::string& get_command_buffer() const{
         return _command_buffer;
@@ -118,6 +156,8 @@ public:
 private:
     ServoMotor _pitch_motor{3};
     ServoMotor _yaw_motor{0};
+    float _pitch_zero_angle_deg{60.0f};
+    float _yaw_zero_angle_deg{105.0f};
     std::string _command_buffer;
     SerialPort _serial;
 };

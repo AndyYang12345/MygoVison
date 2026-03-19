@@ -7,12 +7,16 @@
 #include <sstream>
 
 TargetTrackingPipeline::TargetTrackingPipeline() {
+    gimbal_.set_pitch_zero_angle_deg(config_.pitch_pwm_zero_angle);
+    gimbal_.set_yaw_zero_angle_deg(config_.yaw_pwm_zero_angle);
     pitch_angle_ = config_.pitch_home;
     yaw_angle_ = config_.yaw_home;
 }
 
 void TargetTrackingPipeline::set_config(const PipelineConfig& config) {
     config_ = config;
+    gimbal_.set_pitch_zero_angle_deg(config_.pitch_pwm_zero_angle);
+    gimbal_.set_yaw_zero_angle_deg(config_.yaw_pwm_zero_angle);
     pitch_angle_ = config_.pitch_home;
     yaw_angle_ = config_.yaw_home;
 }
@@ -84,10 +88,14 @@ PipelineOutput TargetTrackingPipeline::process_frame(const cv::Mat& frame, float
     if (has_target) {
         target_pos = info.target_center;
     }
+    output.roi_active = info.roi_active;
+    output.roi_rect = info.roi_rect;
     cv::Point2f laser_pos(-1.0f, -1.0f);
     if (has_laser) {
         laser_pos = info.laser_center;
     }
+    output.aim_pos = cv::Point2f(cx, cy);
+    output.aim_from_laser = false;
 
     if (state_ == TrackState::Waiting) {
         pitch_angle_ = config_.pitch_home;
@@ -135,12 +143,16 @@ PipelineOutput TargetTrackingPipeline::process_frame(const cv::Mat& frame, float
             if (has_laser) {
                 dx = target_pos.x - laser_pos.x;
                 dy = target_pos.y - laser_pos.y;
+                output.aim_pos = laser_pos;
+                output.aim_from_laser = true;
             } else {
                 dx = target_pos.x - cx;
                 dy = target_pos.y - cy;
+                output.aim_pos = cv::Point2f(cx, cy);
+                output.aim_from_laser = false;
             }
-            float pitch_error = std::atan2(dy, fy) * 180.0f / static_cast<float>(CV_PI);
-            float yaw_error = -std::atan2(dx, fx) * 180.0f / static_cast<float>(CV_PI);
+            float pitch_error = config_.pitch_error_sign * std::atan2(dy, fy) * 180.0f / static_cast<float>(CV_PI);
+            float yaw_error = config_.yaw_error_sign * (-std::atan2(dx, fx) * 180.0f / static_cast<float>(CV_PI));
 
             if (config_.print_debug) {
                 std::cout << std::fixed << std::setprecision(2)
@@ -198,6 +210,8 @@ PipelineOutput TargetTrackingPipeline::process_frame(const cv::Mat& frame, float
     output.yaw_speed = yaw_speed_;
     output.target_found = has_target;
     output.target_pos = target_pos;
+    output.roi_active = info.roi_active;
+    output.roi_rect = info.roi_rect;
     output.laser_found = has_laser;
     output.laser_pos = laser_pos;
     output.laser_target_error_px = (has_target && has_laser) ? cv::norm(target_pos - laser_pos) : 0.0f;
