@@ -51,7 +51,7 @@ int main() {
     pipeline_cfg.pitch_pwm_zero_angle = pipeline_cfg.pitch_home;
     pipeline_cfg.yaw_pwm_zero_angle = pipeline_cfg.yaw_home;
     pipeline_cfg.enable_serial = true;
-    pipeline_cfg.serial_device = "/dev/ttyACM1";
+    pipeline_cfg.serial_device = "/dev/ttyACM0";
     pipeline_cfg.serial_baud = 115200;
     pipeline.set_config(pipeline_cfg);
     // 关闭跟踪器的调试输出

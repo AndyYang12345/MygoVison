@@ -140,17 +140,10 @@ PipelineOutput TargetTrackingPipeline::process_frame(const cv::Mat& frame, float
         if (has_target) {
             float dx = 0.0f;
             float dy = 0.0f;
-            if (has_laser) {
-                dx = target_pos.x - laser_pos.x;
-                dy = target_pos.y - laser_pos.y;
-                output.aim_pos = laser_pos;
-                output.aim_from_laser = true;
-            } else {
-                dx = target_pos.x - cx;
-                dy = target_pos.y - cy;
-                output.aim_pos = cv::Point2f(cx, cy);
-                output.aim_from_laser = false;
-            }
+            dx = target_pos.x - cx;
+            dy = target_pos.y - cy;
+            output.aim_pos = cv::Point2f(cx, cy);
+            output.aim_from_laser = false;
             float pitch_error = config_.pitch_error_sign * std::atan2(dy, fy) * 180.0f / static_cast<float>(CV_PI);
             float yaw_error = config_.yaw_error_sign * (-std::atan2(dx, fx) * 180.0f / static_cast<float>(CV_PI));
 
