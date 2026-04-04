@@ -1,12 +1,16 @@
 #include <opencv2/opencv.hpp>
 #include <chrono>
 #include <cmath>
+#include <fstream>
+#include <limits>
 #include <iostream>
 #include <iomanip>
 #include <string>
 #include <thread>
+#include <random>
 
 #include "TargetTracking/GimbalControl.hpp"
+#include "TargetTracking/GeneticAlgorithm.hpp"
 
 namespace {
 
@@ -104,12 +108,17 @@ public:
 } // namespace
 
 int main(int argc, char** argv) {
+    constexpr float kSafeCenterDeg = 135.0f;
+    constexpr float kSafeHalfRangeDeg = 30.0f;
+    constexpr float kSafeMinDeg = kSafeCenterDeg - kSafeHalfRangeDeg;
+    constexpr float kSafeMaxDeg = kSafeCenterDeg + kSafeHalfRangeDeg;
+
     int camera_index = 0;
     int width = 640;
     int height = 480;
     int input_fps = 30;
     int reconnect_ms = 1000;
-    std::string stream_url;
+    std::string stream_url = "http://192.168.43.19:8000/stream";
 
     int serial_baud = 115200;
     std::string serial_device = "/dev/ttyACM0";
@@ -122,24 +131,31 @@ int main(int argc, char** argv) {
     int min_area_px = 600;
 
     // PID参数
-    float pid_p_yaw = 0.35f;      // 偏航比例增益
-    float pid_i_yaw = 0.02f;      // 偏航积分增益
-    float pid_d_yaw = 0.08f;      // 偏航微分增益
-    float pid_p_pitch = 0.35f;    // 俯仰比例增益
-    float pid_i_pitch = 0.02f;    // 俯仰积分增益
-    float pid_d_pitch = 0.08f;    // 俯仰微分增益
-    float max_output_deg = 10.0f; // 单次最大调整角度（度）
-    float deadzone_px = 10.0f;    // 死区（像素）
+    float pid_p_yaw = 0.0500989f;      // 偏航比例增益（像素误差PID）
+    float pid_i_yaw = 0.0296876f;       // 偏航积分增益（像素误差PID）
+    float pid_d_yaw = 0.0289406f;     // 偏航微分增益（像素误差PID）
+    float pid_p_pitch = 0.0500989f;    // 俯仰比例增益（像素误差PID）
+    float pid_i_pitch = 0.0296876f;     // 俯仰积分增益（像素误差PID）
+    float pid_d_pitch = 0.0289406f;   // 俯仰微分增益（像素误差PID）
+    float max_output_deg = 1.5f;  // 单次最大调整角度（度）
+    float deadzone_px = 18.0f;    // 死区（像素）
     
     // 目标角度（绝对角度）
-    float yaw_angle = 270.0f;
-    float pitch_angle = 60.0f;
-    float yaw_zero = 270.0f;
-    float pitch_zero = 60.0f;
+    float yaw_angle = kSafeCenterDeg;
+    float pitch_angle = kSafeCenterDeg;
+    float yaw_zero = kSafeCenterDeg;
+    float pitch_zero = kSafeCenterDeg;
 
-    bool invert_yaw = false;
-    bool invert_pitch = false;
+    bool invert_yaw = true;
+    bool invert_pitch = true;
     bool auto_tracking = true;     // 自动跟踪开关
+
+    // 在线GA参数
+    bool ga_online_enabled = true;
+    int ga_population_size = 10;
+    float ga_eval_seconds = 10.0f;
+    float ga_mutation_sigma = 0.010f;
+    std::string ga_log_path = "ga_best_pid_log.csv";
     
     // 用于调试的显示选项
     bool show_pid_debug = true;
@@ -205,6 +221,18 @@ int main(int argc, char** argv) {
             invert_pitch = true;
         } else if (arg == "--no-auto") {
             auto_tracking = false;
+        } else if (arg == "--ga-online") {
+            ga_online_enabled = true;
+        } else if (arg == "--no-ga-online") {
+            ga_online_enabled = false;
+        } else if (arg == "--ga-pop" && i + 1 < argc) {
+            ga_population_size = parse_or_default(argv[++i], ga_population_size);
+        } else if (arg == "--ga-test-sec" && i + 1 < argc) {
+            ga_eval_seconds = parse_float_or_default(argv[++i], ga_eval_seconds);
+        } else if (arg == "--ga-mutation-sigma" && i + 1 < argc) {
+            ga_mutation_sigma = parse_float_or_default(argv[++i], ga_mutation_sigma);
+        } else if (arg == "--ga-log" && i + 1 < argc) {
+            ga_log_path = argv[++i];
         }
     }
 
@@ -218,11 +246,14 @@ int main(int argc, char** argv) {
     max_output_deg = std::max(max_output_deg, 0.5f);
     input_fps = std::max(input_fps, 1);
     reconnect_ms = std::max(reconnect_ms, 200);
+    ga_population_size = std::max(2, ga_population_size);
+    ga_eval_seconds = std::max(2.0f, ga_eval_seconds);
+    ga_mutation_sigma = std::max(0.001f, ga_mutation_sigma);
 
-    yaw_angle = clampf(yaw_angle, 0.0f, 270.0f);
-    pitch_angle = clampf(pitch_angle, 0.0f, 270.0f);
-    yaw_zero = clampf(yaw_zero, 0.0f, 270.0f);
-    pitch_zero = clampf(pitch_zero, 0.0f, 270.0f);
+    yaw_angle = clampf(yaw_angle, kSafeMinDeg, kSafeMaxDeg);
+    pitch_angle = clampf(pitch_angle, kSafeMinDeg, kSafeMaxDeg);
+    yaw_zero = clampf(yaw_zero, kSafeMinDeg, kSafeMaxDeg);
+    pitch_zero = clampf(pitch_zero, kSafeMinDeg, kSafeMaxDeg);
 
     stream_url = normalize_stream_url(stream_url);
     if (!stream_url.empty() && (stream_url.find('<') != std::string::npos || stream_url.find('>') != std::string::npos)) {
@@ -283,6 +314,7 @@ int main(int argc, char** argv) {
             // 设置初始位置
             gimbal.set_yaw_angle(yaw_angle);
             gimbal.set_pitch_angle(pitch_angle);
+            gimbal.get_command();
             gimbal.send_command();
         }
     }
@@ -290,10 +322,126 @@ int main(int argc, char** argv) {
     // 初始化PID控制器
     PIDController pid_yaw(pid_p_yaw, pid_i_yaw, pid_d_yaw, 50.0f, max_output_deg);
     PIDController pid_pitch(pid_p_pitch, pid_i_pitch, pid_d_pitch, 50.0f, max_output_deg);
+
+    struct OnlineGaIndividual {
+        Genome genome;
+        float fitness = -std::numeric_limits<float>::infinity();
+    };
+    struct OnlineGaMetrics {
+        float err_integral = 0.0f;
+        float err_square_integral = 0.0f;
+        float lost_time = 0.0f;
+        float settle_time = 0.0f;
+        int oscillation_count = 0;
+        bool settled = false;
+        bool has_prev = false;
+        float prev_error_x = 0.0f;
+        float prev_error_y = 0.0f;
+    };
+    enum class OnlineGaPhase {
+        EvaluateGeneration,
+        RunBestAndWaitEnter
+    };
+
+    auto sign_changed = [](float a, float b) {
+        return (a > 0.0f && b < 0.0f) || (a < 0.0f && b > 0.0f);
+    };
+
+    std::random_device rd;
+    std::mt19937 ga_rng(rd());
+    Genome ga_seed;
+    ga_seed.p = pid_p_yaw;
+    ga_seed.i = pid_i_yaw;
+    ga_seed.d = pid_d_yaw;
+    ga_seed.p_min = 0.0f;
+    ga_seed.p_max = 0.25f;
+    ga_seed.i_min = 0.0f;
+    ga_seed.i_max = 0.03f;
+    ga_seed.d_min = 0.0f;
+    ga_seed.d_max = 0.08f;
+    ga_seed.clamp();
+
+    int ga_generation = 0;
+    int ga_candidate_index = 0;
+    OnlineGaPhase ga_phase = OnlineGaPhase::EvaluateGeneration;
+    std::vector<OnlineGaIndividual> ga_population;
+    OnlineGaMetrics ga_metrics;
+
+    auto apply_genome = [&](const Genome& g) {
+        pid_yaw.setGains(g.p, g.i, g.d);
+        pid_pitch.setGains(g.p, g.i, g.d);
+    };
+
+    auto reset_pose_to_center = [&]() {
+        yaw_angle = kSafeCenterDeg;
+        pitch_angle = kSafeCenterDeg;
+        gimbal.set_yaw_angle(yaw_angle);
+        gimbal.set_pitch_angle(pitch_angle);
+        if (enable_serial) {
+            gimbal.get_command();
+            gimbal.send_command();
+        }
+    };
+
+    auto build_generation = [&](const Genome& seed) {
+        ga_population.clear();
+        ga_population.reserve(ga_population_size);
+
+        OnlineGaIndividual elite;
+        elite.genome = seed;
+        elite.genome.clamp();
+        ga_population.push_back(elite);
+
+        for (int i = 1; i < ga_population_size; ++i) {
+            Genome parent_a = seed;
+            Genome parent_b = seed;
+            parent_a.mutate(ga_rng, 1.0f, ga_mutation_sigma);
+            parent_b.mutate(ga_rng, 1.0f, ga_mutation_sigma);
+            Genome child = Genome::crossover(parent_a, parent_b, ga_rng);
+            child.mutate(ga_rng, 1.0f, ga_mutation_sigma * 0.7f);
+            child.clamp();
+
+            OnlineGaIndividual ind;
+            ind.genome = child;
+            ga_population.push_back(ind);
+        }
+    };
+
+    auto reset_ga_metrics = [&]() {
+        ga_metrics = OnlineGaMetrics{};
+    };
+
+    std::ifstream ga_log_check(ga_log_path);
+    const bool ga_log_exists = ga_log_check.good();
+    ga_log_check.close();
+    if (!ga_log_exists) {
+        std::ofstream ga_log_init(ga_log_path, std::ios::out);
+        ga_log_init << "generation,best_index,fitness,p,i,d\n";
+    }
+
+    build_generation(ga_seed);
+    if (!ga_population.empty()) {
+        apply_genome(ga_population.front().genome);
+    }
+    auto ga_eval_start = std::chrono::steady_clock::now();
     
+    // 抗抖参数
+    const float error_lpf_alpha = 0.18f;
+    float filtered_error_x = 0.0f;
+    float filtered_error_y = 0.0f;
+    bool filter_initialized = false;
+    const auto min_send_interval = std::chrono::milliseconds(50);
+    auto last_send_time = std::chrono::steady_clock::now() - min_send_interval;
+
     // 创建显示窗口
     const std::string win_name = "Camera Gimbal Control (Blue Block)";
-    cv::namedWindow(win_name, cv::WINDOW_AUTOSIZE);
+    bool gui_enabled = true;
+    try {
+        cv::namedWindow(win_name, cv::WINDOW_AUTOSIZE);
+    } catch (const cv::Exception& e) {
+        gui_enabled = false;
+        std::cerr << "OpenCV GUI init failed, running headless: " << e.what() << std::endl;
+    }
 
     auto last_tick = std::chrono::steady_clock::now();
     float total_yaw_adjust = 0.0f;
@@ -379,53 +527,65 @@ int main(int argc, char** argv) {
             error_x = best_center.x - static_cast<float>(center.x);
             error_y = best_center.y - static_cast<float>(center.y);
             
-            // 应用死区
-            float deadzone_normalized = deadzone_px;
-            if (std::abs(error_x) < deadzone_normalized) error_x = 0;
-            if (std::abs(error_y) < deadzone_normalized) error_y = 0;
-            
-            // 归一化误差：将像素误差映射到角度误差范围
-            // 假设视场角(FOV)为60度，图像宽度640像素 => 每像素约0.094度
-            float pixels_to_deg_x = 60.0f / width;   // 水平方向每像素对应的角度
-            float pixels_to_deg_y = 45.0f / height;  // 垂直方向每像素对应的角度
-            
-            float angle_error_x = error_x * pixels_to_deg_x;
-            float angle_error_y = error_y * pixels_to_deg_y;
-            
+            // 应用像素死区
+            if (std::abs(error_x) < deadzone_px) error_x = 0;
+            if (std::abs(error_y) < deadzone_px) error_y = 0;
+
+            // 误差低通滤波，降低检测噪声引起的抖动
+            if (!filter_initialized) {
+                filtered_error_x = error_x;
+                filtered_error_y = error_y;
+                filter_initialized = true;
+            } else {
+                filtered_error_x = (1.0f - error_lpf_alpha) * filtered_error_x + error_lpf_alpha * error_x;
+                filtered_error_y = (1.0f - error_lpf_alpha) * filtered_error_y + error_lpf_alpha * error_y;
+            }
+
             if (auto_tracking) {
-                // PID计算需要的角度调整量（度）
-                float yaw_adjust = pid_yaw.update(angle_error_x, dt);
-                float pitch_adjust = pid_pitch.update(angle_error_y, dt);
-                
+                // 直接使用像素误差做PID，输出为角度增量
+                float yaw_adjust = pid_yaw.update(filtered_error_x, dt);
+                float pitch_adjust = pid_pitch.update(filtered_error_y, dt);
+
+                // 接近目标中心时衰减输出，降低来回穿越导致的绕圈抖动
+                const float near_center_px = deadzone_px * 3.0f;
+                const float err_norm_x = std::min(1.0f, std::abs(filtered_error_x) / std::max(near_center_px, 1.0f));
+                const float err_norm_y = std::min(1.0f, std::abs(filtered_error_y) / std::max(near_center_px, 1.0f));
+                const float scale_x = 0.25f + 0.75f * err_norm_x;
+                const float scale_y = 0.25f + 0.75f * err_norm_y;
+                yaw_adjust *= scale_x;
+                pitch_adjust *= scale_y;
+
                 // 应用方向反转
                 if (invert_yaw) yaw_adjust = -yaw_adjust;
                 if (invert_pitch) pitch_adjust = -pitch_adjust;
-                
+
                 // 更新目标角度
                 float new_yaw = yaw_angle + yaw_adjust;
                 float new_pitch = pitch_angle + pitch_adjust;
-                
+
                 // 限制角度范围
-                new_yaw = clampf(new_yaw, 0.0f, 270.0f);
-                new_pitch = clampf(new_pitch, 0.0f, 270.0f);
-                
+                new_yaw = clampf(new_yaw, kSafeMinDeg, kSafeMaxDeg);
+                new_pitch = clampf(new_pitch, kSafeMinDeg, kSafeMaxDeg);
+
                 // 累积总调整量用于显示
                 total_yaw_adjust += std::abs(yaw_adjust);
                 total_pitch_adjust += std::abs(pitch_adjust);
-                
+
                 // 只有角度变化超过阈值时才发送命令
                 if (std::abs(new_yaw - yaw_angle) > 0.1f || std::abs(new_pitch - pitch_angle) > 0.1f) {
                     yaw_angle = new_yaw;
                     pitch_angle = new_pitch;
-                    
+
                     gimbal.set_yaw_angle(yaw_angle);
                     gimbal.set_pitch_angle(pitch_angle);
-                    
-                    if (enable_serial) {
+
+                    if (enable_serial && (now_tick - last_send_time) >= min_send_interval) {
+                        gimbal.get_command();
                         gimbal.send_command();
+                        last_send_time = now_tick;
                     }
                 }
-                
+
                 // 绘制PID调试信息
                 if (show_pid_debug) {
                     std::string pid_info = cv::format(
@@ -442,16 +602,113 @@ int main(int argc, char** argv) {
                      cv::Scalar(0, 255, 255), 2, cv::LINE_AA);
             
             // 绘制误差数值
-            cv::putText(canvas, cv::format("Err X:%.1fpx (%.2fdeg)", error_x, error_x * 60.0f / width),
+                cv::putText(canvas, cv::format("Err X:%.1fpx", error_x),
                         cv::Point(best_box.x, best_box.y + best_box.height + 15),
                         cv::FONT_HERSHEY_SIMPLEX, 0.45, cv::Scalar(255, 255, 0), 1);
-            cv::putText(canvas, cv::format("Err Y:%.1fpx (%.2fdeg)", error_y, error_y * 45.0f / height),
+                cv::putText(canvas, cv::format("Err Y:%.1fpx", error_y),
                         cv::Point(best_box.x, best_box.y + best_box.height + 30),
                         cv::FONT_HERSHEY_SIMPLEX, 0.45, cv::Scalar(255, 255, 0), 1);
         } else {
             // 没有检测到目标时重置PID积分项，防止积分饱和
             pid_yaw.reset();
             pid_pitch.reset();
+            filter_initialized = false;
+        }
+
+        if (ga_online_enabled) {
+            auto_tracking = true;
+
+            const float elapsed_eval =
+                std::chrono::duration<float>(now_tick - ga_eval_start).count();
+
+            if (ga_phase == OnlineGaPhase::EvaluateGeneration &&
+                ga_candidate_index < static_cast<int>(ga_population.size())) {
+                if (!found_blue) {
+                    ga_metrics.lost_time += dt;
+                } else {
+                    const float err_mag = std::sqrt(
+                        filtered_error_x * filtered_error_x +
+                        filtered_error_y * filtered_error_y);
+
+                    if (err_mag > deadzone_px) {
+                        ga_metrics.err_integral += err_mag * dt;
+                        ga_metrics.err_square_integral += err_mag * err_mag * dt;
+
+                        if (ga_metrics.has_prev) {
+                            if (std::abs(filtered_error_x) > deadzone_px &&
+                                sign_changed(filtered_error_x, ga_metrics.prev_error_x)) {
+                                ga_metrics.oscillation_count++;
+                            }
+                            if (std::abs(filtered_error_y) > deadzone_px &&
+                                sign_changed(filtered_error_y, ga_metrics.prev_error_y)) {
+                                ga_metrics.oscillation_count++;
+                            }
+                        }
+                    } else if (!ga_metrics.settled) {
+                        ga_metrics.settled = true;
+                        ga_metrics.settle_time = elapsed_eval;
+                    }
+
+                    ga_metrics.prev_error_x = filtered_error_x;
+                    ga_metrics.prev_error_y = filtered_error_y;
+                    ga_metrics.has_prev = true;
+                }
+
+                if (elapsed_eval >= ga_eval_seconds) {
+                    const float settle_term = ga_metrics.settled ? ga_metrics.settle_time : ga_eval_seconds;
+                    const float cost =
+                        1.0f * ga_metrics.err_integral +
+                        0.01f * ga_metrics.err_square_integral +
+                        2.5f * ga_metrics.lost_time +
+                        0.8f * settle_term +
+                        0.15f * static_cast<float>(ga_metrics.oscillation_count);
+                    ga_population[ga_candidate_index].fitness = -cost;
+
+                    ga_candidate_index++;
+                    if (ga_candidate_index < static_cast<int>(ga_population.size())) {
+                        apply_genome(ga_population[ga_candidate_index].genome);
+                        pid_yaw.output_limit = max_output_deg;
+                        pid_pitch.output_limit = max_output_deg;
+                        filter_initialized = false;
+                        reset_ga_metrics();
+                        reset_pose_to_center();
+                        ga_eval_start = now_tick;
+                    } else {
+                        int best_idx = 0;
+                        float best_fit = ga_population[0].fitness;
+                        for (int i = 1; i < static_cast<int>(ga_population.size()); ++i) {
+                            if (ga_population[i].fitness > best_fit) {
+                                best_fit = ga_population[i].fitness;
+                                best_idx = i;
+                            }
+                        }
+
+                        const Genome best = ga_population[best_idx].genome;
+                        apply_genome(best);
+                        pid_yaw.output_limit = max_output_deg;
+                        pid_pitch.output_limit = max_output_deg;
+                        reset_pose_to_center();
+                        ga_seed = best;
+
+                        std::ofstream ga_log(ga_log_path, std::ios::app);
+                        ga_log << ga_generation << ","
+                               << best_idx << ","
+                               << best_fit << ","
+                               << best.p << ","
+                               << best.i << ","
+                               << best.d << "\n";
+
+                        std::cout << "[GA] Generation " << ga_generation
+                                  << " done. Best idx=" << best_idx
+                                  << " fitness=" << best_fit
+                                  << " PID(" << best.p << ", " << best.i << ", " << best.d << ")"
+                                  << std::endl;
+
+                        ga_phase = OnlineGaPhase::RunBestAndWaitEnter;
+                        reset_ga_metrics();
+                    }
+                }
+            }
         }
 
         // 显示状态信息
@@ -466,7 +723,7 @@ int main(int argc, char** argv) {
                     2);
 
         cv::putText(canvas,
-                    cv::format("Yaw:%.1f/270  Pitch:%.1f/270  Inv:%c%c", 
+                    cv::format("Yaw:%.1f[105-165]  Pitch:%.1f[105-165]  Inv:%c%c", 
                                yaw_angle, pitch_angle,
                                invert_yaw ? 'Y' : 'N',
                                invert_pitch ? 'Y' : 'N'),
@@ -485,6 +742,19 @@ int main(int argc, char** argv) {
                     cv::Scalar(180, 220, 255),
                     1);
 
+        if (ga_online_enabled) {
+            const char* phase_text = (ga_phase == OnlineGaPhase::EvaluateGeneration) ? "EVAL" : "BEST_WAIT_ENTER";
+            const int eval_idx = std::min(ga_candidate_index + 1, std::max(1, ga_population_size));
+            cv::putText(canvas,
+                        cv::format("GA:%s Gen:%d Candidate:%d/%d Test:%.0fs",
+                                   phase_text, ga_generation, eval_idx, ga_population_size, ga_eval_seconds),
+                        cv::Point(16, 132),
+                        cv::FONT_HERSHEY_SIMPLEX,
+                        0.5,
+                        cv::Scalar(170, 255, 170),
+                        1);
+        }
+
         cv::putText(canvas,
                     use_stream ? "Input: stream" : "Input: camera",
                     cv::Point(16, canvas.rows - 60),
@@ -494,7 +764,9 @@ int main(int argc, char** argv) {
                     1);
 
         cv::putText(canvas,
-                    "Q:quit  T:toggle tracking  I/K:inv pitch  J/L:inv yaw  R:reset PID",
+                    ga_online_enabled
+                        ? "Q:quit  Enter:next generation  I/K:inv pitch  J/L:inv yaw"
+                        : "Q:quit  T:toggle tracking  I/K:inv pitch  J/L:inv yaw  R:reset PID",
                     cv::Point(16, canvas.rows - 35),
                     cv::FONT_HERSHEY_SIMPLEX,
                     0.45,
@@ -514,12 +786,39 @@ int main(int argc, char** argv) {
             fps_last_time = now;
         }
 
-        cv::imshow(win_name, canvas);
-
-        int key = cv::waitKey(1);
+        int key = -1;
+        if (gui_enabled) {
+            try {
+                cv::imshow(win_name, canvas);
+                key = cv::waitKey(1);
+            } catch (const cv::Exception& e) {
+                gui_enabled = false;
+                std::cerr << "OpenCV GUI runtime error, disabling display: " << e.what() << std::endl;
+            }
+        }
         if (key == 27 || key == 'q' || key == 'Q') {
             break;
         }
+
+        if (ga_online_enabled && (key == 10 || key == 13) && ga_phase == OnlineGaPhase::RunBestAndWaitEnter) {
+            ga_generation++;
+            ga_candidate_index = 0;
+            build_generation(ga_seed);
+            apply_genome(ga_population.front().genome);
+            pid_yaw.output_limit = max_output_deg;
+            pid_pitch.output_limit = max_output_deg;
+            filter_initialized = false;
+            reset_ga_metrics();
+            reset_pose_to_center();
+            ga_eval_start = std::chrono::steady_clock::now();
+            ga_phase = OnlineGaPhase::EvaluateGeneration;
+            std::cout << "[GA] Start generation " << ga_generation << std::endl;
+        }
+
+        if (ga_online_enabled) {
+            continue;
+        }
+
         // 控制按键
         if (key == 't' || key == 'T') {
             auto_tracking = !auto_tracking;
