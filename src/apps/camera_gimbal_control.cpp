@@ -130,15 +130,16 @@ int main(int argc, char** argv) {
     int blue_v_min = 80;
     int min_area_px = 600;
 
-    // PID参数
-    float pid_p_yaw = 0.0500989f;      // 偏航比例增益（像素误差PID）
-    float pid_i_yaw = 0.0296876f;       // 偏航积分增益（像素误差PID）
-    float pid_d_yaw = 0.0289406f;     // 偏航微分增益（像素误差PID）
-    float pid_p_pitch = 0.0500989f;    // 俯仰比例增益（像素误差PID）
-    float pid_i_pitch = 0.0296876f;     // 俯仰积分增益（像素误差PID）
-    float pid_d_pitch = 0.0289406f;   // 俯仰微分增益（像素误差PID）
-    float max_output_deg = 1.5f;  // 单次最大调整角度（度）
-    float deadzone_px = 18.0f;    // 死区（像素）
+    // PID参数（按角度误差控制，输出为角速度 deg/s）
+//     2.40262,0,0.207062
+    float pid_p_yaw = 2.40262f;
+    float pid_i_yaw = 0.04f;
+    float pid_d_yaw = 0.207062f;
+    float pid_p_pitch = 2.40262f;
+    float pid_i_pitch = 0.04f;
+    float pid_d_pitch = 0.207062f;
+    float max_output_deg = 150.0f;  // 单次最大角速度（度/秒）
+    float deadzone_px = 8.0f;    // 死区（像素）
     
     // 目标角度（绝对角度）
     float yaw_angle = kSafeCenterDeg;
@@ -146,16 +147,20 @@ int main(int argc, char** argv) {
     float yaw_zero = kSafeCenterDeg;
     float pitch_zero = kSafeCenterDeg;
 
-    bool invert_yaw = true;
-    bool invert_pitch = true;
+    bool invert_yaw = false;
+    bool invert_pitch = false;
     bool auto_tracking = true;     // 自动跟踪开关
 
     // 在线GA参数
-    bool ga_online_enabled = true;
+    bool ga_online_enabled = false;
     int ga_population_size = 10;
     float ga_eval_seconds = 10.0f;
     float ga_mutation_sigma = 0.010f;
     std::string ga_log_path = "ga_best_pid_log.csv";
+
+    // 固定PID日志（默认开启，仅在GA关闭时记录）
+    bool fixed_pid_log_enabled = true;
+    std::string fixed_pid_log_path = "fixed_pid_distance_log.csv";
     
     // 用于调试的显示选项
     bool show_pid_debug = true;
@@ -233,6 +238,10 @@ int main(int argc, char** argv) {
             ga_mutation_sigma = parse_float_or_default(argv[++i], ga_mutation_sigma);
         } else if (arg == "--ga-log" && i + 1 < argc) {
             ga_log_path = argv[++i];
+        } else if (arg == "--fixed-log" && i + 1 < argc) {
+            fixed_pid_log_path = argv[++i];
+        } else if (arg == "--no-fixed-log") {
+            fixed_pid_log_enabled = false;
         }
     }
 
@@ -320,8 +329,8 @@ int main(int argc, char** argv) {
     }
 
     // 初始化PID控制器
-    PIDController pid_yaw(pid_p_yaw, pid_i_yaw, pid_d_yaw, 50.0f, max_output_deg);
-    PIDController pid_pitch(pid_p_pitch, pid_i_pitch, pid_d_pitch, 50.0f, max_output_deg);
+    PIDController pid_yaw(pid_p_yaw, pid_i_yaw, pid_d_yaw, 20.0f, max_output_deg);
+    PIDController pid_pitch(pid_p_pitch, pid_i_pitch, pid_d_pitch, 20.0f, max_output_deg);
 
     struct OnlineGaIndividual {
         Genome genome;
@@ -354,11 +363,11 @@ int main(int argc, char** argv) {
     ga_seed.i = pid_i_yaw;
     ga_seed.d = pid_d_yaw;
     ga_seed.p_min = 0.0f;
-    ga_seed.p_max = 0.25f;
+    ga_seed.p_max = 80.0f;
     ga_seed.i_min = 0.0f;
-    ga_seed.i_max = 0.03f;
+    ga_seed.i_max = 5.0f;
     ga_seed.d_min = 0.0f;
-    ga_seed.d_max = 0.08f;
+    ga_seed.d_max = 2.0f;
     ga_seed.clamp();
 
     int ga_generation = 0;
@@ -419,11 +428,26 @@ int main(int argc, char** argv) {
         ga_log_init << "generation,best_index,fitness,p,i,d\n";
     }
 
-    build_generation(ga_seed);
-    if (!ga_population.empty()) {
-        apply_genome(ga_population.front().genome);
+    std::ofstream fixed_pid_log;
+    if (fixed_pid_log_enabled && !ga_online_enabled) {
+        fixed_pid_log.open(fixed_pid_log_path, std::ios::out | std::ios::trunc);
+        if (!fixed_pid_log.is_open()) {
+            std::cerr << "Failed to open fixed PID log file: " << fixed_pid_log_path << std::endl;
+        } else {
+            fixed_pid_log << "timestamp_ms,found_target,target_x,target_y,center_x,center_y,distance_px,"
+                          << "filtered_error_x,filtered_error_y,yaw_angle,pitch_angle,kp_yaw,ki_yaw,kd_yaw,"
+                          << "kp_pitch,ki_pitch,kd_pitch\n";
+            std::cout << "Fixed PID log file: " << fixed_pid_log_path << std::endl;
+        }
     }
+
     auto ga_eval_start = std::chrono::steady_clock::now();
+    if (ga_online_enabled) {
+        build_generation(ga_seed);
+        if (!ga_population.empty()) {
+            apply_genome(ga_population.front().genome);
+        }
+    }
     
     // 抗抖参数
     const float error_lpf_alpha = 0.18f;
@@ -444,6 +468,7 @@ int main(int argc, char** argv) {
     }
 
     auto last_tick = std::chrono::steady_clock::now();
+    const auto run_start_tick = last_tick;
     float total_yaw_adjust = 0.0f;
     float total_pitch_adjust = 0.0f;
     
@@ -517,6 +542,7 @@ int main(int argc, char** argv) {
         // 计算误差（像素坐标）
         float error_x = 0.0f;
         float error_y = 0.0f;
+        float distance_px = -1.0f;
         
         if (found_blue) {
             cv::rectangle(canvas, best_box, cv::Scalar(255, 140, 0), 2);
@@ -526,6 +552,7 @@ int main(int argc, char** argv) {
 
             error_x = best_center.x - static_cast<float>(center.x);
             error_y = best_center.y - static_cast<float>(center.y);
+            distance_px = std::sqrt(error_x * error_x + error_y * error_y);
             
             // 应用像素死区
             if (std::abs(error_x) < deadzone_px) error_x = 0;
@@ -542,48 +569,39 @@ int main(int argc, char** argv) {
             }
 
             if (auto_tracking) {
-                // 直接使用像素误差做PID，输出为角度增量
-                float yaw_adjust = pid_yaw.update(filtered_error_x, dt);
-                float pitch_adjust = pid_pitch.update(filtered_error_y, dt);
+                const float fx = std::max(1.0f, static_cast<float>(frame.cols) * 0.6f);
+                const float fy = std::max(1.0f, static_cast<float>(frame.rows) * 0.6f);
+                const float px_to_deg = 180.0f / static_cast<float>(CV_PI);
 
-                // 接近目标中心时衰减输出，降低来回穿越导致的绕圈抖动
-                const float near_center_px = deadzone_px * 3.0f;
-                const float err_norm_x = std::min(1.0f, std::abs(filtered_error_x) / std::max(near_center_px, 1.0f));
-                const float err_norm_y = std::min(1.0f, std::abs(filtered_error_y) / std::max(near_center_px, 1.0f));
-                const float scale_x = 0.25f + 0.75f * err_norm_x;
-                const float scale_y = 0.25f + 0.75f * err_norm_y;
-                yaw_adjust *= scale_x;
-                pitch_adjust *= scale_y;
+                float yaw_error_deg = -std::atan2(filtered_error_x, fx) * px_to_deg;
+                float pitch_error_deg = -std::atan2(filtered_error_y, fy) * px_to_deg;
 
-                // 应用方向反转
-                if (invert_yaw) yaw_adjust = -yaw_adjust;
-                if (invert_pitch) pitch_adjust = -pitch_adjust;
+                if (invert_yaw) yaw_error_deg = -yaw_error_deg;
+                if (invert_pitch) pitch_error_deg = -pitch_error_deg;
 
-                // 更新目标角度
-                float new_yaw = yaw_angle + yaw_adjust;
-                float new_pitch = pitch_angle + pitch_adjust;
+                // 改成与 TargetTrackingPipeline 一致的速度型 PID：输出角速度，再按 dt 积分到角度
+                float yaw_speed_cmd = pid_yaw.update(yaw_error_deg, dt);
+                float pitch_speed_cmd = pid_pitch.update(pitch_error_deg, dt);
 
-                // 限制角度范围
-                new_yaw = clampf(new_yaw, kSafeMinDeg, kSafeMaxDeg);
-                new_pitch = clampf(new_pitch, kSafeMinDeg, kSafeMaxDeg);
+                float yaw_adjust = yaw_speed_cmd * dt;
+                float pitch_adjust = pitch_speed_cmd * dt;
 
-                // 累积总调整量用于显示
-                total_yaw_adjust += std::abs(yaw_adjust);
-                total_pitch_adjust += std::abs(pitch_adjust);
+                float new_yaw = clampf(yaw_angle + yaw_adjust, kSafeMinDeg, kSafeMaxDeg);
+                float new_pitch = clampf(pitch_angle + pitch_adjust, kSafeMinDeg, kSafeMaxDeg);
 
-                // 只有角度变化超过阈值时才发送命令
-                if (std::abs(new_yaw - yaw_angle) > 0.1f || std::abs(new_pitch - pitch_angle) > 0.1f) {
-                    yaw_angle = new_yaw;
-                    pitch_angle = new_pitch;
+                total_yaw_adjust += std::abs(new_yaw - yaw_angle);
+                total_pitch_adjust += std::abs(new_pitch - pitch_angle);
 
-                    gimbal.set_yaw_angle(yaw_angle);
-                    gimbal.set_pitch_angle(pitch_angle);
+                yaw_angle = new_yaw;
+                pitch_angle = new_pitch;
 
-                    if (enable_serial && (now_tick - last_send_time) >= min_send_interval) {
-                        gimbal.get_command();
-                        gimbal.send_command();
-                        last_send_time = now_tick;
-                    }
+                gimbal.set_yaw_angle(yaw_angle);
+                gimbal.set_pitch_angle(pitch_angle);
+
+                if (enable_serial && (now_tick - last_send_time) >= min_send_interval) {
+                    gimbal.get_command();
+                    gimbal.send_command();
+                    last_send_time = now_tick;
                 }
 
                 // 绘制PID调试信息
@@ -656,11 +674,12 @@ int main(int argc, char** argv) {
 
                 if (elapsed_eval >= ga_eval_seconds) {
                     const float settle_term = ga_metrics.settled ? ga_metrics.settle_time : ga_eval_seconds;
+                    const float convergence_term = settle_term / std::max(ga_eval_seconds, 0.001f);
                     const float cost =
                         1.0f * ga_metrics.err_integral +
                         0.01f * ga_metrics.err_square_integral +
                         2.5f * ga_metrics.lost_time +
-                        0.8f * settle_term +
+                        6.0f * convergence_term +
                         0.15f * static_cast<float>(ga_metrics.oscillation_count);
                     ga_population[ga_candidate_index].fitness = -cost;
 
@@ -708,6 +727,34 @@ int main(int argc, char** argv) {
                         reset_ga_metrics();
                     }
                 }
+            }
+        }
+
+        if (fixed_pid_log.is_open()) {
+            const long long ts_ms = std::chrono::duration_cast<std::chrono::milliseconds>(now_tick - run_start_tick).count();
+            const float target_x = found_blue ? best_center.x : -1.0f;
+            const float target_y = found_blue ? best_center.y : -1.0f;
+
+            fixed_pid_log << ts_ms << ","
+                          << (found_blue ? 1 : 0) << ","
+                          << target_x << ","
+                          << target_y << ","
+                          << center.x << ","
+                          << center.y << ","
+                          << distance_px << ","
+                          << filtered_error_x << ","
+                          << filtered_error_y << ","
+                          << yaw_angle << ","
+                          << pitch_angle << ","
+                          << pid_yaw.kp << ","
+                          << pid_yaw.ki << ","
+                          << pid_yaw.kd << ","
+                          << pid_pitch.kp << ","
+                          << pid_pitch.ki << ","
+                          << pid_pitch.kd << "\n";
+
+            if ((ts_ms % 1000) < 15) {
+                fixed_pid_log.flush();
             }
         }
 
@@ -863,6 +910,10 @@ int main(int argc, char** argv) {
 
     // 清理
     gimbal.close_serial();
+    if (fixed_pid_log.is_open()) {
+        fixed_pid_log.flush();
+        fixed_pid_log.close();
+    }
     cap.release();
     cv::destroyAllWindows();
     
