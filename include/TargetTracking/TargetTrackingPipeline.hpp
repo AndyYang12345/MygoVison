@@ -27,6 +27,9 @@ struct PipelineConfig {
     // PID limits
     float max_speed = 180.0f;
     float integral_limit = 30.0f;
+    float pid_kp = 11.8354f;
+    float pid_ki = 0.315478f;
+    float pid_kd = 0.0215511f;
 
     // Control direction (set to -1.0f when axis direction is reversed)
     float pitch_error_sign = -1.0f;
@@ -99,9 +102,9 @@ public:
 
 private:
     struct PID {
-        float kp{11.8354f};
-        float ki{0.315478f};
-        float kd{0.0215511f};
+        float kp{0.0f};
+        float ki{0.0f};
+        float kd{0.0f};
         float integral{0.0f};
         float prev_error{0.0f};
         bool has_prev{false};
@@ -110,6 +113,7 @@ private:
     float clamp_value(float v, float lo, float hi) const;
     float pid_step(float error, float dt, PID& pid, float integral_limit);
     void reset_pid(PID& pid);
+    void apply_pid_gains_from_config();
 
     PipelineConfig config_;
     TrackState state_ = TrackState::Waiting;

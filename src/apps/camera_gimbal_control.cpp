@@ -133,11 +133,11 @@ int main(int argc, char** argv) {
     // PID参数（按角度误差控制，输出为角速度 deg/s）
 //     2.40262,0,0.207062
     float pid_p_yaw = 2.40262f;
-    float pid_i_yaw = 0.04f;
-    float pid_d_yaw = 0.207062f;
+    float pid_i_yaw = 0.05f;
+    float pid_d_yaw = 0.307062f;
     float pid_p_pitch = 2.40262f;
-    float pid_i_pitch = 0.04f;
-    float pid_d_pitch = 0.207062f;
+    float pid_i_pitch = 0.05f;
+    float pid_d_pitch = 0.307062f;
     float max_output_deg = 150.0f;  // 单次最大角速度（度/秒）
     float deadzone_px = 8.0f;    // 死区（像素）
     
@@ -450,11 +450,25 @@ int main(int argc, char** argv) {
     }
     
     // 抗抖参数
-    const float error_lpf_alpha = 0.18f;
+    const float error_lpf_alpha = 0.55f;
     float filtered_error_x = 0.0f;
     float filtered_error_y = 0.0f;
     bool filter_initialized = false;
-    const auto min_send_interval = std::chrono::milliseconds(50);
+    
+    // 目标中心卡尔曼滤波（状态: x, y, vx, vy）
+    cv::KalmanFilter target_kf(4, 2, 0, CV_32F);
+    target_kf.measurementMatrix = cv::Mat::zeros(2, 4, CV_32F);
+    target_kf.measurementMatrix.at<float>(0, 0) = 1.0f;
+    target_kf.measurementMatrix.at<float>(1, 1) = 1.0f;
+    target_kf.transitionMatrix = cv::Mat::eye(4, 4, CV_32F);
+    target_kf.processNoiseCov = cv::Mat::eye(4, 4, CV_32F) * 0.2f;
+    target_kf.measurementNoiseCov = cv::Mat::eye(2, 2, CV_32F) * 1.0f;
+    target_kf.errorCovPost = cv::Mat::eye(4, 4, CV_32F);
+    bool kf_initialized = false;
+    int kf_lost_frames = 0;
+    const int kf_max_predict_frames = 4;
+
+    const auto min_send_interval = std::chrono::milliseconds(25);
     auto last_send_time = std::chrono::steady_clock::now() - min_send_interval;
 
     // 创建显示窗口
@@ -494,6 +508,13 @@ int main(int argc, char** argv) {
         
         // 限制dt范围
         dt = std::max(0.005f, std::min(dt, 0.1f));
+
+        target_kf.transitionMatrix.at<float>(0, 2) = dt;
+        target_kf.transitionMatrix.at<float>(1, 3) = dt;
+        cv::Mat kf_pred = target_kf.predict();
+        const cv::Point2f pred_center(
+            kf_pred.at<float>(0),
+            kf_pred.at<float>(1));
 
         // 颜色检测
         cv::Mat hsv;
@@ -543,6 +564,9 @@ int main(int argc, char** argv) {
         float error_x = 0.0f;
         float error_y = 0.0f;
         float distance_px = -1.0f;
+        bool has_control_target = false;
+        cv::Point2f control_center(0.0f, 0.0f);
+        bool using_predicted_target = false;
         
         if (found_blue) {
             cv::rectangle(canvas, best_box, cv::Scalar(255, 140, 0), 2);
@@ -550,19 +574,61 @@ int main(int argc, char** argv) {
             cv::putText(canvas, "blue_target", cv::Point(best_box.x, std::max(20, best_box.y - 8)),
                         cv::FONT_HERSHEY_SIMPLEX, 0.56, cv::Scalar(255, 140, 0), 2);
 
-            error_x = best_center.x - static_cast<float>(center.x);
-            error_y = best_center.y - static_cast<float>(center.y);
+            if (!kf_initialized) {
+                target_kf.statePost.at<float>(0) = best_center.x;
+                target_kf.statePost.at<float>(1) = best_center.y;
+                target_kf.statePost.at<float>(2) = 0.0f;
+                target_kf.statePost.at<float>(3) = 0.0f;
+                kf_initialized = true;
+            }
+
+            cv::Mat measurement(2, 1, CV_32F);
+            measurement.at<float>(0) = best_center.x;
+            measurement.at<float>(1) = best_center.y;
+            target_kf.correct(measurement);
+            // 优先使用实时检测值做控制，避免“预测+校正”在闭环里引入切向漂移
+            control_center = best_center;
+            has_control_target = true;
+            kf_lost_frames = 0;
+        } else if (kf_initialized && kf_lost_frames < kf_max_predict_frames) {
+            control_center = pred_center;
+            has_control_target = true;
+            using_predicted_target = true;
+            kf_lost_frames++;
+        }
+
+        if (has_control_target) {
+            error_x = control_center.x - static_cast<float>(center.x);
+            error_y = control_center.y - static_cast<float>(center.y);
             distance_px = std::sqrt(error_x * error_x + error_y * error_y);
+
+            cv::circle(canvas,
+                       cv::Point(static_cast<int>(control_center.x), static_cast<int>(control_center.y)),
+                       4,
+                       using_predicted_target ? cv::Scalar(0, 165, 255) : cv::Scalar(255, 255, 0),
+                       2);
+            if (using_predicted_target) {
+                cv::putText(canvas,
+                            "pred_target",
+                            cv::Point(static_cast<int>(control_center.x) + 8, static_cast<int>(control_center.y) - 6),
+                            cv::FONT_HERSHEY_SIMPLEX,
+                            0.45,
+                            cv::Scalar(0, 165, 255),
+                            1);
+            }
             
             // 应用像素死区
             if (std::abs(error_x) < deadzone_px) error_x = 0;
             if (std::abs(error_y) < deadzone_px) error_y = 0;
 
-            // 误差低通滤波，降低检测噪声引起的抖动
+            // 误差低通滤波，检测有效时平滑；仅预测时不再叠加滤波，降低相位滞后
             if (!filter_initialized) {
                 filtered_error_x = error_x;
                 filtered_error_y = error_y;
                 filter_initialized = true;
+            } else if (using_predicted_target) {
+                filtered_error_x = error_x;
+                filtered_error_y = error_y;
             } else {
                 filtered_error_x = (1.0f - error_lpf_alpha) * filtered_error_x + error_lpf_alpha * error_x;
                 filtered_error_y = (1.0f - error_lpf_alpha) * filtered_error_y + error_lpf_alpha * error_y;
@@ -595,6 +661,8 @@ int main(int argc, char** argv) {
                 yaw_angle = new_yaw;
                 pitch_angle = new_pitch;
 
+                gimbal.set_yaw_speed(std::abs(yaw_speed_cmd));
+                gimbal.set_pitch_speed(std::abs(pitch_speed_cmd));
                 gimbal.set_yaw_angle(yaw_angle);
                 gimbal.set_pitch_angle(pitch_angle);
 
@@ -616,7 +684,7 @@ int main(int argc, char** argv) {
             }
             
             // 绘制误差线和目标指示
-            cv::line(canvas, center, cv::Point(static_cast<int>(best_center.x), static_cast<int>(best_center.y)),
+            cv::line(canvas, center, cv::Point(static_cast<int>(control_center.x), static_cast<int>(control_center.y)),
                      cv::Scalar(0, 255, 255), 2, cv::LINE_AA);
             
             // 绘制误差数值

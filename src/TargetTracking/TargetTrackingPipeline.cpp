@@ -9,6 +9,7 @@
 TargetTrackingPipeline::TargetTrackingPipeline() {
     gimbal_.set_pitch_zero_angle_deg(config_.pitch_pwm_zero_angle);
     gimbal_.set_yaw_zero_angle_deg(config_.yaw_pwm_zero_angle);
+    apply_pid_gains_from_config();
     pitch_angle_ = config_.pitch_home;
     yaw_angle_ = config_.yaw_home;
 }
@@ -17,6 +18,7 @@ void TargetTrackingPipeline::set_config(const PipelineConfig& config) {
     config_ = config;
     gimbal_.set_pitch_zero_angle_deg(config_.pitch_pwm_zero_angle);
     gimbal_.set_yaw_zero_angle_deg(config_.yaw_pwm_zero_angle);
+    apply_pid_gains_from_config();
     pitch_angle_ = config_.pitch_home;
     yaw_angle_ = config_.yaw_home;
 }
@@ -326,4 +328,15 @@ void TargetTrackingPipeline::reset_pid(PID& pid) {
     pid.integral = 0.0f;
     pid.prev_error = 0.0f;
     pid.has_prev = false;
+}
+
+void TargetTrackingPipeline::apply_pid_gains_from_config() {
+    pid_pitch_.kp = config_.pid_kp;
+    pid_pitch_.ki = config_.pid_ki;
+    pid_pitch_.kd = config_.pid_kd;
+    pid_yaw_.kp = config_.pid_kp;
+    pid_yaw_.ki = config_.pid_ki;
+    pid_yaw_.kd = config_.pid_kd;
+    reset_pid(pid_pitch_);
+    reset_pid(pid_yaw_);
 }
