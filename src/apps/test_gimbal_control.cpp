@@ -51,9 +51,10 @@ int main() {
     pipeline_cfg.yaw_home = 135.0f;
     pipeline_cfg.pitch_pwm_zero_angle = pipeline_cfg.pitch_home;
     pipeline_cfg.yaw_pwm_zero_angle = 135.0f;
-    pipeline_cfg.pid_kp = 15.40262f;
+    pipeline_cfg.pid_kp = 18.40262f;
     pipeline_cfg.pid_ki = 0.05f;
     pipeline_cfg.pid_kd = 0.307062f;
+    pipeline_cfg.scan_pitch_freq = 0.30f; // 增加 pitch 扫描速度（默认 0.10 Hz）
     pipeline_cfg.enable_serial = true;
     pipeline_cfg.serial_device = "/dev/ttyACM0";
     pipeline_cfg.serial_baud = 115200;

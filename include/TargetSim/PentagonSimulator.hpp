@@ -43,7 +43,7 @@ public:
         CameraConfig(int w = 640, int h = 640, float f = 30.0f)
             : width(w), height(h), fps(f),
               fx(381.625f), fy(381.625f), cx(320.0f), cy(320.0f),
-              position(0, -100, 1000), pitch(0.35f), yaw(0.0f),
+              position(0, -100, 1000), pitch(0.0f), yaw(0.0f),
                             enable_laser(true), laser_offset_left_mm(0.0f), laser_offset_up_mm(20.0f), laser_dot_radius_px(4.0f),
                             pitch_axis_below_optical_center_mm(0.0f), yaw_axis_behind_pitch_axis_mm(0.0f) {}
     };

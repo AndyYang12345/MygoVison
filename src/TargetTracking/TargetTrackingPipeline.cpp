@@ -123,7 +123,7 @@ PipelineOutput TargetTrackingPipeline::process_frame(const cv::Mat& frame, float
         const float yaw_span = std::max(0.0f, yaw_max - yaw_min);
 
         // t=0 从 home 出发优先向左；随后在 [yaw_min, yaw_max] 匀速往返。
-        const float tri_phase = std::fmod(yaw_phase01 + 0.5f, 1.0f);
+        const float tri_phase = std::fmod(yaw_phase01 + 0.25f, 1.0f);
         if (yaw_span < 1e-4f) {
             yaw_angle_ = config_.yaw_home;
             yaw_speed_ = 0.0f;
