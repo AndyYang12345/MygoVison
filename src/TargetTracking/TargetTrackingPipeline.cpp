@@ -106,12 +106,39 @@ PipelineOutput TargetTrackingPipeline::process_frame(const cv::Mat& frame, float
         yaw_speed_ = 0.0f;
     } else if (state_ == TrackState::Searching) {
         scan_time_ += dt;
-        float yaw_phase = 2.0f * static_cast<float>(CV_PI) * config_.scan_yaw_freq * scan_time_ + config_.scan_yaw_phase;
-        float pitch_phase = 2.0f * static_cast<float>(CV_PI) * config_.scan_pitch_freq * scan_time_ + config_.scan_pitch_phase;
-        yaw_angle_ = config_.yaw_home + config_.scan_yaw_amp * std::sin(yaw_phase);
+        // Yaw 三角扫描（边界自适应）：避免 home±amp 超出机械范围后被夹平。
+        const float yaw_freq = std::max(1e-3f, config_.scan_yaw_freq);
+        float yaw_phase01 = std::fmod(scan_time_ * yaw_freq +
+                                      config_.scan_yaw_phase / (2.0f * static_cast<float>(CV_PI)),
+                                      1.0f);
+        if (yaw_phase01 < 0.0f) {
+            yaw_phase01 += 1.0f;
+        }
+
+        const float yaw_amp = std::max(0.0f, config_.scan_yaw_amp);
+        const float yaw_left = std::min(yaw_amp, std::max(0.0f, config_.yaw_home - 0.0f));
+        const float yaw_right = std::min(yaw_amp, std::max(0.0f, 270.0f - config_.yaw_home));
+        const float yaw_min = config_.yaw_home - yaw_left;
+        const float yaw_max = config_.yaw_home + yaw_right;
+        const float yaw_span = std::max(0.0f, yaw_max - yaw_min);
+
+        // t=0 从 home 出发优先向左；随后在 [yaw_min, yaw_max] 匀速往返。
+        const float tri_phase = std::fmod(yaw_phase01 + 0.5f, 1.0f);
+        if (yaw_span < 1e-4f) {
+            yaw_angle_ = config_.yaw_home;
+            yaw_speed_ = 0.0f;
+        } else {
+            const float tri01 = 1.0f - std::abs(2.0f * tri_phase - 1.0f); // [0,1]
+            yaw_angle_ = yaw_min + yaw_span * tri01;
+            const float sweep_speed = 2.0f * yaw_span * yaw_freq;
+            yaw_speed_ = (tri_phase < 0.5f ? -sweep_speed : sweep_speed);
+        }
+
+        // Pitch保持0相位起始：从中心开始向下做正弦震荡。
+        const float pitch_phase = 2.0f * static_cast<float>(CV_PI) * config_.scan_pitch_freq * scan_time_;
         pitch_angle_ = config_.pitch_home + config_.scan_pitch_amp * std::sin(pitch_phase);
-        yaw_speed_ = config_.scan_yaw_amp * 2.0f * static_cast<float>(CV_PI) * config_.scan_yaw_freq * std::cos(yaw_phase);
-        pitch_speed_ = config_.scan_pitch_amp * 2.0f * static_cast<float>(CV_PI) * config_.scan_pitch_freq * std::cos(pitch_phase);
+        pitch_speed_ = config_.scan_pitch_amp * 2.0f * static_cast<float>(CV_PI) *
+                       config_.scan_pitch_freq * std::cos(pitch_phase);
 
         if (has_target) {
             lock_count_++;
@@ -146,8 +173,12 @@ PipelineOutput TargetTrackingPipeline::process_frame(const cv::Mat& frame, float
             dy = target_pos.y - cy;
             output.aim_pos = cv::Point2f(cx, cy);
             output.aim_from_laser = false;
-            float pitch_error = config_.pitch_error_sign * std::atan2(dy, fy) * 180.0f / static_cast<float>(CV_PI);
-            float yaw_error = config_.yaw_error_sign * (-std::atan2(dx, fx) * 180.0f / static_cast<float>(CV_PI));
+            // 使用角度误差驱动PID，避免归一化误差量级过小导致控制输出不足。
+            // 通过 atan2(error_px, focal_px) 计算视线偏角（单位：deg）。
+            float pitch_error = config_.pitch_error_sign *
+                                ( - std::atan2(dy, fy) * 180.0f / static_cast<float>(CV_PI));
+            float yaw_error = config_.yaw_error_sign *
+                              ( - std::atan2(dx, fx) * 180.0f / static_cast<float>(CV_PI));
 
             if (config_.print_debug) {
                 std::cout << std::fixed << std::setprecision(2)
@@ -169,6 +200,8 @@ PipelineOutput TargetTrackingPipeline::process_frame(const cv::Mat& frame, float
 
             pitch_angle_ += pitch_speed_ * dt;
             yaw_angle_ += yaw_speed_ * dt;
+            pitch_angle_ = clamp_value(pitch_angle_, 0.0f, 270.0f);
+            yaw_angle_ = clamp_value(yaw_angle_, 0.0f, 270.0f);
 
             lost_count_ = 0;
         } else {

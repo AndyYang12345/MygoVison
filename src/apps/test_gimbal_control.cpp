@@ -47,9 +47,10 @@ int main() {
     pipeline_cfg.cx = cam_cfg.cx;
     pipeline_cfg.cy = cam_cfg.cy;
     pipeline_cfg.pitch_home = 60.0f; // 向下旋转30度（90-30）
-    pipeline_cfg.yaw_home = 270.0f;  // 初始位设为yaw上限，便于观察边界扫描
+    // Yaw 物理定义：PWM=1500 对应 135deg（正前方），左右可各转 135deg。
+    pipeline_cfg.yaw_home = 135.0f;
     pipeline_cfg.pitch_pwm_zero_angle = pipeline_cfg.pitch_home;
-    pipeline_cfg.yaw_pwm_zero_angle = pipeline_cfg.yaw_home;
+    pipeline_cfg.yaw_pwm_zero_angle = 135.0f;
     pipeline_cfg.pid_kp = 15.40262f;
     pipeline_cfg.pid_ki = 0.05f;
     pipeline_cfg.pid_kd = 0.307062f;
@@ -98,7 +99,7 @@ int main() {
     TrackState last_state = TrackState::Waiting;
 
     const float sim_pitch_neutral_deg = 60.0f;
-    const float sim_yaw_neutral_deg = 105.0f;
+    const float sim_yaw_neutral_deg = 135.0f;
 
     if (auto_start_search) {
         pipeline.handle_key(' ');

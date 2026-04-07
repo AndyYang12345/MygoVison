@@ -17,12 +17,12 @@ struct PipelineConfig {
     float cy = -1.0f;
 
     // Home angles
-    float pitch_home = 60.0f;
-    float yaw_home = 105.0f;
+    float pitch_home = 135.0f;
+    float yaw_home = 135.0f;
 
     // Servo PWM zero-angle calibration (angle that maps to PWM=1500)
-    float pitch_pwm_zero_angle = 60.0f;
-    float yaw_pwm_zero_angle = 105.0f;
+    float pitch_pwm_zero_angle = 135.0f;
+    float yaw_pwm_zero_angle = 135.0f;
 
     // PID limits
     float max_speed = 180.0f;
@@ -40,14 +40,14 @@ struct PipelineConfig {
     int lost_required = 10;
 
     // Search scan parameters
-    float scan_yaw_amp = 30.0f;
-    float scan_pitch_amp = 15.0f;
+    float scan_yaw_amp = 60.0f;
+    float scan_pitch_amp = 30.0f;
     float scan_yaw_freq = 0.15f;   // Hz
     float scan_pitch_freq = 0.10f; // Hz
     // yaw 默认从中心起扫（1500PWM 对应零位），随后左右震荡
     float scan_yaw_phase = 0.0f;
     // pitch 默认从上方向下扫（围绕零位/1500PWM往返）
-    float scan_pitch_phase = static_cast<float>(CV_PI) * 0.5f;
+    float scan_pitch_phase = 0.0f;
 
     // Output behavior
     bool draw_overlay = true;
