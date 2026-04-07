@@ -106,8 +106,8 @@ PipelineOutput TargetTrackingPipeline::process_frame(const cv::Mat& frame, float
         yaw_speed_ = 0.0f;
     } else if (state_ == TrackState::Searching) {
         scan_time_ += dt;
-        float yaw_phase = 2.0f * static_cast<float>(CV_PI) * config_.scan_yaw_freq * scan_time_;
-        float pitch_phase = 2.0f * static_cast<float>(CV_PI) * config_.scan_pitch_freq * scan_time_ + config_.scan_phase;
+        float yaw_phase = 2.0f * static_cast<float>(CV_PI) * config_.scan_yaw_freq * scan_time_ + config_.scan_yaw_phase;
+        float pitch_phase = 2.0f * static_cast<float>(CV_PI) * config_.scan_pitch_freq * scan_time_ + config_.scan_pitch_phase;
         yaw_angle_ = config_.yaw_home + config_.scan_yaw_amp * std::sin(yaw_phase);
         pitch_angle_ = config_.pitch_home + config_.scan_pitch_amp * std::sin(pitch_phase);
         yaw_speed_ = config_.scan_yaw_amp * 2.0f * static_cast<float>(CV_PI) * config_.scan_yaw_freq * std::cos(yaw_phase);

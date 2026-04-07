@@ -11,24 +11,31 @@
 
 class ServoMotor{
 public:
+    /// 创建舵机对象并记录ID。
     ServoMotor(int id) : _id(id),_angle(0.0f),_speed(0.0f){
         std::cout<<"ServoMotor "<<_id<<" created."<<std::endl;
     };
+    /// 设置目标角度（单位：度）。
     void set_angle(float angle){
         _angle = angle;
     }
+    /// 在当前角度基础上叠加增量。
     void add_angle(float delta){
         _angle += delta;
     }
+    /// 获取当前目标角度。
     float get_angle() const{
         return _angle;
     }
+    /// 设置角速度（单位：度/秒）。
     void set_speed(float speed){
         _speed = speed;
     }
+    /// 获取当前角速度设定值。
     float get_speed() const{
         return _speed;
     }
+    /// 按角度与速度生成舵机串口命令片段。
     void generate_command(float min_angle_deg, float max_angle_deg){
         const float clamped = std::clamp(_angle, min_angle_deg, max_angle_deg);
         _pwm = angle_to_pwm(clamped, min_angle_deg, max_angle_deg);
@@ -45,12 +52,15 @@ public:
             << "T" << std::setw(4) << std::setfill('0') << _time_ms << "!";
         _cmd = oss.str();
     }
+    /// 返回最近一次生成的命令缓冲。
     const std::string& get_command_buffer() const{
         return _cmd;
     }
+    /// 返回最近一次生成的PWM值。
     int get_pwm() const{
         return _pwm;
     }
+    /// 返回最近一次生成的运动时长（ms）。
     int get_time_ms() const{
         return _time_ms;
     }
@@ -63,6 +73,7 @@ private:
     int _time_ms{0};
     std::string _cmd;
 
+    /// 将角度线性映射到 500-2500 PWM。
     static int angle_to_pwm(float angle_deg, float min_angle_deg, float max_angle_deg){
         const float span = max_angle_deg - min_angle_deg;
         if (span <= 0.0f) return 1500;
@@ -74,27 +85,35 @@ private:
 
 class GimbalControl{
 public:
+    /// 初始化双轴云台控制器。
     GimbalControl(){
         std::cout << "Gimbal created." << std::endl;
     }
+    /// 设置俯仰轴PWM零位对应角度。
     void set_pitch_zero_angle_deg(float angle){
         _pitch_zero_angle_deg = angle;
     }
+    /// 设置偏航轴PWM零位对应角度。
     void set_yaw_zero_angle_deg(float angle){
         _yaw_zero_angle_deg = angle;
     }
+    /// 设置俯仰目标角度。
     void set_pitch_angle(float angle){
         _pitch_motor.set_angle(angle);
     }
+    /// 设置偏航目标角度。
     void set_yaw_angle(float angle){
         _yaw_motor.set_angle(angle);
     }
+    /// 设置俯仰速度约束。
     void set_pitch_speed(float speed){
         _pitch_motor.set_speed(speed);
     }
+    /// 设置偏航速度约束。
     void set_yaw_speed(float speed){
         _yaw_motor.set_speed(speed);
     }
+    /// 组合各通道并生成整包云台控制命令。
     void get_command(){
         _yaw_motor.generate_command(0.0f, 270.0f);
         _pitch_motor.generate_command(0.0f, 270.0f);
@@ -126,18 +145,23 @@ public:
         _command_buffer = oss.str();
         std::cout << "Generated command: " << _command_buffer << std::endl;
     }
+    /// 获取当前完整命令字符串。
     const std::string& get_command_buffer() const{
         return _command_buffer;
     }
+    /// 打开串口设备用于实际发送控制命令。
     bool open_serial(const std::string& device, int baudrate){
         return _serial.open(device, baudrate);
     }
+    /// 关闭串口。
     void close_serial(){
         _serial.close();
     }
+    /// 查询串口是否可用。
     bool is_serial_open() const{
         return _serial.is_open();
     }
+    /// 发送当前自动生成命令。
     bool send_command(){
         if (!_serial.is_open()) {
             std::cout << "Sending command (serial closed): " << get_command_buffer() << std::endl;
@@ -145,6 +169,7 @@ public:
         }
         return _serial.write_string(get_command_buffer());
     }
+    /// 发送用户提供的原始命令。
     bool send_raw_command(const std::string& command){
         if (!_serial.is_open()) {
             std::cout << "Sending raw command (serial closed): " << command << std::endl;

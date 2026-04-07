@@ -50,7 +50,7 @@ int main() {
     pipeline_cfg.yaw_home = 270.0f;  // 初始位设为yaw上限，便于观察边界扫描
     pipeline_cfg.pitch_pwm_zero_angle = pipeline_cfg.pitch_home;
     pipeline_cfg.yaw_pwm_zero_angle = pipeline_cfg.yaw_home;
-    pipeline_cfg.pid_kp = 2.40262f;
+    pipeline_cfg.pid_kp = 15.40262f;
     pipeline_cfg.pid_ki = 0.05f;
     pipeline_cfg.pid_kd = 0.307062f;
     pipeline_cfg.enable_serial = true;
