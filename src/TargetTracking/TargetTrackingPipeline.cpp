@@ -7,6 +7,7 @@
 #include <sstream>
 
 TargetTrackingPipeline::TargetTrackingPipeline() {
+    control_enabled_ = config_.control_enabled;
     gimbal_.set_pitch_zero_angle_deg(config_.pitch_pwm_zero_angle);
     gimbal_.set_yaw_zero_angle_deg(config_.yaw_pwm_zero_angle);
     apply_pid_gains_from_config();
@@ -16,6 +17,7 @@ TargetTrackingPipeline::TargetTrackingPipeline() {
 
 void TargetTrackingPipeline::set_config(const PipelineConfig& config) {
     config_ = config;
+    control_enabled_ = config_.control_enabled;
     gimbal_.set_pitch_zero_angle_deg(config_.pitch_pwm_zero_angle);
     gimbal_.set_yaw_zero_angle_deg(config_.yaw_pwm_zero_angle);
     apply_pid_gains_from_config();
@@ -33,6 +35,25 @@ void TargetTrackingPipeline::set_tracker_config(const TrackerConfig& config) {
 
 TrackerConfig TargetTrackingPipeline::get_tracker_config() const {
     return tracker_.get_config();
+}
+
+void TargetTrackingPipeline::set_control_enabled(bool enabled) {
+    control_enabled_ = enabled;
+    config_.control_enabled = enabled;
+    if (!enabled) {
+        pitch_speed_ = 0.0f;
+        yaw_speed_ = 0.0f;
+        reset_pid(pid_pitch_);
+        reset_pid(pid_yaw_);
+    }
+}
+
+void TargetTrackingPipeline::start_tracking() {
+    state_ = TrackState::Tracking;
+    lock_count_ = 0;
+    lost_count_ = 0;
+    reset_pid(pid_pitch_);
+    reset_pid(pid_yaw_);
 }
 
 void TargetTrackingPipeline::reset() {
@@ -105,40 +126,42 @@ PipelineOutput TargetTrackingPipeline::process_frame(const cv::Mat& frame, float
         pitch_speed_ = 0.0f;
         yaw_speed_ = 0.0f;
     } else if (state_ == TrackState::Searching) {
-        scan_time_ += dt;
-        // Yaw 三角扫描（边界自适应）：避免 home±amp 超出机械范围后被夹平。
-        const float yaw_freq = std::max(1e-3f, config_.scan_yaw_freq);
-        float yaw_phase01 = std::fmod(scan_time_ * yaw_freq +
-                                      config_.scan_yaw_phase / (2.0f * static_cast<float>(CV_PI)),
-                                      1.0f);
-        if (yaw_phase01 < 0.0f) {
-            yaw_phase01 += 1.0f;
-        }
+        if (control_enabled_) {
+            scan_time_ += dt;
+            const float yaw_freq = std::max(1e-3f, config_.scan_yaw_freq);
+            float yaw_phase01 = std::fmod(scan_time_ * yaw_freq +
+                                          config_.scan_yaw_phase / (2.0f * static_cast<float>(CV_PI)),
+                                          1.0f);
+            if (yaw_phase01 < 0.0f) {
+                yaw_phase01 += 1.0f;
+            }
 
-        const float yaw_amp = std::max(0.0f, config_.scan_yaw_amp);
-        const float yaw_left = std::min(yaw_amp, std::max(0.0f, config_.yaw_home - 0.0f));
-        const float yaw_right = std::min(yaw_amp, std::max(0.0f, 270.0f - config_.yaw_home));
-        const float yaw_min = config_.yaw_home - yaw_left;
-        const float yaw_max = config_.yaw_home + yaw_right;
-        const float yaw_span = std::max(0.0f, yaw_max - yaw_min);
+            const float yaw_amp = std::max(0.0f, config_.scan_yaw_amp);
+            const float yaw_left = std::min(yaw_amp, std::max(0.0f, config_.yaw_home - 0.0f));
+            const float yaw_right = std::min(yaw_amp, std::max(0.0f, 270.0f - config_.yaw_home));
+            const float yaw_min = config_.yaw_home - yaw_left;
+            const float yaw_max = config_.yaw_home + yaw_right;
+            const float yaw_span = std::max(0.0f, yaw_max - yaw_min);
 
-        // t=0 从 home 出发优先向左；随后在 [yaw_min, yaw_max] 匀速往返。
-        const float tri_phase = std::fmod(yaw_phase01 + 0.25f, 1.0f);
-        if (yaw_span < 1e-4f) {
-            yaw_angle_ = config_.yaw_home;
-            yaw_speed_ = 0.0f;
+            const float tri_phase = std::fmod(yaw_phase01 + 0.25f, 1.0f);
+            if (yaw_span < 1e-4f) {
+                yaw_angle_ = config_.yaw_home;
+                yaw_speed_ = 0.0f;
+            } else {
+                const float tri01 = 1.0f - std::abs(2.0f * tri_phase - 1.0f);
+                yaw_angle_ = yaw_min + yaw_span * tri01;
+                const float sweep_speed = 2.0f * yaw_span * yaw_freq;
+                yaw_speed_ = (tri_phase < 0.5f ? -sweep_speed : sweep_speed);
+            }
+
+            const float pitch_phase = 2.0f * static_cast<float>(CV_PI) * config_.scan_pitch_freq * scan_time_;
+            pitch_angle_ = config_.pitch_home + config_.scan_pitch_amp * std::sin(pitch_phase);
+            pitch_speed_ = config_.scan_pitch_amp * 2.0f * static_cast<float>(CV_PI) *
+                           config_.scan_pitch_freq * std::cos(pitch_phase);
         } else {
-            const float tri01 = 1.0f - std::abs(2.0f * tri_phase - 1.0f); // [0,1]
-            yaw_angle_ = yaw_min + yaw_span * tri01;
-            const float sweep_speed = 2.0f * yaw_span * yaw_freq;
-            yaw_speed_ = (tri_phase < 0.5f ? -sweep_speed : sweep_speed);
+            pitch_speed_ = 0.0f;
+            yaw_speed_ = 0.0f;
         }
-
-        // Pitch保持0相位起始：从中心开始向下做正弦震荡。
-        const float pitch_phase = 2.0f * static_cast<float>(CV_PI) * config_.scan_pitch_freq * scan_time_;
-        pitch_angle_ = config_.pitch_home + config_.scan_pitch_amp * std::sin(pitch_phase);
-        pitch_speed_ = config_.scan_pitch_amp * 2.0f * static_cast<float>(CV_PI) *
-                       config_.scan_pitch_freq * std::cos(pitch_phase);
 
         if (has_target) {
             lock_count_++;
@@ -166,19 +189,19 @@ PipelineOutput TargetTrackingPipeline::process_frame(const cv::Mat& frame, float
             }
         }
     } else if (state_ == TrackState::Tracking) {
-        if (has_target) {
-            float dx = 0.0f;
-            float dy = 0.0f;
-            dx = target_pos.x - cx;
-            dy = target_pos.y - cy;
+        if (!control_enabled_) {
+            pitch_speed_ = 0.0f;
+            yaw_speed_ = 0.0f;
+        } else if (has_target) {
+            const float dx = target_pos.x - cx;
+            const float dy = target_pos.y - cy;
             output.aim_pos = cv::Point2f(cx, cy);
             output.aim_from_laser = false;
-            // 使用角度误差驱动PID，避免归一化误差量级过小导致控制输出不足。
-            // 通过 atan2(error_px, focal_px) 计算视线偏角（单位：deg）。
-            float pitch_error = config_.pitch_error_sign *
-                                ( - std::atan2(dy, fy) * 180.0f / static_cast<float>(CV_PI));
-            float yaw_error = config_.yaw_error_sign *
-                              ( - std::atan2(dx, fx) * 180.0f / static_cast<float>(CV_PI));
+
+            const float pitch_error = config_.pitch_error_sign *
+                                      (-std::atan2(dy, fy) * 180.0f / static_cast<float>(CV_PI));
+            const float yaw_error = config_.yaw_error_sign *
+                                    (-std::atan2(dx, fx) * 180.0f / static_cast<float>(CV_PI));
 
             if (config_.print_debug) {
                 std::cout << std::fixed << std::setprecision(2)
@@ -192,8 +215,8 @@ PipelineOutput TargetTrackingPipeline::process_frame(const cv::Mat& frame, float
                           << std::endl;
             }
 
-            float pitch_speed_cmd = pid_step(pitch_error, dt, pid_pitch_, config_.integral_limit);
-            float yaw_speed_cmd = pid_step(yaw_error, dt, pid_yaw_, config_.integral_limit);
+            const float pitch_speed_cmd = pid_step(pitch_error, dt, pid_pitch_, config_.integral_limit);
+            const float yaw_speed_cmd = pid_step(yaw_error, dt, pid_yaw_, config_.integral_limit);
 
             pitch_speed_ = clamp_value(pitch_speed_cmd, -config_.max_speed, config_.max_speed);
             yaw_speed_ = clamp_value(yaw_speed_cmd, -config_.max_speed, config_.max_speed);
@@ -221,11 +244,14 @@ PipelineOutput TargetTrackingPipeline::process_frame(const cv::Mat& frame, float
     gimbal_.set_yaw_angle(yaw_angle_);
     gimbal_.set_pitch_speed(std::abs(pitch_speed_));
     gimbal_.set_yaw_speed(std::abs(yaw_speed_));
-    gimbal_.get_command();
 
-    const std::string cmd = gimbal_.get_command_buffer();
-    if (config_.enable_serial && gimbal_.is_serial_open()) {
-        gimbal_.send_command();
+    std::string cmd;
+    if (control_enabled_) {
+        gimbal_.get_command();
+        cmd = gimbal_.get_command_buffer();
+        if (config_.enable_serial && gimbal_.is_serial_open()) {
+            gimbal_.send_command();
+        }
     }
 
     output.state = state_;
